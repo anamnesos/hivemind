@@ -1,174 +1,85 @@
-# Hivemind Self-Improvement Sprint
+# V9: Documentation & Polish
 
-**Generated:** Jan 24, 2026
-**Author:** Reviewer (Agent 4)
-**Purpose:** Complete remaining action items from feedback discussion
-
----
-
-## Status Check
-
-### Already Complete
-| Item | Status | Evidence |
-|------|--------|----------|
-| Update CLAUDE.md (remove Python refs) | DONE | Now shows Electron/Node.js/xterm.js stack |
-| Document Windows-first | DONE | Line 129: "Platform: Windows-first (others untested)" |
-| Note about old docs | DONE | Line 74: "docs/ folder contains planning specs from earlier Python architecture" |
-
-### Remaining Work
-| Item | Priority | Status |
-|------|----------|--------|
-| Cost tracking in UI | HIGH | TODO |
-| Atomic writes for state.json | MEDIUM | TODO |
-| Document failure modes | MEDIUM | TODO |
+## Goal
+Prepare Hivemind for stable release with documentation and refinements.
 
 ---
 
-## Phase 1: Cost Tracking (HIGH PRIORITY)
+## Features
 
-### Why It Matters
-From web search: Multi-agent workflows commonly run 5-10 Claude instances. The emerging best practice is cost visibility before spawning.
+### 1. Documentation (HIGH)
+Complete documentation for users and developers.
+- README with installation, usage examples
+- In-app help tooltips for discoverability
+- Auto-generated API documentation
 
-### Task 1.1: Add Spawn Counter to UI
-
-**What:** Track and display how many Claude instances have been spawned this session.
-
-**Implementation:**
-```javascript
-// In main.js - track spawns
-let spawnCount = 0;
-
-ipcMain.handle('spawn-claude', (event, paneId, workingDir) => {
-  // ... existing code ...
-  spawnCount++;
-  broadcastSpawnCount();
-});
-
-function broadcastSpawnCount() {
-  if (mainWindow) {
-    mainWindow.webContents.send('spawn-count-changed', spawnCount);
-  }
-}
-
-ipcMain.handle('get-spawn-count', () => spawnCount);
-```
-
-**UI Display:** Add to Build Progress tab:
-```html
-<div class="stat-item">
-  <span class="stat-label">Claude Sessions:</span>
-  <span id="spawn-count">0</span>
-</div>
-```
-
-**Files touched:**
-- MODIFY: `ui/main.js` - Add spawn counter + IPC
-- MODIFY: `ui/renderer.js` - Listen for spawn count updates
-- MODIFY: `ui/index.html` - Add display element
-
-**Owner:** Worker A
+### 2. Polish (MEDIUM)
+Refinements for production readiness.
+- Clear, actionable error messages
+- Consistent UI styling
+- Performance optimizations
 
 ---
 
-## Phase 2: Atomic Writes (MEDIUM)
+## Tasks
 
-### Task 2.1: Implement Atomic State Writes
-
-**What:** Prevent state.json corruption from crash during write.
-
-**Implementation:**
-```javascript
-// Replace writeState() in main.js
-
-function writeState(state) {
-  try {
-    const dir = path.dirname(STATE_FILE_PATH);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-
-    // Atomic write: temp file then rename
-    const tempPath = STATE_FILE_PATH + '.tmp';
-    fs.writeFileSync(tempPath, JSON.stringify(state, null, 2), 'utf-8');
-    fs.renameSync(tempPath, STATE_FILE_PATH);
-
-  } catch (err) {
-    console.error('Error writing state:', err);
-  }
-}
-```
-
-**Files touched:**
-- MODIFY: `ui/main.js` - Update `writeState()` function (~5 lines changed)
-
-**Owner:** Worker B
+| Task | Owner | Description |
+|------|-------|-------------|
+| DC1 | Lead | README and getting started guide |
+| DC2 | Worker A | In-app help tooltips on UI elements |
+| DC3 | Worker B | API documentation generator |
+| PL1 | Lead | Error message improvements |
+| PL2 | Worker A | UI consistency pass (spacing, colors) |
+| PL3 | Worker B | Performance audit and fixes |
+| R1 | Reviewer | Final release verification |
 
 ---
 
-## Phase 3: Failure Modes Documentation (MEDIUM)
+## Implementation Notes
 
-### Task 3.1: Create Failure Modes Guide
+### DC1: README
+- Installation: npm install, prerequisites
+- Quick start: First run, spawning agents
+- Architecture: Main process, daemon, renderer
+- Configuration: settings.json options
 
-**What:** Document what can go wrong and recovery paths.
+### DC2: Help Tooltips
+- Add title attributes to buttons
+- Tooltip component for complex actions
+- Keyboard shortcut hints
 
-**Content outline:**
-1. **Agent Timeout** - What happens when Claude doesn't respond
-2. **State Corruption** - How to recover from corrupted state.json
-3. **Workspace Conflicts** - When two workers touch same file
-4. **Stuck Detection** - How the system detects no progress
-5. **Manual Recovery** - How to reset and restart
+### DC3: API Documentation
+- Parse ipc-handlers.js for handler names
+- Generate markdown with parameters/returns
+- Output to docs/api.md
 
-**Files touched:**
-- CREATE: `docs/failure-modes.md`
+### PL1: Error Messages
+- Review all console.error calls
+- Add user-facing error toasts
+- Include recovery suggestions
 
-**Owner:** Reviewer (I'll write this)
+### PL2: UI Consistency
+- Audit all colors against palette
+- Standardize spacing (8px grid)
+- Ensure all buttons have hover states
 
----
-
-## Assignments Summary
-
-| Task | Owner | Priority | Est. Effort |
-|------|-------|----------|-------------|
-| 1.1 Spawn counter | Worker A | HIGH | ~30 lines |
-| 2.1 Atomic writes | Worker B | MEDIUM | ~5 lines |
-| 3.1 Failure docs | Reviewer | MEDIUM | ~100 lines |
-
----
-
-## Checkpoints
-
-**Checkpoint 1:** Cost tracking complete
-- Spawn counter visible in UI
-- Updates live as Claude instances spawn
-
-**Checkpoint 2:** Atomic writes + docs complete
-- state.json uses temp+rename pattern
-- failure-modes.md exists and is comprehensive
+### PL3: Performance Audit
+- Profile startup time
+- Check for memory leaks
+- Optimize file watching
 
 ---
 
 ## Success Criteria
 
-- [ ] UI shows "Claude Sessions: N" in Build Progress tab
-- [ ] state.json writes use atomic pattern
-- [ ] docs/failure-modes.md explains recovery for common issues
-- [ ] All agents verify their tasks work
+- [ ] README enables new user to run Hivemind
+- [ ] Tooltips explain all major UI elements
+- [ ] API docs cover all IPC handlers
+- [ ] Error messages are clear and actionable
+- [ ] UI passes visual consistency check
+- [ ] No performance regressions
+- [ ] All tests still pass
 
 ---
 
-## Research Notes (From Web Search)
-
-Key learnings from 2026 multi-agent landscape:
-- [Claude Code now has native subagent support](https://code.claude.com/docs/en/sub-agents)
-- [Claude-Flow](https://github.com/ruvnet/claude-flow) is leading orchestration framework
-- [Parallel execution of 5-10 instances](https://dev.to/bredmond1019/multi-agent-orchestration-running-10-claude-instances-in-parallel-part-3-29da) is common
-- File-based coordination via shared CLAUDE.md is standard practice
-- Teams maintain shared context files, updated multiple times per session
-
-**Relevance to Hivemind:** We're on the right track with file-based coordination. The cost tracking feature aligns with industry need for visibility into multi-agent costs.
-
----
-
-**Status:** READY FOR LEAD APPROVAL
-
-This plan was written by Reviewer. Lead should approve or push back, then assign to workers.
+**Awaiting Reviewer approval before starting implementation.**

@@ -18,6 +18,29 @@ Write questions here. Lead will resolve and respond.
 
 ## Open Blockers
 
+### [Reviewer] - V3 Dry-Run: Critical Bug - dryRun Flag Not Propagated
+**Owner**: Lead / Worker B (whoever owns ipc-handlers.js)
+**Priority**: HIGH - feature is non-functional
+**Status**: RESOLVED (Jan 24, 2026)
+
+**Problem**: The dry-run flag is never passed from ipc-handlers.js to the daemon. Result: enabling dry-run in settings does nothing - real PTYs still spawn.
+
+**Root Cause**: `ui/modules/ipc-handlers.js` line 81:
+```javascript
+daemonClient.spawn(paneId, cwd);  // <-- MISSING: dryRun parameter
+```
+
+Should be:
+```javascript
+daemonClient.spawn(paneId, cwd, currentSettings.dryRun);
+```
+
+**Full analysis**: See `workspace/instances/lead/lead.txt`
+
+**Verdict**: DO NOT consider D1/D2 complete until fixed and verified.
+
+---
+
 ### [Lead] - BUG: Broadcast uses wrong newline character
 **Owner**: Worker A
 **Priority**: HIGH - user reported, breaks core functionality

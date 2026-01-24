@@ -1,6 +1,127 @@
 # Build Status
 
-Last updated: 2026-01-24 - V2 COMPLETE 🎉
+Last updated: 2026-01-24 - V6 IN PROGRESS
+
+---
+
+## V6: Smart Automation - 🔄 REVIEW PENDING
+
+**Goal:** Intelligent task routing and automated coordination.
+
+| Task | Owner | Status | Description |
+|------|-------|--------|-------------|
+| SR1 | Lead | ✅ DONE | Smart routing algorithm |
+| SR2 | Lead | ✅ DONE | Routing IPC handlers |
+| AH1 | Lead | ✅ DONE | Auto-handoff logic |
+| AH2 | Worker A | ✅ DONE | Handoff notification UI |
+| CR1 | Worker B | ✅ DONE | Conflict queue system |
+| CR2 | Worker A | ✅ DONE | Conflict resolution UI |
+| LM1 | Worker B | ✅ DONE | Learning data persistence |
+| R1 | Reviewer | 🔄 ACTIVE | Verify all V6 features |
+
+**All implementation complete.** Awaiting Reviewer verification (R1).
+
+---
+
+## V5: Multi-Project & Performance - ✅ SHIPPED
+
+Commit: `da593b1` - All tasks complete.
+
+---
+
+## V4: Self-Healing & Autonomy - ✅ SHIPPED
+
+Commit: `f4e9453` - All 8 tasks complete.
+
+---
+
+## V3: Developer Experience - ✅ COMPLETE
+
+**Goal:** Testing workflow, session history, project management
+
+| Sprint | Focus | Status |
+|--------|-------|--------|
+| 3.1 | Dry-Run Mode | ✅ COMPLETE |
+| 3.2 | History + Projects Tabs | ✅ COMPLETE |
+| 3.3 | Polish & Verification | ✅ COMPLETE |
+
+### Sprint 3.1: Dry-Run Mode ✅ COMPLETE
+
+| Task | Owner | Status | Description |
+|------|-------|--------|-------------|
+| D1 | Worker A | ✅ DONE | Settings toggle + header indicator |
+| D2 | Worker B | ✅ DONE | Daemon dry-run mode (mock terminals) |
+
+### Sprint 3.2: History & Projects
+
+| Task | Owner | Status | Description |
+|------|-------|--------|-------------|
+| H1 | Worker A | PENDING | Session History tab UI |
+| H2 | Worker B | ✅ DONE | Session History data + IPC handler |
+| J1 | Worker A | PENDING | Projects tab UI |
+| J2 | Worker B | ✅ DONE | Recent projects backend + IPC handlers |
+
+#### Worker B Completion Notes (H2 + J2)
+
+**Files modified:**
+- `ui/modules/ipc-handlers.js` - Added 6 new IPC handlers
+- `ui/main.js` - Added `recentProjects` to DEFAULT_SETTINGS
+
+**H2: Session History IPC:**
+- `get-session-history` - Returns enhanced history data with role names, formatted durations
+
+**J2: Recent Projects IPC:**
+- `get-recent-projects` - List recent projects (validates existence)
+- `add-recent-project` - Add to list (max 10, dedupes)
+- `remove-recent-project` - Remove specific project
+- `clear-recent-projects` - Clear all
+- `switch-project` - Switch + add to recent list
+
+**Integration:**
+- `select-project` now auto-adds to recent projects
+
+**Handoff to Worker A (H1 + J1):**
+Backend APIs are ready. See `workspace/checkpoint.md` for API reference.
+
+#### Worker B Completion Notes (D2)
+
+**Files modified:**
+- `ui/terminal-daemon.js` - Added dry-run mode support
+- `ui/daemon-client.js` - Updated spawn() to accept dryRun flag
+
+**Changes to terminal-daemon.js:**
+- Added `DRY_RUN_RESPONSES` array with mock Claude responses
+- Added `sendMockData()` function for simulated typing effect
+- Added `generateMockResponse()` function to create context-aware mock responses
+- Updated `spawnTerminal()` to accept `dryRun` flag
+  - When dryRun=true: creates mock terminal (no real PTY spawned)
+  - Shows welcome message with role and working dir
+  - Fake PID: 90000 + paneId
+- Updated `writeTerminal()` to handle dry-run mode
+  - Echoes input, buffers until Enter
+  - Generates mock response on Enter
+- Updated `killTerminal()` to handle dry-run terminals
+- Updated `listTerminals()` to include dryRun flag
+- Imported `PANE_ROLES` from config for welcome message
+
+**Changes to daemon-client.js:**
+- Updated `spawn(paneId, cwd, dryRun)` to accept dryRun parameter
+- Updated `spawned` event handler to capture dryRun flag
+
+**Protocol extension:**
+- spawn action: `{ action: "spawn", paneId, cwd, dryRun: true/false }`
+- spawned event: `{ event: "spawned", paneId, pid, dryRun: true/false }`
+
+**Handoff to Worker A (D1):**
+- Settings toggle needs to pass dryRun flag when calling `window.hivemind.pty.create()`
+- main.js needs to forward dryRun from settings to daemon spawn call
+- Header indicator should show when dry-run is active
+
+See `workspace/shared_context.md` for full task breakdown.
+
+---
+
+## V2 COMPLETE 🎉
 
 ## Sprint 2.3: Polish ✅ COMPLETE (Jan 24, 2026)
 

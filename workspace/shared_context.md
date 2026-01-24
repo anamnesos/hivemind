@@ -1,13 +1,173 @@
 # Hivemind Shared Context
 
-**Last Updated:** Jan 24, 2026 - SPRINT 2.3 ACTIVE
-**Status:** EXECUTING
+**Last Updated:** Jan 24, 2026 - V9 COMPLETE
+**Status:** ✅ V9 SHIPPED - STABLE RELEASE
 
 ---
 
-## SPRINT 2.3: Polish
+## V9: Documentation & Polish
 
-**Goal:** Daemon improvements and UX enhancements. Final sprint of V2.
+**Goal:** Prepare for stable release with docs and refinements.
+
+### Tasks
+
+| Task | Owner | Status | Description |
+|------|-------|--------|-------------|
+| DC1 | Lead | ✅ DONE | README and getting started guide |
+| DC2 | Worker A | ✅ DONE | In-app help tooltips |
+| DC3 | Worker B | ✅ DONE | API documentation generator |
+| PL1 | Lead | ✅ DONE | Error message improvements |
+| PL2 | Worker A | ✅ DONE | UI consistency pass |
+| PL3 | Worker B | ✅ DONE | Performance audit |
+| R1 | Reviewer | ✅ DONE | Final release verification |
+
+### Feature Details
+
+**DC1-DC3: Documentation**
+- README with installation, usage, architecture
+- Tooltips on UI elements for discoverability
+- Auto-generate IPC handler docs
+
+**PL1-PL3: Polish**
+- Clear, actionable error messages
+- Consistent styling, spacing, colors
+- Profile and optimize slow paths
+
+---
+
+## V8: Testing & Automation ✅ SHIPPED
+
+Commit: `4e8d7c3` - All 7 tasks complete:
+- TE1/TE2 ✅ Test execution daemon
+- TR1 Worker A ✅ Test results UI
+- TR2 Lead ✅ Test failure notifications
+- CI1 Worker B ✅ Pre-commit hooks
+- CI2 Worker A ✅ CI status indicator
+
+### Feature Details
+
+**TE1+TE2: Test Runner** - Execute tests automatically
+- Detect test framework (Jest, Mocha, pytest, etc.)
+- Run tests on file save or on demand
+- Capture and parse test output
+
+**TR1+TR2: Test Results** - Display test status
+- Test results panel with pass/fail counts
+- Failure details with stack traces
+- Notifications on test failures
+
+**CI1+CI2: CI Integration** - Pre-commit checks
+- Run tests before allowing commits
+- Block commits on test failure
+- Show CI status in header
+
+---
+
+## V7: Quality & Observability ✅ SHIPPED
+
+Commit: `1df828b` - All 7 tasks complete:
+- OB1 Lead ✅ Activity log aggregation
+- OB2 Worker A ✅ Activity log UI panel
+- QV1 Worker B ✅ Output validation hooks
+- QV2 Lead ✅ Completion quality checks
+- RB1 Worker B ✅ Checkpoint rollback support
+- RB2 Worker A ✅ Rollback confirmation UI
+- R1 Reviewer ✅ Verified all features
+
+### Feature Details
+
+**OB1+OB2: Activity Log** - Unified view of all agent activity
+- Aggregate terminal output, file changes, state transitions
+- Filterable by agent, time, event type
+- Searchable for debugging
+
+**QV1+QV2: Quality Validation** - Verify completed work
+- Hooks to validate output (syntax check, tests)
+- Auto-detect incomplete work
+- Confidence scoring for completions
+
+**RB1+RB2: Rollback Support** - Undo failed changes
+- Checkpoint file state before changes
+- One-click rollback on failure
+- Diff view of pending rollback
+
+---
+
+## V6: Smart Automation ✅ SHIPPED
+
+Commit: `98d3454` - All 8 tasks complete:
+- SR1 Lead ✅ Smart routing algorithm
+- SR2 Lead ✅ Routing IPC handlers
+- AH1 Lead ✅ Auto-handoff logic
+- AH2 Worker A ✅ Handoff notification UI
+- CR1 Worker B ✅ Conflict queue system
+- CR2 Worker A ✅ Conflict resolution UI
+- LM1 Worker B ✅ Learning data persistence
+- R1 Reviewer ✅ Verified all features
+
+---
+
+## V5: Multi-Project & Performance ✅ SHIPPED
+
+Commit: `da593b1` - All tasks complete.
+
+---
+
+## V4: Self-Healing & Autonomy ✅ SHIPPED
+
+Commit: `f4e9453` - All 8 tasks complete:
+- AR1 Worker B ✅ Stuck detection in daemon
+- AR2 Lead ✅ Auto-nudge IPC handler
+- AR3 Lead ✅ Auto-unstick timer
+- CB1 Worker A ✅ Startup state display
+- CB2 Worker B ✅ Agent claim/release protocol
+- AT1 Lead ✅ Completion detection patterns
+- AT2 Worker A ✅ Auto-trigger UI feedback
+- CP1 Worker B ✅ Session summary persistence
+
+---
+
+## V3: Developer Experience ✅ SHIPPED
+
+**Goal:** Improve the development/testing workflow based on V2 feedback.
+
+---
+
+## V3 Features (Proposed)
+
+### 1. Dry-Run Mode (HIGH PRIORITY)
+Simulate multi-agent flow without spawning real Claude instances.
+- Toggle in settings: "Dry Run Mode"
+- When enabled, terminals show simulated agent responses
+- Useful for: testing state transitions, demos, debugging orchestration
+- **Why:** 3 of 4 agents requested this in feedback
+
+### 2. Session History Tab (MEDIUM)
+View and replay past sessions.
+- New tab in right panel: "History"
+- Shows: timestamp, agents involved, files touched, duration
+- Click to view session details
+- **Why:** Already tracking `usageStats.history`, just need UI
+
+### 3. Projects Tab (MEDIUM)
+Quick-switch between projects.
+- New tab in right panel: "Projects"
+- Recent projects list
+- One-click to switch project folder
+- **Why:** Deferred from Phase 4, users asked for it
+
+### 4. Workflow Gate (HIGH - V3 REQUIRED)
+Enforce Lead → Reviewer → Workers flow.
+- Lead proposes plan → System blocks workers
+- Reviewer approves → System unblocks workers
+- Not optional. MANDATORY gate.
+- **Why:** Lead just skipped Reviewer and triggered workers. Product must prevent this.
+
+### 5. Context Handoff (LOW - FUTURE)
+Better persistence between agent handoffs.
+- Session state file agents can append to
+- Context summarization between handoffs
+- **Why:** Valid concern but complex, defer to later
 
 ---
 
@@ -15,134 +175,62 @@
 
 | Task | Owner | Status | Description |
 |------|-------|--------|-------------|
-| D1 | Worker B | ✅ DONE | Daemon logging to file (daemon.log) |
-| D2 | Worker B | ✅ DONE | Health check endpoint: `action: "health"` |
-| D3 | Worker B | ✅ DONE | Graceful shutdown notification to clients |
-| U1 | Worker A | ✅ DONE | Terminal scrollback persistence on reconnect |
-| U2 | Worker A | ✅ DONE | Visual flash when pane receives trigger |
-| U3 | Lead | ✅ DONE | "Kill all terminals" button |
-| U4 | Lead | ✅ DONE | "others.txt" trigger (excludes sender) |
-| P1 | Reviewer | ✅ VERIFIED | All features verified and approved |
+| P1 | Lead | ✅ DONE | Finalize V3 scope, break into tasks |
+| D1 | Worker A | ✅ DONE | Dry-run mode UI toggle in settings |
+| D2 | Worker B | ✅ DONE | Dry-run mode backend (mock terminal responses) |
+| WG1 | Lead | ✅ DONE | Workflow Gate - block workers until Reviewer approves |
+| H1 | Worker A | ✅ DONE | Session History tab UI |
+| H2 | Worker B | ✅ DONE | Session History data persistence |
+| J1 | Worker A | ✅ DONE | Projects tab UI |
+| J2 | Worker B | ✅ DONE | Projects tab backend (recent projects) |
+| R1 | Reviewer | ✅ DONE | Verify all V3 features |
 
 ---
 
-## Task Details
+## Sprint Breakdown
 
-### Worker B - Daemon Improvements
+### Sprint 3.1: Dry-Run Mode
+- D1: Settings toggle, UI indicator
+- D2: Mock terminal responses, bypass Claude spawn
 
-**D1: Daemon logging to file**
-- Create `daemon.log` in ui/ folder
-- Log all significant events (spawn, kill, connect, disconnect, errors)
-- Include timestamps
+### Sprint 3.2: History & Projects
+- H1 + H2: Session History tab
+- J1 + J2: Projects tab
 
-**D2: Health check endpoint**
-- Add `action: "health"` to protocol
-- Returns: uptime, terminal count, memory usage
-
-**D3: Graceful shutdown notification**
-- When daemon receives SIGTERM, notify all clients before closing
-- Send `event: "shutdown"` to all connected clients
-
-### Worker A - UX Improvements
-
-**U1: Scrollback persistence**
-- When reconnecting to daemon, restore terminal scrollback
-- Daemon should buffer last N lines per terminal
-
-**U2: Visual flash on trigger**
-- When a pane receives a trigger, flash the header briefly
-- CSS animation, ~200ms highlight
+### Sprint 3.3: Polish
+- R1: Full verification
+- Bug fixes, UX tweaks
 
 ---
 
-## Workflow
+## File Ownership
 
-1. Worker A: U1, U2 (UX improvements)
-2. Worker B: D1-D3 (daemon improvements) - parallel
-3. Lead: U3, U4 (additional features)
-4. Reviewer: P1 (final verification)
-5. Lead: Commit & push, V2 complete!
+| Owner | Files |
+|-------|-------|
+| Lead | main.js (state/IPC), SPRINT.md, shared_context.md |
+| Worker A | renderer.js, index.html, modules/ui-*.js |
+| Worker B | terminal-daemon.js, daemon-client.js, modules/watcher.js |
+| Reviewer | __tests__/, workspace/build/reviews/ |
 
 ---
 
 ## Success Criteria
 
-- Daemon logs to file
-- Health check works
-- Graceful shutdown works
-- Visual feedback on triggers
-- All 86 tests still pass
+- [ ] Dry-run mode works (toggle on, terminals simulate)
+- [ ] Session history tab shows past sessions
+- [ ] Projects tab shows recent projects, allows switching
+- [ ] All 86 existing tests still pass
+- [ ] Reviewer verifies all features
 
 ---
 
-## ✅ SPRINT 2.3 COMPLETE - Final Verification (P1)
+## V2 Summary (Complete)
 
-**Reviewer:** Claude-Reviewer
-**Date:** January 24, 2026
-**Status:** ALL FEATURES VERIFIED
-
----
-
-### D1: Daemon Logging ✅
-- `ui/daemon.log` file created
-- `logInfo()`, `logWarn()`, `logError()` functions
-- Timestamps on all entries
-- Startup header with PID
-
-### D2: Health Check ✅
-- `action: "health"` endpoint working
-- Returns: uptime, uptimeFormatted, terminalCount, activeTerminals, clientCount, memory (heapUsed/heapTotal/rss), pid
-
-### D3: Graceful Shutdown ✅
-- SIGTERM handler broadcasts `event: "shutdown"` to all clients
-- 100ms delay before killing terminals
-- Logs notification count
-
-### U1: Scrollback Persistence ✅
-- `SCROLLBACK_MAX_SIZE = 50000` (50KB buffer)
-- `scrollback` field in terminal info
-- Included in `list` and `attach` responses
-- Clients can restore history on reconnect
-
-### U2: Visual Flash ✅
-- CSS class `.pane-header.trigger-flash`
-- `@keyframes triggerFlash` animation (0.3s)
-- `flashPaneHeader()` function in daemon-handlers.js
-- Called when trigger received
-
-### U3: Kill All Button ✅
-- `<button id="killAllBtn">Kill All</button>` in header
-- `killAllTerminals()` function in terminal.js
-- Iterates all panes and kills each
-
-### U4: Others Triggers ✅
-- `others-lead.txt` → ['2', '3', '4']
-- `others-worker-a.txt` → ['1', '3', '4']
-- `others-worker-b.txt` → ['1', '2', '4']
-- `others-reviewer.txt` → ['1', '2', '3']
-- Protocol constants updated
-
----
-
-## 🎉 V2 COMPLETE
-
-All Sprint 2.3 tasks verified. V2 is ready for release.
-
-**V2 Summary:**
-- Sprint 2.1: 86 tests added (from 0)
+- Sprint 2.1: 86 tests added
 - Sprint 2.2: Modularized (3036 lines → 9 files)
-- Sprint 2.3: Polish (logging, health, scrollback, flash, kill all, others triggers)
+- Sprint 2.3: Polish (logging, health, scrollback, flash, kill all, others)
+- Post-sprint: Fresh Start button, Nudge All button
 
 ---
 
-## Previous Sprints
-
-### Sprint 2.1: Test Suite ✅ COMPLETE
-86 tests added.
-
-### Sprint 2.2: Modularize ✅ COMPLETE
-7 modules extracted. renderer.js: 1635→185 lines (89%↓), main.js: 1401→343 lines (76%↓).
-
----
-
-**V2 SHIPPED. Ready for V3 planning.**
+**Ready for team sync. Agents: read this and confirm your assignments.**
