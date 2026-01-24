@@ -1,6 +1,29 @@
 # Build Status
 
-Last updated: 2026-01-24 - SPRINT 2.1 COMPLETE
+Last updated: 2026-01-24 - V2 COMPLETE 🎉
+
+## Sprint 2.3: Polish ✅ COMPLETE (Jan 24, 2026)
+
+**Final sprint of V2 - All features verified by Reviewer**
+
+| Task | Owner | Feature | Status |
+|------|-------|---------|--------|
+| D1 | Worker B | Daemon logging to file | ✅ |
+| D2 | Worker B | Health check endpoint | ✅ |
+| D3 | Worker B | Graceful shutdown | ✅ |
+| U1 | Worker A | Scrollback persistence | ✅ |
+| U2 | Worker A | Visual flash on trigger | ✅ |
+| U3 | Lead | Kill All button | ✅ |
+| U4 | Lead | Others triggers | ✅ |
+| P1 | Reviewer | Final verification | ✅ |
+
+---
+
+## Sprint 2.2: Modularize ✅ COMPLETE (Jan 24, 2026)
+
+Renderer.js: 1635→185 lines (89%↓), main.js: 1401→343 lines (76%↓)
+
+---
 
 ## Sprint 2.1: Test Suite ✅ COMPLETE (Jan 24, 2026)
 
