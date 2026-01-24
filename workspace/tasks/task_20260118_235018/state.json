@@ -1,0 +1,28 @@
+{
+  "task_id": "task_20260118_235018",
+  "plan_id": null,
+  "status": "error",
+  "phase": "planning",
+  "created_at": "2026-01-18T23:50:18.110295",
+  "started_at": null,
+  "last_updated": "2026-01-18T23:50:18.111236",
+  "completed_at": null,
+  "plan_version": 0,
+  "revision_count": 0,
+  "subtasks": {},
+  "workers": {},
+  "checkpoints": {},
+  "current_review": null,
+  "errors": [
+    {
+      "agent": "orchestrator",
+      "code": -1,
+      "message": "[WinError 2] The system cannot find the file specified",
+      "file": null,
+      "timestamp": "2026-01-18T23:50:18.121938",
+      "retry_count": 0
+    }
+  ],
+  "escalation": null,
+  "updated_by": null
+}

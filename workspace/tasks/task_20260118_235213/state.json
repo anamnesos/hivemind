@@ -1,0 +1,28 @@
+{
+  "task_id": "task_20260118_235213",
+  "plan_id": null,
+  "status": "error",
+  "phase": "planning",
+  "created_at": "2026-01-18T23:52:13.952891",
+  "started_at": null,
+  "last_updated": "2026-01-18T23:52:13.953853",
+  "completed_at": null,
+  "plan_version": 0,
+  "revision_count": 0,
+  "subtasks": {},
+  "workers": {},
+  "checkpoints": {},
+  "current_review": null,
+  "errors": [
+    {
+      "agent": "orchestrator",
+      "code": 1,
+      "message": "Error: Input must be provided either through stdin or as a prompt argument when using --print\n",
+      "file": null,
+      "timestamp": "2026-01-18T23:52:15.231060",
+      "retry_count": 0
+    }
+  ],
+  "escalation": null,
+  "updated_by": null
+}

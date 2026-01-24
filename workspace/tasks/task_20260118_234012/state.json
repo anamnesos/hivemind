@@ -1,0 +1,19 @@
+{
+  "task_id": "task_20260118_234012",
+  "plan_id": null,
+  "status": "task_created",
+  "phase": "planning",
+  "created_at": "2026-01-18T23:40:12.949869",
+  "started_at": null,
+  "last_updated": "2026-01-18T23:40:12.949887",
+  "completed_at": null,
+  "plan_version": 0,
+  "revision_count": 0,
+  "subtasks": {},
+  "workers": {},
+  "checkpoints": {},
+  "current_review": null,
+  "errors": [],
+  "escalation": null,
+  "updated_by": null
+}

@@ -1,0 +1,4 @@
+{"timestamp": "2026-01-18T23:53:23.219365+00:00", "level": "INFO", "event": "Processing initial state: task_created", "logger": "hivemind.events", "agent": "orchestrator", "task_id": "task_20260118_235323"}
+{"timestamp": "2026-01-18T23:53:23.220050+00:00", "level": "INFO", "event": "Spawning orchestrator", "logger": "hivemind.events", "agent": "orchestrator", "task_id": "task_20260118_235323"}
+{"timestamp": "2026-01-18T23:54:39.248535+00:00", "level": "INFO", "event": "Processing initial state: task_created", "logger": "hivemind.events", "agent": "orchestrator", "task_id": "task_20260118_235439"}
+{"timestamp": "2026-01-18T23:54:39.249010+00:00", "level": "INFO", "event": "Spawning orchestrator", "logger": "hivemind.events", "agent": "orchestrator", "task_id": "task_20260118_235439"}

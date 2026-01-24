@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mypy:*)",
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "Bash(python -c:*)",
+      "Bash(powershell -Command \"$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut\\(''C:\\\\Users\\\\James Kim\\\\Desktop\\\\Hivemind.lnk''\\); $Shortcut.TargetPath = ''D:\\\\projects\\\\hivemind\\\\Hivemind.bat''; $Shortcut.WorkingDirectory = ''D:\\\\projects\\\\hivemind''; $Shortcut.Save\\(\\)\")",
+      "Bash(dir \"C:\\\\Users\\\\James Kim\\\\Desktop\\\\*.bat\")",
+      "Bash(where:*)",
+      "WebSearch",
+      "Bash(pip show:*)",
+      "Bash(cd:*)",
+      "Bash(curl:*)",
+      "Bash(npm install)",
+      "Bash(npm run rebuild:*)",
+      "Bash(npm start)",
+      "Bash(tasklist:*)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)"
+    ]
+  }
+}
