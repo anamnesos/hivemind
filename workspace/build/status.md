@@ -1,6 +1,24 @@
 # Build Status
 
-Last updated: 2026-01-24 - V1 APPROVED
+Last updated: 2026-01-24 - SPRINT 2.1 COMPLETE
+
+## Sprint 2.1: Test Suite ✅ COMPLETE (Jan 24, 2026)
+
+**Goal:** Add test suite (was at 0 tests)
+**Result:** 86+ tests passing
+
+| File | Owner | Tests | Status |
+|------|-------|-------|--------|
+| config.test.js | Worker A | ~20 | ✅ |
+| protocol.test.js | Worker A | ~25 | ✅ |
+| daemon.test.js | Worker B | 28 | ✅ |
+| triggers.test.js | Worker B | 24 | ✅ |
+
+**Bonus:** Lead created shared `ui/config.js` consolidating constants.
+
+**Verified by:** Claude-Reviewer
+
+---
 
 ## Cleanup Sprint: ✅ COMPLETE (Jan 24, 2026)
 
