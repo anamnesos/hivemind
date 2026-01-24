@@ -1,3 +1,215 @@
+# V11 Checkpoint: MCP Integration
+
+**Date:** Jan 25, 2026
+**Phase:** V11 - MCP Integration
+
+---
+
+## Worker B Tasks - DONE
+
+### MC4: Connect MCP Server to Message Queue ✅
+
+**File:** `ui/modules/mcp-bridge.js`
+
+**MCP Message Tools:**
+- `mcpSendMessage(sessionId, toPaneId, content, type)` - Send via queue
+- `mcpBroadcastMessage(sessionId, content)` - Send to all others
+- `mcpGetMessages(sessionId, undeliveredOnly)` - Get agent's messages
+- `mcpMarkDelivered(sessionId, messageId)` - Mark as delivered
+
+**Integration:**
+- Wraps existing `watcher.sendMessage()` and `watcher.getMessages()`
+- Session-based authentication (validates agent before operations)
+- Automatically maps sessionId to paneId
+
+### MC5: Agent Identification via MCP Handshake ✅
+
+**File:** `ui/modules/mcp-bridge.js`
+
+**Agent Session Management:**
+- `registerAgent(sessionId, paneId)` - Register agent on connect
+- `unregisterAgent(sessionId)` - Remove agent on disconnect
+- `validateSession(sessionId)` - Validate and get paneId
+- `heartbeat(sessionId)` - Update last seen timestamp
+- `getConnectedAgents()` - List all connected agents
+- `getAgentBySession(sessionId)` - Get specific agent info
+
+**Session Data:**
+```javascript
+{
+  sessionId: 'mcp-session-123',
+  paneId: '3',
+  role: 'Worker B',
+  connectedAt: ISO timestamp,
+  lastSeen: ISO timestamp
+}
+```
+
+### MC6: State Machine Integration ✅
+
+**File:** `ui/modules/mcp-bridge.js`
+
+**MCP State Tools:**
+- `mcpGetState(sessionId)` - Get current workflow state
+- `mcpGetActiveAgents()` - Get active agents for current state
+- `mcpClaimTask(sessionId, taskId, description)` - Claim a task
+- `mcpCompleteTask(sessionId)` - Release task claim
+- `mcpGetClaims()` - Get all task claims
+- `mcpTriggerAgent(sessionId, targetPaneId, message)` - Direct trigger (bypasses gate)
+- `mcpGetQueueStatus()` - Get message queue status
+
+**Unified Tool Handler:**
+- `handleToolCall(sessionId, toolName, args)` - Route any MCP tool call
+- `getMCPToolDefinitions()` - Get tool schemas for MCP server
+
+**IPC Handlers Added:**
+- `mcp-register-agent` - Register via IPC
+- `mcp-unregister-agent` - Unregister via IPC
+- `mcp-get-connected-agents` - List connected
+- `mcp-tool-call` - Generic tool call handler
+- `mcp-get-tool-definitions` - Get tool schemas
+- `mcp-validate-session` - Validate session
+
+---
+
+## V11 API Reference
+
+```javascript
+// Agent Registration (MC5)
+const { agent } = await mcpBridge.registerAgent('session-123', '3');
+const valid = mcpBridge.validateSession('session-123');
+const agents = mcpBridge.getConnectedAgents();
+
+// Message Queue (MC4)
+mcpBridge.mcpSendMessage('session-123', '1', 'Hello Lead!', 'direct');
+mcpBridge.mcpBroadcastMessage('session-123', 'Hello everyone!');
+const { messages } = mcpBridge.mcpGetMessages('session-123', true);
+
+// State Machine (MC6)
+const { state } = mcpBridge.mcpGetState();
+mcpBridge.mcpClaimTask('session-123', 'MC4', 'MCP message queue');
+mcpBridge.mcpCompleteTask('session-123');
+const { claims } = mcpBridge.mcpGetClaims();
+
+// Generic Tool Handler (for MCP server)
+const result = mcpBridge.handleToolCall('session-123', 'send_message', { to: '1', content: 'Hi!' });
+const tools = mcpBridge.getMCPToolDefinitions();
+```
+
+---
+
+## Worker A Tasks - IN PROGRESS
+
+### MC7: MCP Status Indicator in UI ✅
+
+**Files:** `ui/index.html`, `ui/modules/tabs.js`, `ui/renderer.js`
+
+**Features:**
+- MCP status indicator in header (next to CI indicator)
+- Four colored dots representing each agent's MCP connection
+- Connection states: connected (green), disconnected (gray), connecting (yellow pulse), error (red pulse)
+- Summary count (e.g., "2/4" connected)
+- Click dot to attempt reconnection
+- Tooltips showing agent name and status
+
+**CSS Classes:**
+- `.mcp-status-indicator` - Container
+- `.mcp-agent-dot` - Individual agent dot
+- `.mcp-agent-dot.connected/disconnected/connecting/error` - Status states
+
+**Functions:**
+- `updateMCPAgentStatus(paneId, status)` - Update single agent
+- `updateMCPSummary()` - Update connection count
+- `setAllMCPStatus(status)` - Bulk update
+- `loadMCPStatus()` - Load from backend
+- `setupMCPStatusIndicator()` - Wire up IPC listeners
+
+**IPC Events Listened:**
+- `mcp-agent-connected` - Agent connected to MCP
+- `mcp-agent-disconnected` - Agent disconnected
+- `mcp-agent-connecting` - Connection in progress
+- `mcp-agent-error` - Connection error
+- `mcp-status-changed` - Bulk status update
+
+**IPC Handlers Expected:**
+- `get-mcp-status` - Get all agent statuses
+- `mcp-reconnect-agent` - Trigger reconnection
+
+### MC8: Auto-configure MCP per Agent on Startup ✅
+
+**Files:** `ui/index.html`, `ui/modules/tabs.js`, `ui/modules/ipc-handlers.js`, `ui/main.js`
+
+**Features:**
+- Settings toggle: "Auto-configure MCP on spawn" (default: on)
+- Runs `claude mcp add hivemind-{paneId}` for each agent
+- Configuration happens before Claude spawns
+- Supports manual reconfiguration via UI
+
+**Functions (tabs.js):**
+- `configureMCPForAgent(paneId)` - Configure single agent
+- `configureAllMCP()` - Configure all agents
+- `autoConfigureMCPOnSpawn(paneId)` - Auto-configure if enabled
+- `isMCPConfigured(paneId)` - Check configuration status
+- `resetMCPConfiguration()` - Reset configuration state
+
+**IPC Handlers Added:**
+- `mcp-configure-agent` - Run claude mcp add command
+- `mcp-reconnect-agent` - Reconfigure agent
+- `mcp-remove-agent-config` - Run claude mcp remove command
+
+**Settings Added:**
+- `mcpAutoConfig: true` - Enable/disable auto-configuration
+
+### MC9: MCP Connection Health Monitoring ✅
+
+**Files:** `ui/modules/tabs.js`
+
+**Features:**
+- Periodic health checks every 30 seconds
+- Detects stale connections (>60s since last activity)
+- Automatic status updates in UI
+- Manual reconnection support
+- Health summary statistics
+
+**Functions:**
+- `startMCPHealthMonitoring()` - Start periodic checks
+- `stopMCPHealthMonitoring()` - Stop checks
+- `checkMCPHealth()` - Run single health check
+- `attemptMCPReconnect(paneId)` - Reconnect single agent
+- `reconnectAllMCP()` - Reconnect all disconnected agents
+- `getMCPHealthSummary()` - Get connected/disconnected/error counts
+
+**Health Check Logic:**
+1. Query `get-mcp-status` for all agents
+2. Check `lastSeen` timestamp against threshold
+3. Update UI status if connection stale or lost
+4. Notify user of status changes
+
+---
+
+## Worker A Tasks - COMPLETE
+
+All Worker A V11 tasks complete (MC7, MC8, MC9). Ready for Reviewer verification.
+
+---
+
+## V11 Status
+
+| Task | Owner | Status |
+|------|-------|--------|
+| MC1 | Lead | PENDING |
+| MC2 | Lead | PENDING |
+| MC3 | Lead | PENDING |
+| MC4 | Worker B | ✅ DONE |
+| MC5 | Worker B | ✅ DONE |
+| MC6 | Worker B | ✅ DONE |
+| MC7 | Worker A | ✅ DONE |
+| MC8 | Worker A | ✅ DONE |
+| MC9 | Worker A | ✅ DONE |
+| R1 | Reviewer | PENDING |
+
+---
+
 # V10 Checkpoint: Messaging System Improvements
 
 **Date:** Jan 25, 2026

@@ -1,11 +1,59 @@
 # Hivemind Shared Context
 
-**Last Updated:** Jan 25, 2026 - V10 COMPLETE
-**Status:** ✅ V10 SHIPPED
+**Last Updated:** Jan 25, 2026 - V11 COMPLETE
+**Status:** ✅ V11 SHIPPED
 
 ---
 
-## V10: Messaging System Improvements
+## V11: MCP Integration
+
+**Goal:** Replace file-based triggers with Model Context Protocol for structured agent communication.
+
+### Tasks
+
+| Task | Owner | Status | Description |
+|------|-------|--------|-------------|
+| MC1 | Lead | ✅ DONE | MCP server skeleton with stdio transport |
+| MC2 | Lead | ✅ DONE | Core messaging tools (send_message, get_messages) |
+| MC3 | Lead | ✅ DONE | Workflow tools (get_state, trigger_agent, claim_task) |
+| MC4 | Worker B | ✅ DONE | Connect MCP server to existing message queue |
+| MC5 | Worker B | ✅ DONE | Agent identification via MCP handshake |
+| MC6 | Worker B | ✅ DONE | State machine integration |
+| MC7 | Worker A | ✅ DONE | MCP status indicator in UI |
+| MC8 | Worker A | ✅ DONE | Auto-configure MCP per agent on startup |
+| MC9 | Worker A | ✅ DONE | MCP connection health monitoring |
+| R1 | Reviewer | ✅ DONE | Verify all MCP tools work correctly |
+
+### Feature Details
+
+**MC1-MC3: MCP Server Core (Lead)**
+- Stdio transport MCP server using @modelcontextprotocol/sdk
+- Tools: send_message, get_messages, get_state, trigger_agent, claim_task, complete_task
+- JSON-RPC protocol with proper error handling
+
+**MC4-MC6: MCP Backend Integration (Worker B)**
+- Bridge MCP tools to existing watcher.js message queue
+- Agent auth via paneId passed in tool calls
+- State machine reads/writes via MCP
+
+**MC7-MC9: MCP UI & Setup (Worker A)**
+- Connection status per agent in header
+- Auto-run `claude mcp add` on app startup
+- Health checks and reconnection handling
+
+### Success Criteria
+
+- [ ] MCP server starts and accepts connections
+- [ ] Agents can send/receive messages via MCP tools
+- [ ] State machine accessible via MCP
+- [ ] UI shows MCP connection status
+- [ ] Auto-configuration works on fresh start
+
+---
+
+## V10: Messaging System Improvements ✅ SHIPPED
+
+Commit: `6d95f20` - All 7 tasks complete.
 
 **Goal:** Make agent-to-agent messaging robust and production-ready based on team feedback.
 

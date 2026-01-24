@@ -1,38 +1,92 @@
-# V10: Messaging System Improvements
+# V11: MCP Integration
 
 ## Goal
-Make agent-to-agent messaging robust and production-ready based on team feedback.
+Replace file-based triggers with Model Context Protocol for structured, reliable agent communication.
 
 ---
 
 ## Background
 
-During V9 messaging test, all 4 agents identified issues:
-- Race conditions (messages overwritten before read)
-- No delivery confirmation
-- No message history
-- Workflow gate blocks direct messages
+Current system uses file-based triggers (`workspace/triggers/*.txt`) which:
+- Require file watcher (race conditions possible)
+- No structured protocol
+- No built-in error handling
+- Workaround for Claude CLI's black-box nature
+
+MCP (Model Context Protocol) is Anthropic's standard for AI-tool integration:
+- Native to Claude Code
+- Structured JSON-RPC protocol
+- Built-in tool discovery
+- Proper error handling
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Hivemind Electron App                     │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │              Hivemind MCP Server                     │    │
+│  │  (stdio transport, runs as child process)           │    │
+│  │                                                      │    │
+│  │  Tools:                                              │    │
+│  │  - send_message(to, content)                        │    │
+│  │  - get_messages()                                   │    │
+│  │  - claim_task(task_id)                              │    │
+│  │  - complete_task(task_id, result)                   │    │
+│  │  - get_workflow_state()                             │    │
+│  │  - trigger_agent(agent_id, context)                 │    │
+│  │  - get_shared_context()                             │    │
+│  │  - update_status(task, status)                      │    │
+│  └─────────────────────────────────────────────────────┘    │
+│         ▲              ▲              ▲              ▲       │
+│         │ stdio        │ stdio        │ stdio        │ stdio │
+│  ┌──────┴───┐   ┌──────┴───┐   ┌──────┴───┐   ┌──────┴───┐  │
+│  │ Claude   │   │ Claude   │   │ Claude   │   │ Claude   │  │
+│  │ (Lead)   │   │ (Wkr A)  │   │ (Wkr B)  │   │ (Review) │  │
+│  └──────────┘   └──────────┘   └──────────┘   └──────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## Features
 
-### 1. Message Queue Backend (HIGH)
-Replace single-message trigger files with persistent JSON queue.
-- Append-only (no overwrites)
-- Delivery tracking
-- IPC events for real-time updates
+### 1. MCP Server Core (HIGH - Lead)
+Build the MCP server that all Claude instances connect to.
 
-### 2. Message UI (MEDIUM)
-New Messages panel for viewing agent conversations.
-- Conversation history
-- Filter by agent
-- Group message composer
+**Files:** `ui/mcp-server.js` (new)
 
-### 3. Gate Bypass (MEDIUM)
-Direct messages bypass workflow state machine.
-- Messages always allowed
-- State doesn't block communication
+**Dependencies:**
+```json
+"@modelcontextprotocol/sdk": "^1.0.0"
+```
+
+**Implementation:**
+- Stdio transport (spawned per-agent)
+- Agent identification via init params
+- Tool definitions with JSON schemas
+
+### 2. MCP Tool Integration (HIGH - Worker B)
+Connect MCP tools to existing message queue and state machine.
+
+**Files:** `ui/mcp-server.js`, `ui/modules/watcher.js`
+
+**Implementation:**
+- Bridge `send_message` to `watcher.sendMessage()`
+- Bridge `get_messages` to `watcher.getMessages()`
+- Bridge state tools to state.json read/write
+
+### 3. MCP UI & Auto-Setup (MEDIUM - Worker A)
+Show MCP status and auto-configure on startup.
+
+**Files:** `ui/renderer.js`, `ui/index.html`
+
+**Implementation:**
+- MCP connection indicator per pane
+- Auto-run `claude mcp add` on first launch
+- Health check polling
 
 ---
 
@@ -40,63 +94,144 @@ Direct messages bypass workflow state machine.
 
 | Task | Owner | Description |
 |------|-------|-------------|
-| MQ1 | Lead | Message queue backend - JSON array with append |
-| MQ2 | Lead | Delivery confirmation IPC events |
-| MQ3 | Worker A | Message history UI panel |
-| MQ4 | Worker B | Message queue file watcher integration |
-| MQ5 | Worker B | Gate bypass for direct messages |
-| MQ6 | Worker A | Group messaging UI |
-| R1 | Reviewer | Verify all messaging features |
+| MC1 | Lead | MCP server skeleton - stdio transport, tool registration |
+| MC2 | Lead | Messaging tools - send_message, get_messages |
+| MC3 | Lead | Workflow tools - get_state, trigger_agent, claim_task, complete_task |
+| MC4 | Worker B | Connect MCP to watcher.js message queue |
+| MC5 | Worker B | Agent identification - pass paneId in MCP init |
+| MC6 | Worker B | State machine integration via MCP |
+| MC7 | Worker A | MCP status indicator in agent header |
+| MC8 | Worker A | Auto-configure MCP on app startup |
+| MC9 | Worker A | MCP health monitoring and reconnection |
+| R1 | Reviewer | Verify all MCP tools work correctly |
 
 ---
 
 ## Implementation Notes
 
-### MQ1: Message Queue Format
-```json
-{
-  "messages": [
+### MC1: MCP Server Skeleton
+
+```javascript
+// ui/mcp-server.js
+const { Server } = require('@modelcontextprotocol/sdk/server/index.js');
+const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
+
+const server = new Server({
+  name: 'hivemind',
+  version: '1.0.0',
+}, {
+  capabilities: {
+    tools: {},
+  },
+});
+
+// Tool definitions registered here
+server.setRequestHandler(ListToolsRequestSchema, async () => ({
+  tools: [
     {
-      "id": "msg-1737...",
-      "from": "LEAD",
-      "to": "WORKER-A",
-      "timestamp": "2026-01-25T09:00:00.000Z",
-      "content": "Message text here",
-      "delivered": false,
-      "read": false
-    }
-  ]
+      name: 'send_message',
+      description: 'Send a message to another agent',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          to: { type: 'string', enum: ['lead', 'worker-a', 'worker-b', 'reviewer', 'all'] },
+          content: { type: 'string' },
+        },
+        required: ['to', 'content'],
+      },
+    },
+    // ... more tools
+  ],
+}));
+
+const transport = new StdioServerTransport();
+server.connect(transport);
+```
+
+### MC2: Messaging Tools
+
+```javascript
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const { name, arguments: args } = request.params;
+
+  switch (name) {
+    case 'send_message':
+      const result = await sendMessage(agentId, args.to, args.content);
+      return { content: [{ type: 'text', text: JSON.stringify(result) }] };
+
+    case 'get_messages':
+      const messages = await getMessages(agentId);
+      return { content: [{ type: 'text', text: JSON.stringify(messages) }] };
+  }
+});
+```
+
+### MC3: Workflow Tools
+
+```javascript
+// get_workflow_state - Read state.json
+// trigger_agent - Write to trigger file + emit event
+// claim_task - Update claims in state.json
+// complete_task - Update status.md + trigger next agent
+```
+
+### MC4: Bridge to watcher.js
+
+```javascript
+// In mcp-server.js, import watcher functions
+const watcher = require('./modules/watcher');
+
+async function sendMessage(fromAgent, toAgent, content) {
+  const fromPaneId = AGENT_TO_PANE[fromAgent];
+  const toPaneId = AGENT_TO_PANE[toAgent];
+  return watcher.sendMessage(fromPaneId, toPaneId, content, 'mcp');
 }
 ```
-- File: `workspace/messages.json`
-- Append new messages to array
-- Mark delivered/read as processed
 
-### MQ2: IPC Events
-- `message-sent` - When agent writes message
-- `message-delivered` - When target agent receives
-- `message-read` - When target agent acknowledges
+### MC5: Agent Identification
 
-### MQ3: Messages UI
-- New tab in right panel: "Messages"
-- List view of conversations
-- Click to expand thread
-- Compose button for new messages
+Each Claude instance runs with agent ID:
+```bash
+claude mcp add --transport stdio hivemind -- node mcp-server.js --agent lead
+```
 
-### MQ4: File Watcher
-- Watch `workspace/messages.json`
-- On change, parse and deliver pending messages
-- Update delivered flag after injection
+Server reads `--agent` arg to identify which pane it serves.
 
-### MQ5: Gate Bypass
-- In state machine, always allow message-related triggers
-- Don't block on `idle`, `planning`, or `checkpoint_review`
-- Only block execution triggers, not communication
+### MC6: State Machine Integration
 
-### MQ6: Group Messaging
-- Dropdown: "To: Worker A / Worker B / Workers / All / Reviewer"
-- Resolve groups to individual messages
-- Show "Sent to 2 agents" confirmation
+```javascript
+case 'get_workflow_state':
+  const state = JSON.parse(fs.readFileSync(STATE_FILE_PATH, 'utf-8'));
+  return { content: [{ type: 'text', text: JSON.stringify(state) }] };
+
+case 'trigger_agent':
+  await triggerAgent(args.agent, args.context);
+  return { content: [{ type: 'text', text: 'Agent triggered' }] };
+```
+
+### MC7: Status Indicator
+
+```html
+<div class="mcp-status" id="mcp-status-1">
+  <span class="mcp-dot connected"></span>
+  <span>MCP</span>
+</div>
+```
+
+### MC8: Auto-Configure
+
+On app startup, for each pane:
+```javascript
+async function configureMcpForAgent(paneId, agentName) {
+  const mcpServerPath = path.join(__dirname, 'mcp-server.js');
+  const command = `claude mcp add --transport stdio hivemind-${agentName} -- node "${mcpServerPath}" --agent ${agentName}`;
+  // Execute in terminal or via child_process
+}
+```
+
+### MC9: Health Monitoring
+
+Poll MCP server status, show reconnect button if disconnected.
 
 ---
 
@@ -104,20 +239,38 @@ Direct messages bypass workflow state machine.
 
 | Owner | Files |
 |-------|-------|
-| Lead | main.js (message queue, IPC events) |
-| Worker A | renderer.js (Messages UI), index.html |
-| Worker B | terminal-daemon.js (watcher), main.js (gate bypass) |
+| Lead | mcp-server.js (new), package.json |
+| Worker A | renderer.js, index.html (status UI) |
+| Worker B | watcher.js (bridge), mcp-server.js (integration) |
+
+---
+
+## Migration Path
+
+1. V11 adds MCP as **additional** communication method
+2. File-based triggers remain for backward compatibility
+3. Future version can deprecate file triggers once MCP proven stable
 
 ---
 
 ## Success Criteria
 
-- [ ] Messages persist across writes (no race conditions)
-- [ ] Delivery confirmation events fire correctly
-- [ ] Message history visible in Messages tab
-- [ ] Direct messages work regardless of workflow state
-- [ ] Group messaging sends to correct recipients
-- [ ] All existing tests still pass
+- [ ] `node mcp-server.js --agent lead` starts without error
+- [ ] Claude Code can connect: `claude mcp add --transport stdio hivemind -- node mcp-server.js --agent lead`
+- [ ] `send_message` tool delivers to target agent
+- [ ] `get_messages` returns pending messages
+- [ ] `get_workflow_state` returns current state
+- [ ] UI shows MCP connection status
+- [ ] Auto-configuration works on fresh install
+- [ ] All existing functionality still works
+
+---
+
+## Dependencies
+
+```bash
+cd ui && npm install @modelcontextprotocol/sdk
+```
 
 ---
 
