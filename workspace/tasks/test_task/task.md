@@ -1,3 +1,0 @@
-# Task
-
-Create a simple hello world Python script.

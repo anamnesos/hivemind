@@ -1,2 +1,0 @@
-{"timestamp": "2026-01-18T23:54:51.918653+00:00", "level": "INFO", "event": "Processing initial state: task_created", "logger": "hivemind.events", "agent": "orchestrator", "task_id": "task_20260118_235451"}
-{"timestamp": "2026-01-18T23:54:51.918903+00:00", "level": "INFO", "event": "Spawning orchestrator", "logger": "hivemind.events", "agent": "orchestrator", "task_id": "task_20260118_235451"}
