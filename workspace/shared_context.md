@@ -1,7 +1,26 @@
 # Hivemind Shared Context
 
-**Last Updated:** Jan 25, 2026 - V11 COMPLETE
-**Status:** ✅ V11 SHIPPED
+**Last Updated:** Jan 25, 2026 - V11 COMPLETE + Bug Fix
+**Status:** ✅ V11 SHIPPED + Autocomplete Bug Fixed
+
+---
+
+## Post-V11: Autocomplete Bug Fix
+
+**Commit:** `0ba5cb7` - Collaborative fix by Worker A + Worker B
+
+**Issue:** During MCP testing, autocomplete suggestions were auto-submitted to agent terminals without user confirmation. Documented as HIGH PRIORITY in friction.md.
+
+**Fix Applied:**
+1. **Worker A:** Added `blurAllTerminals()` function + focusin listener to release xterm keyboard capture when input fields get focus
+2. **Worker B:** Made broadcast keydown handler defensive (check !isComposing, trim, block empty sends) + added autocomplete="off" attributes
+
+**Files Changed:**
+- `ui/index.html` - autocomplete/autocorrect/autocapitalize="off" on inputs
+- `ui/renderer.js` - defensive keydown handler + focusin blur
+- `ui/modules/terminal.js` - blurAllTerminals() export
+
+**Reviewer:** This fix was committed after your V11 verification. The friction.md you updated triggered this fix. No re-verification needed unless you want to confirm the autocomplete issue is resolved.
 
 ---
 
