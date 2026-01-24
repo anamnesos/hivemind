@@ -237,4 +237,24 @@ Track problems and patterns as we build Hivemind. This feeds into improving the 
 
 ---
 
+### Jan 25 2026 - tooling - Terminal autocomplete auto-submits to agent terminals
+
+**What happened**: Terminal autocomplete suggestions were automatically entered into agent terminals without user confirmation. Agents received unintended commands like "commit this" or "start mcp" that the user didn't intentionally send.
+
+**Root cause**: Autocomplete feature auto-submits recommended messages to terminal panes without requiring explicit user confirmation (Enter/Tab).
+
+**Resolution**: (none yet - logged for V12 - HIGH PRIORITY)
+
+**Pattern**: YES - any time autocomplete is active, accidental submissions can occur. Happened multiple times in same session.
+
+**Severity**: HIGH - actively disrupting workflow. Occurred 3+ times in 10 minutes.
+
+**Improvement**:
+1. Require explicit Enter/Tab to accept autocomplete suggestions
+2. Add confirmation before injecting suggested messages to agent terminals
+3. Consider disabling autocomplete in agent terminal panes entirely
+4. Add visual distinction between "suggestion" and "submitted" states
+
+---
+
 (Add new entries as friction occurs)
