@@ -1,11 +1,60 @@
 # Hivemind Shared Context
 
-**Last Updated:** Jan 24, 2026 - V9 COMPLETE
-**Status:** ✅ V9 SHIPPED - STABLE RELEASE
+**Last Updated:** Jan 25, 2026 - V10 COMPLETE
+**Status:** ✅ V10 SHIPPED
 
 ---
 
-## V9: Documentation & Polish
+## V10: Messaging System Improvements
+
+**Goal:** Make agent-to-agent messaging robust and production-ready based on team feedback.
+
+### Tasks
+
+| Task | Owner | Status | Description |
+|------|-------|--------|-------------|
+| MQ1 | Lead | ✅ DONE | Message queue backend - JSON array with append (merged with MQ4) |
+| MQ2 | Lead | ✅ DONE | Delivery confirmation IPC events (merged with MQ4) |
+| MQ3 | Worker A | ✅ DONE | Message history UI panel |
+| MQ4 | Worker B | ✅ DONE | Message queue file watcher integration |
+| MQ5 | Worker B | ✅ DONE | Gate bypass for direct messages |
+| MQ6 | Worker A | ✅ DONE | Group messaging UI (workers only, custom) |
+| R1 | Reviewer | ✅ DONE | Verify all messaging features |
+
+### Feature Details
+
+**MQ1+MQ2: Message Queue Backend (Lead)**
+- Replace single-message trigger files with JSON queue
+- Format: `[{from, to, time, msg, delivered}, ...]`
+- Append new messages, don't overwrite
+- Emit `message-delivered` IPC event when processed
+- Emit `message-received` IPC event for UI updates
+
+**MQ3+MQ6: Message UI (Worker A)**
+- New "Messages" tab in right panel
+- Show conversation history between agents
+- Filter by sender/recipient
+- Group message composer (workers only, all, custom)
+
+**MQ4+MQ5: Message Integration (Worker B)**
+- File watcher for message queue files
+- Process queue, mark as delivered
+- Bypass workflow gate for direct messages
+- Messages always allowed regardless of state
+
+### Success Criteria
+
+- [ ] Messages persist (no race condition overwrites)
+- [ ] Delivery confirmation works
+- [ ] Message history visible in UI
+- [ ] Direct messages bypass workflow gate
+- [ ] Group messaging works
+
+---
+
+## V9: Documentation & Polish ✅ SHIPPED
+
+Commit: `ac4e13c` - All 7 tasks complete.
 
 **Goal:** Prepare for stable release with docs and refinements.
 

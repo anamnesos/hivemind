@@ -1,3 +1,165 @@
+# V10 Checkpoint: Messaging System Improvements
+
+**Date:** Jan 25, 2026
+**Phase:** V10 - Messaging System Improvements
+
+---
+
+## Worker B Tasks - DONE
+
+### MQ4: Message Queue File Watcher Integration ✅
+
+**File:** `ui/modules/watcher.js`
+**Storage:** `workspace/messages/queue-{paneId}.json`
+
+**Features:**
+- Message queue directory initialization
+- Per-pane JSON queue files (queue-1.json through queue-4.json)
+- Append-based messaging (no overwrites)
+- Delivery tracking (delivered flag + timestamp)
+- Automatic queue size limit (100 messages)
+- Chokidar watcher for queue file changes
+- Auto-delivery to running Claude instances
+
+**Functions Added:**
+- `initMessageQueue()` - Create message directory and queue files
+- `sendMessage(from, to, content, type)` - Append message to queue
+- `getMessages(paneId, undeliveredOnly)` - Read queue messages
+- `markMessageDelivered(paneId, messageId)` - Mark as delivered
+- `clearMessages(paneId, deliveredOnly)` - Clear queue
+- `getMessageQueueStatus()` - Get all queue stats
+- `startMessageWatcher()` / `stopMessageWatcher()` - Watcher control
+- `handleMessageQueueChange(filePath)` - Process queue changes
+
+**Message Format:**
+```javascript
+{
+  id: 'msg-{timestamp}-{random}',
+  from: '3',
+  fromRole: 'Worker B',
+  to: '1',
+  toRole: 'Lead',
+  content: 'Message text',
+  type: 'direct' | 'broadcast' | 'system',
+  timestamp: ISO string,
+  delivered: false,
+  deliveredAt: null
+}
+```
+
+### MQ5: Gate Bypass for Direct Messages ✅
+
+**File:** `ui/modules/triggers.js`
+
+**Features:**
+- Direct messages bypass workflow gate completely
+- Messages delivered regardless of state machine state
+- No reviewer approval required for inter-agent chat
+- Dedicated `sendDirectMessage()` function
+
+**Functions Added:**
+- `sendDirectMessage(targetPanes, message, fromRole)` - Send without gate check
+- `checkDirectMessageGate()` - Always returns allowed: true
+
+**IPC Handlers Added (ipc-handlers.js):**
+- `init-message-queue` - Initialize queue system
+- `send-message` - Send direct message
+- `send-broadcast-message` - Send to all other panes
+- `send-group-message` - Send to specific panes
+- `get-messages` - Get messages for a pane
+- `get-all-messages` - Get all queues
+- `mark-message-delivered` - Mark delivered
+- `clear-messages` - Clear queue
+- `get-message-queue-status` - Get status
+- `start-message-watcher` - Start watcher
+
+**Integration:**
+- `main.js`: Added `startMessageWatcher()` / `stopMessageWatcher()` calls
+
+---
+
+## V10 API Reference
+
+```javascript
+// Message Queue (MQ4)
+await window.hivemind.invoke('init-message-queue');
+await window.hivemind.invoke('send-message', fromPaneId, toPaneId, 'Hello!', 'direct');
+await window.hivemind.invoke('send-broadcast-message', fromPaneId, 'Hello everyone!');
+await window.hivemind.invoke('send-group-message', fromPaneId, ['2', '3'], 'Workers only');
+const { messages } = await window.hivemind.invoke('get-messages', paneId, true);
+await window.hivemind.invoke('mark-message-delivered', paneId, messageId);
+const status = await window.hivemind.invoke('get-message-queue-status');
+
+// IPC Events emitted:
+// - 'message-queued' - New message added to queue
+// - 'message-delivered' - Message marked delivered
+// - 'messages-pending' - Undelivered messages detected
+// - 'messages-cleared' - Queue cleared
+// - 'direct-message-sent' - Direct message sent via triggers
+```
+
+---
+
+## Worker A Tasks - DONE
+
+### MQ3: Message History UI Panel ✅
+
+**Files:** `ui/index.html`, `ui/modules/tabs.js`, `ui/renderer.js`
+
+**Features:**
+- New "Messages" tab in right panel
+- Message list showing from/to/time/content
+- Filter buttons: All, Lead, Worker A, Worker B, Reviewer
+- Delivery status indicators (✓ Delivered / ⏳ Pending)
+- Auto-scroll to newest messages
+- Refresh and Clear buttons
+
+**Functions:**
+- `renderMessagesList()` - Render messages with filters
+- `loadMessageHistory()` - Load from all queues via `get-all-messages`
+- `clearMessageHistory()` - Clear all queues
+- `formatMessageTime()` - Format timestamp display
+- `getAgentDisplayName()` - Convert agent ID to name
+
+### MQ6: Group Messaging UI ✅
+
+**Files:** `ui/index.html`, `ui/modules/tabs.js`
+
+**Features:**
+- Message composer with recipient selection
+- Individual recipients: Lead, Worker A, Worker B, Reviewer
+- Group recipients: Workers Only, All Agents
+- Multi-select for custom groups
+- Enter to send, Shift+Enter for newline
+- Send button enabled only with message + recipients
+
+**Functions:**
+- `sendGroupMessage()` - Send via `send-group-message` IPC
+- `updateSendButtonState()` - Enable/disable send button
+- `setupMessagesTab()` - Wire up all event listeners
+
+**IPC Event Listeners:**
+- `message-queued` - Add new message to history
+- `message-delivered` - Update delivery status
+- `messages-cleared` - Reload history
+- `direct-message-sent` - Reload history
+
+---
+
+## V10 Status
+
+| Task | Owner | Status |
+|------|-------|--------|
+| MQ1 | Lead | PENDING |
+| MQ2 | Lead | PENDING |
+| MQ3 | Worker A | ✅ DONE |
+| MQ4 | Worker B | ✅ DONE |
+| MQ5 | Worker B | ✅ DONE |
+| MQ6 | Worker A | ✅ DONE |
+| R1 | Reviewer | PENDING |
+
+---
+
 # V9 Checkpoint: Documentation & Polish
 
 **Date:** Jan 24, 2026

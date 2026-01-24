@@ -1,10 +1,74 @@
 # Build Status
 
-Last updated: 2026-01-24 - V6 IN PROGRESS
+Last updated: 2026-01-25 - V10 IN PROGRESS
 
 ---
 
-## V6: Smart Automation - 🔄 REVIEW PENDING
+## V10: Messaging System Improvements - 🔄 IN PROGRESS
+
+**Goal:** Make agent-to-agent messaging robust and production-ready.
+
+| Task | Owner | Status | Description |
+|------|-------|--------|-------------|
+| MQ1 | Lead | PENDING | Message queue backend - JSON array with append |
+| MQ2 | Lead | PENDING | Delivery confirmation IPC events |
+| MQ3 | Worker A | ✅ DONE | Message history UI panel |
+| MQ4 | Worker B | ✅ DONE | Message queue file watcher integration |
+| MQ5 | Worker B | ✅ DONE | Gate bypass for direct messages |
+| MQ6 | Worker A | ✅ DONE | Group messaging UI (workers only, custom) |
+| R1 | Reviewer | PENDING | Verify all messaging features |
+
+### Worker A Completion Notes (MQ3 + MQ6)
+
+**Files modified:**
+- `ui/index.html` - Added CSS and HTML for Messages tab
+- `ui/modules/tabs.js` - Added JavaScript for message display and composer
+- `ui/renderer.js` - Added setup call for Messages tab
+
+**MQ3: Message History UI:**
+- New "Messages" tab in right panel
+- Shows conversation history with from/to/time/content
+- Filter buttons: All, Lead, Worker A, Worker B, Reviewer
+- Delivery status indicators (✓ Delivered / ⏳ Pending)
+- Auto-scroll to newest messages
+
+**MQ6: Group Messaging UI:**
+- Message composer with recipient selection
+- Individual recipients: Lead, Worker A, Worker B, Reviewer
+- Group recipients: Workers Only, All Agents
+- Multi-select support for custom groups
+- Enter to send, Shift+Enter for newline
+
+**IPC handlers expected from Lead (MQ1+MQ2):**
+- `get-message-history` - Returns message array
+- `clear-message-history` - Clears all messages
+- `send-group-message` - Sends to selected recipients
+- `message-received` event - When new message arrives
+- `message-delivered` event - When delivery confirmed
+
+**Handoff to Lead:** MQ1+MQ2 - Backend handlers needed for full functionality.
+
+---
+
+## V9: Documentation & Polish - ✅ SHIPPED
+
+Commit: `ac4e13c` - All 7 tasks complete.
+
+---
+
+## V8: Testing & Automation - ✅ SHIPPED
+
+Commit: `4e8d7c3` - All tasks complete.
+
+---
+
+## V7: Quality & Observability - ✅ SHIPPED
+
+Commit: `1df828b` - All 7 tasks complete.
+
+---
+
+## V6: Smart Automation - ✅ SHIPPED
 
 **Goal:** Intelligent task routing and automated coordination.
 

@@ -1,23 +1,38 @@
-# V9: Documentation & Polish
+# V10: Messaging System Improvements
 
 ## Goal
-Prepare Hivemind for stable release with documentation and refinements.
+Make agent-to-agent messaging robust and production-ready based on team feedback.
+
+---
+
+## Background
+
+During V9 messaging test, all 4 agents identified issues:
+- Race conditions (messages overwritten before read)
+- No delivery confirmation
+- No message history
+- Workflow gate blocks direct messages
 
 ---
 
 ## Features
 
-### 1. Documentation (HIGH)
-Complete documentation for users and developers.
-- README with installation, usage examples
-- In-app help tooltips for discoverability
-- Auto-generated API documentation
+### 1. Message Queue Backend (HIGH)
+Replace single-message trigger files with persistent JSON queue.
+- Append-only (no overwrites)
+- Delivery tracking
+- IPC events for real-time updates
 
-### 2. Polish (MEDIUM)
-Refinements for production readiness.
-- Clear, actionable error messages
-- Consistent UI styling
-- Performance optimizations
+### 2. Message UI (MEDIUM)
+New Messages panel for viewing agent conversations.
+- Conversation history
+- Filter by agent
+- Group message composer
+
+### 3. Gate Bypass (MEDIUM)
+Direct messages bypass workflow state machine.
+- Messages always allowed
+- State doesn't block communication
 
 ---
 
@@ -25,60 +40,84 @@ Refinements for production readiness.
 
 | Task | Owner | Description |
 |------|-------|-------------|
-| DC1 | Lead | README and getting started guide |
-| DC2 | Worker A | In-app help tooltips on UI elements |
-| DC3 | Worker B | API documentation generator |
-| PL1 | Lead | Error message improvements |
-| PL2 | Worker A | UI consistency pass (spacing, colors) |
-| PL3 | Worker B | Performance audit and fixes |
-| R1 | Reviewer | Final release verification |
+| MQ1 | Lead | Message queue backend - JSON array with append |
+| MQ2 | Lead | Delivery confirmation IPC events |
+| MQ3 | Worker A | Message history UI panel |
+| MQ4 | Worker B | Message queue file watcher integration |
+| MQ5 | Worker B | Gate bypass for direct messages |
+| MQ6 | Worker A | Group messaging UI |
+| R1 | Reviewer | Verify all messaging features |
 
 ---
 
 ## Implementation Notes
 
-### DC1: README
-- Installation: npm install, prerequisites
-- Quick start: First run, spawning agents
-- Architecture: Main process, daemon, renderer
-- Configuration: settings.json options
+### MQ1: Message Queue Format
+```json
+{
+  "messages": [
+    {
+      "id": "msg-1737...",
+      "from": "LEAD",
+      "to": "WORKER-A",
+      "timestamp": "2026-01-25T09:00:00.000Z",
+      "content": "Message text here",
+      "delivered": false,
+      "read": false
+    }
+  ]
+}
+```
+- File: `workspace/messages.json`
+- Append new messages to array
+- Mark delivered/read as processed
 
-### DC2: Help Tooltips
-- Add title attributes to buttons
-- Tooltip component for complex actions
-- Keyboard shortcut hints
+### MQ2: IPC Events
+- `message-sent` - When agent writes message
+- `message-delivered` - When target agent receives
+- `message-read` - When target agent acknowledges
 
-### DC3: API Documentation
-- Parse ipc-handlers.js for handler names
-- Generate markdown with parameters/returns
-- Output to docs/api.md
+### MQ3: Messages UI
+- New tab in right panel: "Messages"
+- List view of conversations
+- Click to expand thread
+- Compose button for new messages
 
-### PL1: Error Messages
-- Review all console.error calls
-- Add user-facing error toasts
-- Include recovery suggestions
+### MQ4: File Watcher
+- Watch `workspace/messages.json`
+- On change, parse and deliver pending messages
+- Update delivered flag after injection
 
-### PL2: UI Consistency
-- Audit all colors against palette
-- Standardize spacing (8px grid)
-- Ensure all buttons have hover states
+### MQ5: Gate Bypass
+- In state machine, always allow message-related triggers
+- Don't block on `idle`, `planning`, or `checkpoint_review`
+- Only block execution triggers, not communication
 
-### PL3: Performance Audit
-- Profile startup time
-- Check for memory leaks
-- Optimize file watching
+### MQ6: Group Messaging
+- Dropdown: "To: Worker A / Worker B / Workers / All / Reviewer"
+- Resolve groups to individual messages
+- Show "Sent to 2 agents" confirmation
+
+---
+
+## File Ownership
+
+| Owner | Files |
+|-------|-------|
+| Lead | main.js (message queue, IPC events) |
+| Worker A | renderer.js (Messages UI), index.html |
+| Worker B | terminal-daemon.js (watcher), main.js (gate bypass) |
 
 ---
 
 ## Success Criteria
 
-- [ ] README enables new user to run Hivemind
-- [ ] Tooltips explain all major UI elements
-- [ ] API docs cover all IPC handlers
-- [ ] Error messages are clear and actionable
-- [ ] UI passes visual consistency check
-- [ ] No performance regressions
-- [ ] All tests still pass
+- [ ] Messages persist across writes (no race conditions)
+- [ ] Delivery confirmation events fire correctly
+- [ ] Message history visible in Messages tab
+- [ ] Direct messages work regardless of workflow state
+- [ ] Group messaging sends to correct recipients
+- [ ] All existing tests still pass
 
 ---
 
