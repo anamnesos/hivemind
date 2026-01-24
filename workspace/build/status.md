@@ -1,22 +1,61 @@
 # Build Status
 
-Last updated: 2026-01-25 - V10 IN PROGRESS
+Last updated: 2026-01-25 - V11 COMPLETE + Bug Fix
 
 ---
 
-## V10: Messaging System Improvements - 🔄 IN PROGRESS
+## Post-V11: Autocomplete Bug Fix - ✅ COMMITTED
+
+**Commit:** `0ba5cb7`
+
+**Issue:** Autocomplete suggestions were auto-submitted to agent terminals without user confirmation. Happened 3+ times in testing session.
+
+**Fix (Worker A + Worker B collaboration):**
+- Added `autocomplete="off"` and related attributes to all inputs
+- Made broadcast keydown handler defensive (check !isComposing, trim, block empty)
+- Added `blurAllTerminals()` function to release xterm keyboard capture
+- Blur terminals when any input/textarea gets focus
+
+**Files:** ui/index.html, ui/renderer.js, ui/modules/terminal.js
+
+---
+
+## V11: MCP Integration - ✅ SHIPPED
+
+**Commit:** `c4b841a` (+ fix `c567726`)
+
+**Goal:** Replace file-based triggers with Model Context Protocol for structured agent communication.
+
+| Task | Owner | Status | Description |
+|------|-------|--------|-------------|
+| MC1 | Lead | ✅ DONE | MCP server skeleton with stdio transport |
+| MC2 | Lead | ✅ DONE | Core messaging tools (send_message, get_messages) |
+| MC3 | Lead | ✅ DONE | Workflow tools (get_state, trigger_agent, claim_task) |
+| MC4 | Worker B | ✅ DONE | Connect MCP server to existing message queue |
+| MC5 | Worker B | ✅ DONE | Agent identification via MCP handshake |
+| MC6 | Worker B | ✅ DONE | State machine integration |
+| MC7 | Worker A | ✅ DONE | MCP status indicator in UI |
+| MC8 | Worker A | ✅ DONE | Auto-configure MCP per agent on startup |
+| MC9 | Worker A | ✅ DONE | MCP connection health monitoring |
+| R1 | Reviewer | ✅ DONE | Verify all MCP tools work correctly |
+
+---
+
+## V10: Messaging System Improvements - ✅ SHIPPED
+
+**Commit:** `6d95f20`
 
 **Goal:** Make agent-to-agent messaging robust and production-ready.
 
 | Task | Owner | Status | Description |
 |------|-------|--------|-------------|
-| MQ1 | Lead | PENDING | Message queue backend - JSON array with append |
-| MQ2 | Lead | PENDING | Delivery confirmation IPC events |
+| MQ1 | Lead | ✅ DONE | Message queue backend - JSON array with append |
+| MQ2 | Lead | ✅ DONE | Delivery confirmation IPC events |
 | MQ3 | Worker A | ✅ DONE | Message history UI panel |
 | MQ4 | Worker B | ✅ DONE | Message queue file watcher integration |
 | MQ5 | Worker B | ✅ DONE | Gate bypass for direct messages |
 | MQ6 | Worker A | ✅ DONE | Group messaging UI (workers only, custom) |
-| R1 | Reviewer | PENDING | Verify all messaging features |
+| R1 | Reviewer | ✅ DONE | Verify all messaging features |
 
 ### Worker A Completion Notes (MQ3 + MQ6)
 
