@@ -1,16 +1,163 @@
 # Build Status
 
-Last updated: 2026-01-25 - V17 IN PROGRESS
+Last updated: 2026-01-25 - V18.2 AUTO-NUDGE FALSE POSITIVE FIX
 
 ---
 
-## V17: Adaptive Heartbeat - ✅ APPROVED
+## V18.2: Auto-Nudge False Positive Fix - ✅ FIXED (Worker B)
+
+**Problem:** Auto-nudge was detecting stuck agents and sending `(AGGRESSIVE_NUDGE)`, but then immediately marking them as "responded" because the nudge itself updated `lastInputTime`.
+
+**Root Cause:** `hasAgentResponded()` checked if `lastInputTime > lastNudgeTime`, but the nudge process (ESC + 150ms delay + Enter) itself writes to PTY, updating `lastInputTime`. The daemon thought the agent responded when it was actually just seeing its own nudge.
+
+**Fix:** Added 500ms grace period. Agent only counts as "responded" if input came AFTER `lastNudgeTime + 500ms`:
+```javascript
+const NUDGE_GRACE_PERIOD_MS = 500;
+const nudgeCompleteTime = state.lastNudgeTime + NUDGE_GRACE_PERIOD_MS;
+return lastInput > nudgeCompleteTime;
+```
+
+**File Changed:** `ui/terminal-daemon.js` - `hasAgentResponded()` function
+
+**Status:** ✅ FIXED - Requires app restart to test.
+
+---
+
+## FX4-v7: Ghost Text Bug Fix - ✅ FIXED (Worker A)
+
+**Problem:** Ghost text appearing in terminals after broadcasts. Phantom interrupts happening without user action.
+
+**Root Cause:** 50ms delay in `doSendToPane()` between PTY write and Enter dispatch allows Claude Code to show autocomplete/ghost text suggestions. Our Enter event then submits BOTH the intended text AND the ghost text.
+
+**Fix (v7):** Dispatch ESC, wait 20ms for state to settle, re-focus, then Enter:
+```javascript
+// FX4-v7: ESC to dismiss ghost text, delay, then Enter
+textarea.dispatchEvent(escEvent);
+setTimeout(() => {
+  textarea.focus();  // Re-focus after ESC
+  textarea.dispatchEvent(enterEvent);
+}, 20);
+```
+
+**File Changed:** `ui/modules/terminal.js`
+
+**Versions:**
+- v6: ESC before Enter (broke message delivery - no delay)
+- v7: ESC → 20ms delay → re-focus → Enter (CURRENT)
+
+**Status:** ✅ FIXED - Requires app restart to test.
+
+---
+
+## D2: Dry-Run Mode Bug Fix - ✅ FIXED (Worker A)
+
+**Problem:** Dry-run mode was "100% non-functional" per Reviewer report. Toggling dryRun in settings had no effect.
+
+**Root Cause:** `main.js:169` - `saveSettings()` was reassigning `currentSettings` to a new object:
+```javascript
+currentSettings = { ...currentSettings, ...settings };
+```
+This broke the reference held by `ipc-handlers.js`. The old reference still saw `dryRun: false` even after user toggled it on.
+
+**Fix:** Changed to `Object.assign()` to mutate the existing object (preserves reference):
+```javascript
+Object.assign(currentSettings, settings);
+```
+
+**File Changed:** `ui/main.js` line 169
+
+**Status:** ✅ FIXED - Requires app restart to test. Ready for Reviewer verification.
+
+---
+
+## V18: Auto-Aggressive-Nudge - ✅ SHIPPED
+
+**Owner:** Worker B
+**File:** `ui/terminal-daemon.js`
+
+**Problem:** When agents get stuck, manual intervention was needed. FIX3 added aggressive nudge capability, but it required Lead or user to trigger it manually.
+
+**Solution:** Daemon auto-detects stuck agents and sends `(AGGRESSIVE_NUDGE)` automatically.
+
+**Escalation Flow:**
+1. Heartbeat tick detects agent stuck (>60s idle)
+2. Auto-send `(AGGRESSIVE_NUDGE)` to agent's trigger file
+3. Wait 30 seconds
+4. If still stuck, nudge again
+5. After 2 failed nudges, alert user via UI + trigger
+
+**New Functions:**
+- `sendAggressiveNudge(paneId)` - sends nudge to specific agent
+- `checkAndNudgeStuckAgents()` - runs on every heartbeat tick
+- `hasAgentResponded(paneId)` - checks if agent recovered
+- `alertUserAboutAgent(paneId)` - final escalation
+
+**New Protocol Actions:**
+- `nudge-agent` - manually nudge specific agent
+- `nudge-status` - get current nudge state for all agents
+- `nudge-reset` - reset nudge tracking
+
+**Status:** ✅ SHIPPED - Reviewer verified (see `workspace/build/reviews/v18-auto-nudge-verification.md`)
+
+**V18.1 BUG FIX (Jan 25):** Stuck detection not triggering because `lastActivity` was updated by PTY output (including thinking animation). Fixed by adding `lastInputTime` to track user INPUT instead of agent output. Requires restart to test.
+
+---
+
+## Stuck Issue Fixes (External Claude Recommendations) - ✅ VERIFIED
+
+**Issue:** Claude Code instances getting stuck - known bug (GitHub #13224, #13188)
+
+**Stress Test Round 2 Results (Jan 25, 2026):**
+- 3 agents (Worker A, Worker B, Reviewer) got stuck mid-test
+- Lead recovered ALL 3 using aggressive nudge (FIX3)
+- No bunching, correct message ordering, no focus stealing
+- Full report: `workspace/build/reviews/stress-test-round2-verification.md`
+
+**Fixes Applied:**
+
+| Fix | Status | Description |
+|-----|--------|-------------|
+| FIX1 | ✅ APPLIED | AUTOCOMPACT_PCT_OVERRIDE=70 in settings.json |
+| FIX2 | ✅ VERIFIED | Stagger agent activity in triggers.js (avoid thundering herd) |
+| FIX3 | ✅ VERIFIED | Aggressive nudge (ESC + Enter) - recovered 3 stuck agents in test |
+| FIX4 | ⏸️ DEFERRED | Circuit breaker pattern (bigger code change) |
+| FIX5 | ✅ VERIFIED | Focus steal prevention - save/restore user focus during message injection |
+
+### FIX3 Details (Aggressive Nudge)
+
+**Files Changed:**
+- `ui/modules/terminal.js` - Added `aggressiveNudge()` and `aggressiveNudgeAll()` functions
+- `ui/renderer.js` - Updated Nudge All button + watchdog-alert auto-nudge
+- `ui/modules/daemon-handlers.js` - Added `(AGGRESSIVE_NUDGE)` command support
+
+**Behavior:**
+- Nudge All button now sends ESC + Enter (more forceful)
+- Watchdog alert auto-triggers aggressive nudge on all panes
+- New `(AGGRESSIVE_NUDGE)` trigger command available
+
+### FIX5 Details (Focus Steal Prevention)
+
+**Problem:** When messages were injected into terminals via `doSendToPane()`, focus was stolen from the broadcast input, making it hard for users to type while agents were active.
+
+**Solution:** Save user's focus before terminal injection, restore after completion.
+
+**File Changed:** `ui/modules/terminal.js`
+- Save `document.activeElement` before focusing terminal textarea
+- Detect if user was in UI input (not xterm textarea)
+- Restore focus after message injection completes (all 3 code paths)
+
+**Requires restart to test.**
+
+---
+
+## V17: Adaptive Heartbeat - ✅ SHIPPED
 
 **Proposal:** #11 from improvements.md
 **Owner:** Worker B
 **Co-author:** Worker A
 **Votes:** 4/4 UNANIMOUS (Lead's earlier YES finally delivered)
 **Reviewer:** FORMAL APPROVAL - All checks passed
+**Stress Test:** PASS - Verified in round 2 stress test (Jan 25, 2026)
 
 ### Task Breakdown
 
