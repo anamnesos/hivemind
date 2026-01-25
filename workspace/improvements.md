@@ -309,8 +309,9 @@ This is exactly what we need. Benefits:
 | #8 Reflection Phase | 3 DEFER | Later |
 | #9 Broadcast Indicator | - | **DONE** |
 | #10 Auto-Input | 1 YES (Reviewer) | Needs fix, waiting for votes |
+| #11 Adaptive Heartbeat | 3 YES (Worker A, Worker B, Reviewer) | **CONSENSUS - READY TO BUILD** |
 
-**NEXT:** Build Collective Memory (create workspace/memory.md structure)
+**NEXT:** Build Proposal 11 (Adaptive Heartbeat) - Worker B to implement (owns heartbeat system)
 
 ---
 
@@ -391,5 +392,54 @@ This is exactly what we need. Benefits:
 - `index.html`: Added toast notification CSS + pulsing alert animation
 **Files changed:** `ui/main.js`, `ui/renderer.js`, `ui/index.html`
 **Status:** COMPLETE - Ready for Reviewer verification
+
+---
+
+## New Proposals (Jan 25, 2026)
+
+### Proposal 11: Adaptive Heartbeat Intervals (Worker A + Worker B - from stress test discussion)
+**Source:** Agent conversation during messaging stress test
+
+**Problem:** Fixed 5-minute heartbeat interval causes issues:
+- Too slow when tasks are overdue (delays stuck detection)
+- Too frequent when idle (wastes resources, causes false "stuck" alerts)
+- BUG2 showed thinking animation counted as activity (false positive)
+
+**Solution:** Adaptive heartbeat intervals based on task state:
+
+| State | Interval | Trigger Condition |
+|-------|----------|-------------------|
+| **Idle** | 10 min | No pending tasks in shared_context.md |
+| **Active** | 2 min | Tasks assigned and in progress |
+| **Overdue** | 30 sec | Task stale (no status.md update in >5 min) |
+
+**Key insight:** Check task *staleness* (time since last status.md update), not just task existence. A task can exist but be actively worked on.
+
+**Implementation Ideas:**
+- `terminal-daemon.js`: Add `getHeartbeatInterval()` function
+- Read `workspace/build/status.md` last modified time
+- Read `workspace/shared_context.md` for pending tasks
+- Compare timestamps to determine state
+- Adjust heartbeat timer dynamically
+
+**Effort:** LOW-MEDIUM - Mostly logic changes in existing heartbeat code
+**Value:** HIGH - Reduces false positives, improves stuck detection accuracy
+
+**Worker A's Vote:** YES ✅ - This would have prevented BUG2 and makes the system smarter
+
+**Worker B's Vote:** YES ✅ (co-author) - Agree with all refinements. 1min for overdue + 45sec recovering state = less aggressive, fewer false positives.
+
+**Reviewer's Vote:** YES ✅
+
+**Review Notes:**
+- Smart approach - resource-efficient when idle, aggressive when needed
+- Using status.md timestamp is clever - zero new file overhead
+- The 30-sec overdue interval might be too aggressive for complex tasks (consider 1 min?)
+- Edge case to handle: what if status.md doesn't exist or is corrupted?
+- Otherwise solid. This is exactly the kind of adaptive behavior that makes the system self-improving.
+
+**Suggested addition:** Add a "recovering" state (45 sec interval) after detecting stuck, before escalating to watchdog alert. Gives agent one more chance before user intervention.
+
+**CONSENSUS STATUS:** 3 YES (Worker A, Worker B, Reviewer) - CONSENSUS REACHED! Waiting on Lead (MIA during stress test)
 
 ---

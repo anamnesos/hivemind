@@ -1,6 +1,52 @@
 # Build Status
 
-Last updated: 2026-01-25 - V16.11 SHIPPED! 🎉
+Last updated: 2026-01-25 - V17 IN PROGRESS
+
+---
+
+## V17: Adaptive Heartbeat - ✅ APPROVED
+
+**Proposal:** #11 from improvements.md
+**Owner:** Worker B
+**Co-author:** Worker A
+**Votes:** 4/4 UNANIMOUS (Lead's earlier YES finally delivered)
+**Reviewer:** FORMAL APPROVAL - All checks passed
+
+### Task Breakdown
+
+| Task | Status | Description |
+|------|--------|-------------|
+| HB-A1 | ✅ DONE | Add `getHeartbeatInterval()` to terminal-daemon.js |
+| HB-A2 | ✅ DONE | Check status.md mtime for staleness detection |
+| HB-A3 | ✅ DONE | Check shared_context.md for pending tasks |
+| HB-A4 | ✅ DONE | Add "recovering" state (45sec grace period) |
+| HB-A5 | ⏸️ DEFERRED | Make intervals configurable in settings (can add later) |
+| HB-A6 | ✅ DONE | Fallback if status.md missing (default to "active") |
+| HB-A7 | ✅ DONE | Event forwarding: daemon → client → main → renderer |
+| HB-UI | ✅ DONE | Heartbeat mode indicator in status bar (Worker A) |
+| R1 | ✅ PASSED | Worker A sanity check |
+| R2 | ✅ APPROVED | Reviewer formal verification |
+
+### Files Changed
+
+| File | Changes |
+|------|---------|
+| `ui/terminal-daemon.js` | Added adaptive heartbeat logic, state detection, dynamic timer |
+| `ui/daemon-client.js` | Added event handlers for heartbeat-state-changed |
+| `ui/main.js` | Added forwarding to renderer via IPC |
+
+### Intervals (Agreed)
+
+| State | Interval | Trigger |
+|-------|----------|---------|
+| Idle | 10 min | No pending tasks |
+| Active | 2 min | Tasks in progress |
+| Overdue | 1 min | Task stale (>5 min since status.md update) |
+| Recovering | 45 sec | After stuck detection, before escalation |
+
+### IPC Events (New)
+
+- `heartbeat-state-changed` → { state, interval } for UI indicator
 
 ---
 

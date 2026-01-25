@@ -67,6 +67,53 @@ setTimeout(() => ptyProcess.write('\r'), 100);
 **Broadcasts (direct input):** Can interrupt. Text injected directly to PTY while agent is generating = interruption.
 **Best practice:** Use triggers for agent-to-agent comms. User broadcasts when agents are idle.
 
+### Messaging Stress Test Results
+**Learned:** Jan 25, 2026 (Messaging Stress Test)
+**Test:** User requested agents have casual conversation to stress test messaging.
+**Results:**
+- all.txt broadcasts include sender (use `others-{role}.txt` to exclude self)
+- Write conflicts are normal - re-read file and retry (system handles gracefully)
+- 3/4 quorum works when one agent unresponsive (Lead MIA didn't block consensus)
+- Casual chat can evolve into real work (proposal → consensus → build in one session)
+- Two-stage review pipeline proven: co-author sanity check → Reviewer formal review
+
+**Bonus discovery:** Stress test accidentally became governance test - proved system can reach consensus and proceed without full attendance.
+
+### Windows: Bash Echo vs Node.js Write
+**Learned:** Jan 25, 2026 (Lead's MIA Mystery)
+**Issue:** Lead was sending messages via `bash echo > trigger.txt` but no one received them.
+**Root Cause:** On Windows, bash echo/redirect doesn't always trigger chokidar file watcher events.
+**Solution:** Use Write tool (Node.js `fs.writeFileSync`) instead of bash echo for trigger files.
+
+**What works:**
+- ✅ Write tool → Node.js fs.writeFileSync → chokidar detects
+- ❌ Bash echo → shell redirect → chokidar may miss on Windows
+
+**Impact:** Lead appeared "stuck" for entire stress test, but was actually sending messages that weren't being detected.
+
+---
+
+### Contract-First Development
+**Learned:** Jan 25, 2026 (V17 Adaptive Heartbeat)
+**Context:** Worker A (UI) and Worker B (backend) needed to build in parallel.
+**Solution:** Define interface contract BEFORE implementation:
+1. Agree on event name and payload format
+2. Lock contract with Reviewer approval
+3. Build independently against the contract
+4. Integration = plug-and-play
+
+**Example contract:**
+```javascript
+// Event: 'heartbeat-state-changed'
+// Payload: { state: 'idle'|'active'|'overdue'|'recovering', interval: ms }
+```
+
+**Result:** Review becomes verification, not discovery. No surprises at integration time.
+
+**Bonus:** Always check if file exists before creating - avoid duplicates (learned from improvements.md duplication).
+
+---
+
 ### V16.11: Keyboard Events + Auto-Refocus (THE FIX)
 **Learned:** Jan 25, 2026 (V16 → V16.11 journey)
 **Problem:** Messages would arrive in terminal but not process - user had to manually press Enter to flush the buffer.
@@ -84,6 +131,19 @@ setTimeout(() => ptyProcess.write('\r'), 100);
 
 **Key insight:** `xterm.paste()` and `pty.write()` can buffer differently than real keyboard input. Simulating keyboard events is more reliable for triggering Claude Code's input processing.
 
+### Windows: Bash Echo vs Node.js Write (Chokidar Bug)
+**Learned:** Jan 25, 2026 (Messaging Stress Test)
+**Problem:** Lead appeared "stuck" during entire stress test - messages written to trigger files but never detected.
+**Root cause:** On Windows, `bash echo "text" > file.txt` doesn't trigger chokidar file watcher, but Node.js `fs.writeFile()` / Write tool does.
+**Symptoms:**
+- Agent writes to trigger file successfully
+- File content is correct (can verify with `cat`)
+- Chokidar never fires change event
+- Other agents never receive the message
+
+**Solution:** Agents must use Node.js Write tool, NOT bash echo, for trigger file communication on Windows.
+**Impact:** Critical for Windows users - explains "silent agent" scenarios.
+
 ---
 
 ## File Ownership Reference
@@ -94,6 +154,14 @@ setTimeout(() => ptyProcess.write('\r'), 100);
 | `ui/renderer.js` | Worker A | UI logic, timers, display |
 | `ui/index.html` | Shared | Layout, styling |
 | `workspace/` | All agents | Coordination files |
+
+---
+
+## Testing Wisdom
+
+1. **Best way to test stuck detection:** Have an agent actually get stuck during the discussion about stuck detection. Real-world validation > synthetic tests.
+2. **Stress tests can become real work:** "Casual chat stress test" → messaging validation → governance test → real proposal → shipped feature. Emergent productivity is valid.
+3. **The system debugs itself:** Testing feature X may accidentally validate feature Y. Let it happen.
 
 ---
 
