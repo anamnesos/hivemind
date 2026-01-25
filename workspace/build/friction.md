@@ -243,7 +243,7 @@ Track problems and patterns as we build Hivemind. This feeds into improving the 
 
 **Root cause**: Autocomplete feature auto-submits recommended messages to terminal panes without requiring explicit user confirmation (Enter/Tab).
 
-**Resolution**: (none yet - logged for V12 - HIGH PRIORITY)
+**Resolution**: Fixed in commit 0ba5cb7 - added autocomplete="off" attributes and defensive keydown handler. However, this fix introduced a REGRESSION (see next entry).
 
 **Pattern**: YES - any time autocomplete is active, accidental submissions can occur. Happened multiple times in same session.
 
@@ -254,6 +254,81 @@ Track problems and patterns as we build Hivemind. This feeds into improving the 
 2. Add confirmation before injecting suggested messages to agent terminals
 3. Consider disabling autocomplete in agent terminal panes entirely
 4. Add visual distinction between "suggestion" and "submitted" states
+
+---
+
+### Jan 25 2026 - tooling - Terminal keyboard input broken after autocomplete fix
+
+**What happened**: After the autocomplete bug fix (commit 0ba5cb7), users could not type in any terminal panes. Only broadcast input worked. Clicking on terminals didn't give them keyboard focus. ESC key didn't interrupt agents.
+
+**Root cause**: The autocomplete fix added a `focusin` event listener that called `blurAllTerminals()` whenever ANY textarea got focus. However, xterm.js uses an internal textarea (`xterm-helper-textarea`) for keyboard input. When user clicked a terminal, xterm focused its internal textarea, which triggered the focusin handler, which immediately blurred the terminal.
+
+**Resolution**: Modified renderer.js focusin handler to check for `xterm-helper-textarea` class and skip blurring for xterm's internal textarea.
+
+**Pattern**: YES - fixing one bug can introduce regressions in related functionality.
+
+**Severity**: CRITICAL - app was unusable, terminals couldn't receive keyboard input.
+
+**Improvement**:
+1. Test terminal focus/keyboard input after any changes to focus handling
+2. Understand how xterm.js manages focus internally before modifying focus behavior
+3. Consider integration tests for basic terminal input/output
+
+---
+
+### Jan 25 2026 - tooling - Auto-spawn Claude on start unreliable
+
+**What happened**: User had to press "Spawn All Claude" button 4 times to get all agents to load, even though "auto spawn claude on start" was toggled on.
+
+**Root cause**: Race condition in startup sequence. Three async operations racing:
+1. `loadSettings()` - fetches settings from main process
+2. `daemon-connected` event - initializes terminals
+3. `checkAutoSpawn()` - runs on fixed 1-second setTimeout
+
+If settings aren't loaded OR daemon isn't connected within 1 second, auto-spawn fails silently because:
+- `currentSettings.autoSpawn` is undefined (settings not loaded), OR
+- Terminals aren't initialized yet (daemon not connected)
+
+**Resolution**: Fixed - added init state tracking in renderer.js:
+- `initState` object tracks `settingsLoaded` and `terminalsReady` flags
+- `checkInitComplete()` only calls `checkAutoSpawn()` when BOTH are true
+- `markSettingsLoaded()` called from settings.js after loadSettings completes
+- `markTerminalsReady()` called from daemon-handlers after daemon-connected handling completes
+- Removed the fixed 1-second setTimeout that caused the race condition
+
+**Pattern**: YES - any startup feature that depends on multiple async initializations will have this issue.
+
+**Severity**: MEDIUM - annoying but user can work around with manual button click.
+
+**Improvement**:
+1. Use a proper initialization state machine instead of fixed timeouts
+2. Track both `settingsLoaded` and `terminalsReady` flags
+3. Only call `checkAutoSpawn()` when both are true
+4. Or use Promise.all to wait for both before proceeding
+
+---
+
+### Jan 25 2026 - coordination - Triggers interrupt active agents during stress test
+
+**What happened**: During trigger stress test, all agents except Worker A got repeatedly interrupted mid-response. Messages were being delivered but agents couldn't complete their replies before next trigger came in.
+
+**Root cause**: Trigger injection sends messages to terminal regardless of agent state. When agent is actively generating a response, injected text interrupts the Claude process (similar to Ctrl+C).
+
+**Observations**:
+- Worker A survived because was idle when triggers arrived
+- Active agents (Lead, Worker B, Reviewer) were in chat loop, constantly cut off
+- Race condition on trigger file writes also caused "file modified since read" errors
+
+**Resolution**: (none yet - needs V15+ fix)
+
+**Pattern**: YES - any time multiple agents are actively chatting, triggers will disrupt.
+
+**Severity**: HIGH - breaks real-time collaboration.
+
+**Improvement** (from Reviewer):
+1. Message queuing - hold triggers until agent is idle
+2. Non-interruptive injection - append without disrupting current output
+3. Agent state awareness - check if Claude is mid-response before injecting
 
 ---
 

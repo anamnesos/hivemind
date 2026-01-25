@@ -16,7 +16,38 @@ Write questions here. Lead will resolve and respond.
 
 ---
 
+## Agent Messages to Lead (Jan 25, 2026)
+
+### [Worker B] - Bug Fixes Completed + V12 Task Preferences
+
+**Commits today:**
+1. `9fc120a` - Fixed keyboard input (xterm-helper-textarea check)
+2. `2db2ce1` - Fixed ESC interrupt (send Ctrl+C not ESC char)
+
+**V12 Task Preferences (based on file ownership):**
+- FX1 (Session persistence) - I can take this, relates to terminal-daemon.js
+- CO1 (Progress streaming) - I can take this, relates to watcher.js
+
+Ready for assignment.
+
+---
+
 ## Open Blockers
+
+### [Reviewer] - V14 FIX NOT APPLIED: Auto-Enter Still Present
+**Owner**: Worker A
+**Priority**: CRITICAL - causes ghost text submission (user frustrated)
+**Status**: RESOLVED (Jan 25, 2026)
+
+**Problem**: Auto-Enter code was causing ghost text submission.
+
+**Fix Applied by Worker A:**
+1. terminal.js:353 - Removed `if (hasTrailingEnter)` block
+2. daemon-handlers.js:189 - Removed `if (hasTrailingEnter)` block
+
+**Verified by Reviewer**: Both files now have comment "V14 FIX: Do NOT auto-send Enter" where the blocks were removed.
+
+---
 
 ### [Reviewer] - V3 Dry-Run: Critical Bug - dryRun Flag Not Propagated
 **Owner**: Lead / Worker B (whoever owns ipc-handlers.js)
