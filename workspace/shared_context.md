@@ -1,11 +1,270 @@
 # Hivemind Shared Context
 
-**Last Updated:** Jan 25, 2026 - V11 COMPLETE + Bug Fix
-**Status:** ✅ V11 SHIPPED + Autocomplete Bug Fixed
+**Last Updated:** Jan 25, 2026 - V16.11 SHIPPED
+**Status:** 🟢 FULLY AUTONOMOUS - All panes working, no manual intervention needed!
 
 ---
 
-## Post-V11: Autocomplete Bug Fix
+## ⚠️ CRITICAL NOTE FOR ALL AGENTS - READ THIS
+
+**How to tell where user input came from:**
+- `[BROADCAST TO ALL AGENTS]` prefix → User typed in broadcast input bar
+- NO prefix → User typed DIRECTLY in your terminal
+
+**DO NOT ask "did you use broadcast?" - just look at the message format.**
+
+---
+
+## V16.11: Auto-Refocus Fix - ✅ SHIPPED (THE FIX!)
+
+**Problem:** Messages arriving in terminal but not being processed by Claude. Panes 1 & 4 (Lead/Reviewer) affected more than panes 2 & 3 (Workers).
+
+**Root Cause Discovery (via Lead + Reviewer debugging session):**
+- Focus was being lost between `textarea.focus()` and Enter event dispatch
+- The 50ms delay before sending Enter allowed focus to shift to another element
+- Keyboard Enter events were dispatched to wrong element or no element
+
+**Fix Applied:**
+- `terminal.js` doSendToPane() - Added re-focus check before Enter dispatch
+- If focus was lost during the 50ms delay, re-focus before sending Enter
+- Added diagnostic logging to track focus state
+
+**Code Change:**
+```javascript
+// V16.11: Re-check focus before dispatching
+const stillFocused = document.activeElement === textarea;
+if (!stillFocused) {
+  textarea.focus();  // Re-focus if lost
+}
+// Then dispatch Enter event
+```
+
+**Result:** All 4 panes now receive messages automatically. User confirmed NO manual intervention needed!
+
+---
+
+## V16.10: Keyboard Events + sendUnstick() - ✅ SHIPPED
+
+**Changes:**
+- Replaced PTY `\r` with DOM keyboard events for Enter
+- Added `_hivemindBypass` marker to allow synthetic events through isTrusted check
+- Added `sendUnstick(paneId)` function - dispatches ESC keyboard event
+- Added `(UNSTICK)` trigger command - agents can unstick each other
+
+---
+
+## V16.3: Auto-Unstick ESC Bug Fix - ✅ SHIPPED
+
+**Problem:** Agents getting stuck in "thinking animation" even with NO messages being sent
+
+**Root Cause Discovery (Jan 25 session):**
+- User reported Worker B stuck for 1m44s with NO NEW MESSAGES
+- V16 fixed trigger injection ESC, but missed the auto-unstick timer in main.js
+- main.js line 366 was sending `\x1b` (ESC) via PTY every 30 seconds
+- `autoNudge: true` is the DEFAULT setting
+- This periodic ESC was killing/interrupting agents!
+
+**Fix Applied:**
+- `main.js` - Removed ESC sending from auto-unstick timer
+- Now just notifies user via `agent-stuck-detected` IPC event
+- `renderer.js` - Added handler to show visual notification + flash pane header
+
+**New Behavior:**
+- Auto-unstick timer detects stuck agents but does NOT send ESC
+- User sees notification: "Pane X may be stuck - click pane and press ESC"
+- User must manually press ESC to unstick (keyboard ESC is safe, PTY ESC kills)
+
+**Key Learning (DOCUMENTED):** PTY ESC (`\x1b`) always kills/interrupts Claude Code agents. User keyboard ESC works to unstick. There is NO programmatic way to safely unstick agents.
+
+**Full ESC/Control Character Audit (Jan 25, 2026):**
+
+| Location | Char | Automatic? | Status |
+|----------|------|------------|--------|
+| `renderer.js:258` | `\x03` Ctrl+C | NO - user keyboard | ✅ INTENTIONAL |
+| `main.js:366` | `\x1b` ESC | YES - 30s timer | ✅ FIXED V16.3 |
+| `terminal-daemon.js:252-285` | ESC in heartbeat | YES | ✅ Fixed V16 |
+| `terminal.js:470-475` | ESC in nudgePane | YES | ✅ Fixed V16 |
+
+No other automatic control character sends found. All other PTY writes are user input, text, or Enter.
+
+---
+
+## V16 FINAL: Trigger System Fixed - SHIPPED
+
+**Problem:** Triggers were killing active agents (ESC via PTY = interrupt)
+
+**Root Cause Discovery (via stress test):**
+- 3x ESC BEFORE message = killed active agents
+- 1x ESC AFTER message = also killed (V17 attempt failed)
+- PTY escape writes ≠ keyboard escape (different signal paths!)
+- User keyboard ESC = safe unstick
+- PTY \x1b write = always kills
+
+**Final Fix:** Remove ALL ESC from trigger injection. Just send text + Enter.
+
+**Files Changed:**
+- `daemon-handlers.js` - Removed ESC spam from processQueue()
+- `terminal.js` - Removed ESC from sendToPane()
+
+**Current Behavior:**
+- ✅ Triggers (file-based) = SAFE, no interrupts
+- ⚠️ Broadcasts = may interrupt active agents (unavoidable Claude behavior)
+- ⚠️ Stuck agents = user must manually ESC (documented limitation)
+
+**Key Learning:** Cannot programmatically unstick agents via PTY. User keyboard ESC works, PTY ESC kills.
+
+---
+
+## V15: Trigger + Interrupt Fixes - SUPERSEDED BY V16
+
+**Superseded** - V16 replaced the ESC handling entirely.
+
+---
+
+## V14: Random Interrupt Fix - SHIPPED
+
+**Problem:** Agents getting interrupted randomly by auto-Enter and aggressive auto-sync.
+
+**Fixes Implemented:**
+1. ✅ Worker A: Removed `\r` from terminal.js:346-348 and daemon-handlers.js:188-191
+2. ✅ Worker B: Added `autoSync` setting check in watcher.js handleFileChange()
+3. ✅ Reviewer: Documented Claude Code limitations
+
+---
+
+---
+
+## V13: Autonomous Operation
+
+**Goal:** User gives task, walks away, system keeps working without babysitting.
+
+**Problem:** Agents get stuck after completing tasks. User must manually nudge them. No way to give a large task and walk away.
+
+**Solution:** Lead-as-supervisor with daemon watchdog fallback.
+
+### Supervision Hierarchy
+
+```
+Normal:     Daemon timer → Lead → nudges workers
+Fallback 1: Lead stuck → Daemon nudges Lead
+Fallback 2: Lead still stuck → Daemon directly nudges workers
+Fallback 3: Everyone stuck → Alert user (sound/notification)
+```
+
+### Tasks
+
+| Task | Owner | Status | Description |
+|------|-------|--------|-------------|
+| HB1 | Worker B | ✅ DONE | Heartbeat timer in daemon (every 60s triggers Lead) |
+| HB2 | Worker B | ✅ DONE | Track Lead response. If no response in 30s, nudge Lead again |
+| HB3 | Worker B | ✅ DONE | If Lead unresponsive after 2 nudges, daemon directly nudges workers |
+| HB4 | Worker A+B | ✅ DONE | User alert (Worker A: UI f8a917b, Worker B: daemon a3e78ad) |
+| HB5 | Lead | ✅ DONE | Respond to heartbeat - check incomplete tasks, nudge stuck workers |
+| R1 | Reviewer | ✅ DONE | Verified - PARTIAL PASS (core flow works, fallbacks untested) |
+| BUG1 | Worker B | ✅ FIXED | Heartbeat timer not firing - removed overly aggressive activity check |
+| BUG2 | Lead | ✅ FIXED | Heartbeat false positive - removed terminal activity check from checkLeadResponse |
+| FX4-v2 | Worker A+B | ✅ READY | Ghost text fix - 4-layer defense (ESC, isTrusted, debounce, daemon dedup) |
+
+### File Ownership
+
+| Owner | Files |
+|-------|-------|
+| Worker B | ui/terminal-daemon.js, ui/modules/watcher.js |
+| Lead | Heartbeat response logic (via triggers) |
+| Worker A | UI for alert notification (if needed) |
+| Reviewer | Verification |
+
+### HB1-HB4: Daemon Watchdog (Worker B)
+
+**File:** `ui/terminal-daemon.js`
+
+```
+- Add heartbeat timer (configurable, default 60s)
+- On tick: write to triggers/lead.txt "(SYSTEM): Heartbeat - check team status"
+- Track if Lead responds (check if triggers/lead.txt gets cleared or response in triggers/workers.txt)
+- If no response after 30s: nudge Lead again
+- If still no response after 2nd nudge: read shared_context.md, find incomplete tasks, directly nudge workers
+- If workers don't respond: trigger desktop notification / sound alert
+```
+
+### HB5: Lead Heartbeat Response
+
+When Lead receives "(SYSTEM): Heartbeat":
+1. Read shared_context.md for incomplete tasks
+2. Check which workers should be working on them
+3. Send nudge via trigger: "(LEAD): You have task X assigned. Status?"
+4. If worker responds with completion, update shared_context.md
+
+---
+
+## V12: Stability & Robustness ✅ SHIPPED
+
+**Goal:** Fix critical bugs blocking normal usage.
+
+**MANDATORY FOR ALL AGENTS:**
+1. When you receive a trigger message → REPLY via triggers (not terminal)
+2. When you complete a task → NOTIFY via triggers
+3. When you're stuck → ASK via triggers
+4. Terminal output = for USER only
+5. Triggers = for OTHER AGENTS
+
+**THIS IS NOT OPTIONAL. If you don't use triggers, coordination breaks down.**
+
+Trigger files:
+- `triggers/lead.txt` → Lead
+- `triggers/worker-a.txt` → Worker A
+- `triggers/worker-b.txt` → Worker B
+- `triggers/reviewer.txt` → Reviewer
+- `triggers/all.txt` → Everyone
+
+### Tasks
+
+| Task | Owner | Status | Description |
+|------|-------|--------|-------------|
+| FX1 | Worker A | ✅ DONE | ESC key interrupt - send Ctrl+C to focused terminal (fa2c8aa) |
+| FX2 | Worker B | ✅ DONE | Session persistence - save/restore context on restart |
+| FX3 | Lead | ✅ DONE | Unblock workflow gate during planning phase |
+| FX4 | Worker A | ✅ DONE | Fix autocomplete bug PROPERLY - still injecting messages |
+| CO1 | Worker B | ✅ DONE | Progress indicator when agents working |
+| R1 | Reviewer | ✅ DONE | Verify all V12 fixes |
+| BUG1 | Worker A | ✅ DONE | Self-sync bug - FIXED (3s debounce per pane) |
+| BUG2 | Worker A | ✅ DONE | Trigger flood causes terminal UI glitch - FIXED (throttle 150ms) |
+
+### File Ownership
+
+| Owner | Files |
+|-------|-------|
+| Lead | ui/main.js (state logic), ui/modules/watcher.js |
+| Worker A | ui/renderer.js, ui/modules/terminal.js, ui/index.html |
+| Worker B | ui/modules/watcher.js (file ops), ui/terminal-daemon.js |
+| Reviewer | Testing, verification |
+
+### FX1: ESC Key Interrupt (Worker A)
+- File: `ui/renderer.js`
+- When ESC pressed, send `\x03` (Ctrl+C) to focused terminal
+- Should interrupt running Claude process
+
+### FX2: Session Persistence (Worker B)
+- Save agent conversation context before restart
+- Restore on app reopen
+- Could use daemon to persist state
+
+### FX3: Workflow Gate (Lead)
+- File: `ui/modules/triggers.js`
+- Allow worker triggers during `friction_sync` and `planning` states
+- Current gate blocks workers unless state is `executing`
+
+### FX4: Autocomplete Bug (Worker A) - ⚠️ EXTERNAL DEPENDENCY
+- **RESOLVED:** Not a Hivemind bug
+- **Root Cause:** Claude Code's ghost text suggestions in terminals
+- User screenshot revealed: greyed-out text = Claude Code suggestions (Tab to accept, Enter submits)
+- We cannot control Claude Code's internal UI from Hivemind
+- Browser autocomplete fixes (v1-v5) were solving wrong problem
+- **Action:** Document as expected Claude Code behavior
+
+---
+
+## Previous: V11 Shipped
 
 **Commit:** `0ba5cb7` - Collaborative fix by Worker A + Worker B
 

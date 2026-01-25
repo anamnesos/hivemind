@@ -1,6 +1,113 @@
 # Build Status
 
-Last updated: 2026-01-25 - V11 COMPLETE + Bug Fix
+Last updated: 2026-01-25 - V16.11 SHIPPED! 🎉
+
+---
+
+## V16.11: Trigger System Fix - ✅ SHIPPED
+
+**Problem:** Agents getting stuck and interrupted during trigger-based communication.
+
+**Root Causes Found & Fixed:**
+1. ESC spam in trigger injection (V16)
+2. Hidden ESC in auto-unstick timer (V16.3)
+3. xterm.paste() buffering issues (V16.1-V16.9)
+4. Missing auto-refocus after message injection (V16.11)
+
+**Final Solution:** Keyboard events + bypass marker + auto-refocus
+
+**Versions Tested:**
+| Version | Approach | Result |
+|---------|----------|--------|
+| V16 | Remove ESC spam | Fixed interrupts |
+| V16.1 | xterm.paste instead of pty.write | Partial |
+| V16.2 | Idle detection (2000ms) | Partial |
+| V16.3 | Remove hidden ESC in auto-unstick | Improved |
+| V16.4-V16.9 | Various timing/buffering attempts | Partial |
+| V16.10 | Keyboard events + bypass marker | Almost |
+| V16.11 | Auto-refocus after injection | ✅ SUCCESS |
+
+**User Verified:** NO manual unsticking needed! All 4 agents processing automatically.
+
+**Key Lessons Learned:**
+1. PTY ESC ≠ Keyboard ESC (kills vs dismisses)
+2. xterm.paste() buffers differently than keystrokes
+3. Timing delays alone don't fix buffering
+4. Auto-refocus ensures Claude sees the input
+
+---
+
+## V16.3: Auto-Unstick ESC Bug Fix - ✅ MERGED INTO V16.11
+
+---
+
+## V13: Autonomous Operation - ✅ SHIPPED
+
+| Task | Owner | Status | Description |
+|------|-------|--------|-------------|
+| HB1 | Worker B | ✅ DONE | Heartbeat timer (5 min interval) |
+| HB2 | Worker B | ✅ DONE | Lead response tracking (15s timeout) |
+| HB3 | Worker B | ✅ DONE | Worker fallback (after 2 failed nudges) |
+| HB4 | Worker A+B | ✅ DONE | User alert notification |
+| HB5 | Lead | ✅ DONE | Heartbeat response logic |
+| R1 | Reviewer | ✅ DONE | Verification - PARTIAL PASS |
+| BUG1 | Worker B | ✅ FIXED | Heartbeat timer not firing |
+| BUG2 | Lead | ✅ FIXED | False positive response detection |
+
+### R1 Verification Summary
+
+**Result:** PARTIAL PASS - Core flow works, fallbacks untested
+
+- Heartbeat fires every 5 minutes ✅
+- Lead responds within timeout ✅
+- Fallback to workers: NOT TRIGGERED (Lead responsive)
+- User alert: NOT TRIGGERED (no escalation needed)
+
+**Full report:** `workspace/build/reviews/v13-verification.md`
+
+---
+
+## V12: Stability & Robustness - ✅ SHIPPED
+
+| Task | Owner | Status | Commit | Description |
+|------|-------|--------|--------|-------------|
+| FX1 | Worker A | ✅ DONE | `fa2c8aa` | ESC key interrupt |
+| FX2 | Worker B | ✅ DONE | `8301e7f` | Session persistence |
+| FX3 | Lead | ✅ DONE | (in triggers.js) | Workflow gate unblock |
+| FX4 | Worker A | ✅ DONE | (pending commit) | Ghost text fix v2 - ESC dismiss + isTrusted + debounce |
+| FX5 | Worker A | ✅ DONE | (pending commit) | Re-enable broadcast Enter key (was over-blocked) |
+| BUG2 | Lead | ✅ FIXED | (pending commit) | V13 watchdog - thinking animation counted as activity |
+
+### FX2: Session Persistence (Worker B) - ✅ DONE
+
+**Commit:** `8301e7f`
+
+**Changes:**
+- Save session state to disk (scrollback, cwd, terminal info)
+- Load session state on daemon start
+- Periodic auto-save every 30 seconds
+- Save on shutdown (SIGINT, SIGTERM)
+- Protocol: `get-session`, `save-session`, `clear-session`
+- Client: `getSession()`, `saveSession()`, `clearSession()`
+
+**Files:** ui/terminal-daemon.js, ui/daemon-client.js
+
+---
+
+## CRITICAL: ESC Key Fix - ✅ IMPLEMENTED (Pending Restart)
+
+**Issue:** ESC key stopped working - xterm.js was capturing all keyboard input, preventing users from interrupting stuck agents. All agents (Lead, Worker A, Worker B) became stuck and unresponsive. Only Reviewer remained active.
+
+**Root Cause:** xterm terminals capture keyboard focus and don't release it, blocking ESC from reaching the app's interrupt handlers.
+
+**Fix (Reviewer - Emergency):**
+1. **main.js:446-453** - Added `before-input-event` handler to intercept ESC at Electron main process level BEFORE xterm sees it
+2. **renderer.js:199-214** - Added `global-escape-pressed` IPC listener that:
+   - Blurs all terminals via `terminal.blurAllTerminals()`
+   - Blurs any focused element
+   - Shows visual feedback: "ESC pressed - keyboard released"
+
+**Status:** Code committed. Requires app restart to test.
 
 ---
 
