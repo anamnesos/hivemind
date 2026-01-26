@@ -6,6 +6,35 @@
 
 ## Active Errors
 
+### SDK Mode Bugs (Jan 25, 2026) - FIXED (Pending Restart)
+**Owner**: Worker A
+**Priority**: HIGH - blocks SDK testing
+
+**BUG SDK-1:** sdk-renderer.js:36-40 - "Terminal container not found" - ✅ FIXED
+- **Fix Applied**: Added fallback selectors to handle xterm-modified DOM
+- **Fixed by**: Worker A
+
+**BUG SDK-2:** renderer.js:418-420 - TypeError "Cannot read properties of undefined (reading 'type')" - ✅ FIXED
+- **Fix Applied**: Added null check for malformed IPC data
+- **Fixed by**: Worker A
+
+**Status**: App restart required to test fixes.
+
+---
+
+### V18.1 Auto-Nudge Not Firing - RESOLVED (User Action Needed)
+- **Where**: ui/terminal-daemon.js - checkAndNudgeStuckAgents() function
+- **Cause**: Daemon persists across Electron app restarts. When app was "restarted", only Electron restarted - daemon kept running OLD code from Jan 24 (before V18.1).
+- **Symptoms**: Agents stuck for minutes, no auto-nudge fired, no [AutoNudge] entries in daemon.log
+- **Fix**: Must explicitly restart daemon when daemon code changes:
+  1. Run `cd ui && npm run daemon:stop` (or kill the daemon PID)
+  2. Restart Electron app (daemon auto-starts with new code)
+- **Lesson**: Daemon code changes require daemon restart, not just app restart!
+- **Discovered by**: Worker B (Jan 25, 2026)
+- **Status**: Awaiting user to restart daemon
+
+---
+
 ### Terminal keyboard input broken after restart - RESOLVED
 - **Where**: ui/renderer.js line 195
 - **Cause**: ESC handler used `window.hivemind.on()` which doesn't exist in the API. This threw a JS error during DOMContentLoaded, breaking terminal initialization.
@@ -53,6 +82,34 @@
 - **Fix**: Removed the overly aggressive `hasRecentActivity()` check. Heartbeats are non-intrusive (just trigger messages), so they should fire regardless of PTY output.
 - **Fixed by**: Worker B (Jan 25, 2026)
 - **Verified**: Requires app restart to test
+
+---
+
+## Known Upstream Issues
+
+### Claude Code Concurrent Instance Stuck Bug
+- **Where**: Claude Code CLI (upstream, not Hivemind code)
+- **GitHub Issues**: #13224, #13188
+- **Cause**: Running multiple Claude Code instances concurrently causes intermittent stuck/hang states. Agents freeze mid-operation and require manual intervention to unstick.
+- **Symptoms**: Agent terminal appears frozen, no response to triggers, heartbeat may still pulse but agent doesn't process input
+- **Workaround**: Add to `~/.claude/settings.json`:
+  ```json
+  {
+    "AUTOCOMPACT_PCT_OVERRIDE": 70
+  }
+  ```
+  This compacts context earlier, reducing stuck frequency.
+- **Alternative Fix**: Ralph project uses circuit breaker pattern for heartbeat - potential future implementation
+- **Discovered**: Stress test session Jan 25, 2026 - External Claude identified via GitHub issues
+- **Note**: This is NOT a Hivemind bug. It's a known limitation of Claude Code with concurrent instances.
+
+### Focus Stealing on Terminal Output (Hivemind UI Bug)
+- **Where**: ui/renderer.js - terminal output handling
+- **Cause**: When agents respond, their terminal pane calls `.focus()`, stealing input focus from wherever user is typing (including broadcast input)
+- **Symptoms**: User tries to type in broadcast field, focus jumps to active terminal mid-typing, input gets hijacked
+- **Fix Needed**: Prevent auto-focus on terminal write/output events. Only focus terminal on explicit user click.
+- **Status**: Identified, not yet fixed
+- **Discovered**: Stress test session Jan 25, 2026
 
 ---
 

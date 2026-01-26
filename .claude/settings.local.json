@@ -18,7 +18,18 @@
       "Bash(tasklist:*)",
       "Bash(dir:*)",
       "Bash(findstr:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(cmd /c \"dir /b D:\\\\projects\\\\hivemind\\\\workspace\\\\triggers\"\")",
+      "Bash(powershell -Command \"Get-Content D:\\\\projects\\\\hivemind\\\\ui\\\\session-state.json | Select-Object -First 30\")",
+      "Bash(powershell -Command \"Get-ChildItem D:\\\\projects\\\\hivemind\\\\workspace\\\\triggers\"\")",
+      "Bash(powershell -Command:*)",
+      "Bash(cmd /c \"taskkill /F /IM electron.exe\")",
+      "Bash(cmd /c \"tasklist | findstr /i electron node\")",
+      "Bash(cmd /c \"tasklist | findstr 57220\")",
+      "Bash(cmd /c \"cd /d D:\\\\projects\\\\hivemind\\\\ui && node terminal-daemon.js\")",
+      "Bash(cmd /c \"tasklist | findstr node\")",
+      "Bash(cmd /c \"\"\"C:\\\\Users\\\\James Kim\\\\.local\\\\bin\\\\claude.exe\"\" --version\")",
+      "Bash(npm uninstall:*)"
     ]
   }
 }

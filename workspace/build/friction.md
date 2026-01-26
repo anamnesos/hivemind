@@ -332,4 +332,114 @@ If settings aren't loaded OR daemon isn't connected within 1 second, auto-spawn 
 
 ---
 
+### Jan 25 2026 - tooling - Daemon code changes not live after app restart
+
+**What happened**: V18.1 auto-nudge fix was committed and app was "restarted", but auto-nudge still didn't work. Agents were stuck for minutes with no auto-recovery.
+
+**Root cause**: The terminal daemon (`terminal-daemon.js`) is a SEPARATE PROCESS that survives Electron app restarts. That's its core feature (terminal persistence). But it also means daemon code changes don't take effect on app restart - the old daemon keeps running.
+
+**Evidence**: `daemon.log` showed "Daemon started at 2026-01-24T21:55" even though we "restarted" on Jan 25. The running daemon was 24+ hours old.
+
+**Resolution**: Must explicitly kill daemon before restart:
+```bash
+npm run daemon:stop   # Kill the old daemon process
+npm start             # Fresh start with new code
+```
+
+**Pattern**: YES - any time terminal-daemon.js is modified.
+
+**Severity**: HIGH - causes confusion when "fixes" don't work.
+
+**Improvement**:
+1. Add startup check: compare daemon.js file mtime vs running daemon start time
+2. If code is newer than daemon, warn user or auto-restart daemon
+3. Document in README: "Daemon changes require `npm run daemon:stop`"
+
+---
+
+### Jan 25 2026 - tooling - Cannot identify sessions in /resume picker
+
+**What happened**: After daemon restart, user runs `/resume` to reconnect agents. All sessions look identical - no way to tell which is Lead, Worker A, Worker B, or Reviewer.
+
+**Root cause**: Claude Code sessions don't have custom naming. The `/resume` picker shows session content snippets, but all Hivemind agents start identically.
+
+**Resolution**: (proposed) Daemon injects role identity on terminal spawn:
+```javascript
+// In spawnTerminal() after PTY spawn
+setTimeout(() => {
+  const role = PANE_ROLES[paneId];
+  ptyProcess.write(`echo "=== HIVEMIND: ${role} (Pane ${paneId}) ==="\r`);
+}, 200);
+```
+
+**Pattern**: YES - every time daemon restarts, user must guess which session is which.
+
+**Severity**: MEDIUM - workflow annoyance, but can manually identify by content.
+
+**Improvement**:
+1. Daemon injects role identity string on spawn (proposed fix)
+2. Each session starts with identifiable content
+3. User sees "HIVEMIND: Lead" etc in /resume picker
+
+**Owner**: Worker B (terminal-daemon.js)
+**Trigger sent**: Yes
+
+---
+
+### Jan 25 2026 - coordination - Agents tell user to restart after restart already happened
+
+**What happened**: User starts fresh Hivemind session (app restart). Agents read status.md which says "requires restart to test" for various fixes. Agents parrot "restart needed" to user. User says "I just restarted." Agents acknowledge. User restarts again. Loop repeats forever.
+
+**Root cause**: Status notes like "requires restart to test" are written BEFORE the restart. Agents don't recognize that a fresh session = restart already happened. We read stale notes and repeat them without thinking.
+
+**Resolution**: Agents must recognize:
+1. Fresh session with all agents = user already restarted
+2. "Requires restart" notes in status.md are NOW LIVE
+3. Correct response is "Want me to verify X is working?" not "Restart to test X"
+
+**Pattern**: YES - every time fixes are committed, status.md gets "restart to test" notes, and agents mindlessly repeat them.
+
+**Severity**: HIGH - breaks user trust, wastes time, makes agents seem unintelligent.
+
+**Improvement**:
+1. Agents MUST recognize fresh session = restart already happened
+2. On fresh session, ask "Should I verify [pending fix] is working?"
+3. Don't parrot "restart needed" - that's the user's job to know, not ours to remind
+4. Update status.md after restart to change "requires restart" to "ready to verify"
+
+---
+
+### Jan 25 2026 - review - Incomplete integration review before "APPROVED FOR TESTING"
+
+**What happened**: Reviewer approved SDK V2 for testing. User enabled it. Would have failed immediately. User demanded thorough audit. Audit found 4+ critical bugs that would have broken everything:
+1. Python sends `pane_id`/`session_id` (snake_case), JS expected `paneId`/`sessionId` (camelCase) - ALL messages route to pane 1
+2. Python sends `role` field, JS checked `agent` field - role-based routing broken
+3. Session file format mismatch - JS saves flat, Python expects nested - session resume broken
+4. `interrupt` command not implemented in Python - interrupt button is dead code
+5. Missing IPC emissions - UI status indicators never update
+
+**Root cause**:
+1. Reviewer checked Python file in isolation, didn't trace data flow to JavaScript consumers
+2. Lead accepted "APPROVED" without questioning scope of review
+3. "Review the code" was interpreted as "read one file" not "verify integration"
+4. No actual end-to-end test was run before approval
+
+**Resolution**:
+1. User forced comprehensive audit across all agents
+2. Lead fixed critical bugs in sdk-bridge.js and hivemind-sdk-v2.py
+3. Updated CLAUDE.md with mandatory "Reviewer Gate" section requiring integration review
+
+**Pattern**: YES - rushing to approval without integration verification.
+
+**Severity**: CRITICAL - user almost tested broken code, would have lost session context.
+
+**Improvement**:
+1. "APPROVED FOR TESTING" requires reviewer to trace data flow across ALL involved files
+2. Lead must verify reviewer did integration review, not just spot check
+3. Any IPC protocol (Python ↔ JS, renderer ↔ main) needs both sides verified
+4. Document expected data formats explicitly - don't assume conventions match
+5. When in doubt, delay approval and tell user "needs more review"
+
+---
+
 (Add new entries as friction occurs)

@@ -1,6 +1,534 @@
 # Build Status
 
-Last updated: 2026-01-25 - V18.2 AUTO-NUDGE FALSE POSITIVE FIX
+Last updated: 2026-01-26 - QUALITY GATES + SDK V2 FIXES + UI FIX
+
+---
+
+## UI Fix: Agent Message Styling - ✅ DONE (Jan 26, 2026)
+
+**Owner:** Worker A
+**Problem:** All trigger messages showed as "You:" with person icon - confusing UX.
+
+**Fix Applied:**
+- Detect `(ROLE):` prefix pattern in messages (LEAD, WORKER-A, WORKER-B, REVIEWER)
+- Parse out the prefix and show appropriate agent styling
+- "You:" label ONLY appears for actual user keyboard input (no prefix)
+
+**Distinct Agent Styling:**
+| Role | Icon | Color | CSS Class |
+|------|------|-------|-----------|
+| Lead | 👑 | Gold (#ffd700) | .sdk-agent-lead |
+| Worker A | 🔧 | Teal (#4ecca3) | .sdk-agent-worker-a |
+| Worker B | ⚙️ | Purple (#9b59b6) | .sdk-agent-worker-b |
+| Reviewer | 🔍 | Orange (#ff9800) | .sdk-agent-reviewer |
+
+**Files Modified:**
+- `ui/modules/sdk-renderer.js` - Updated formatMessage() to detect and parse agent prefixes
+- `ui/index.html` - Added CSS for .sdk-agent-msg and role-specific styles
+
+**Status:** ✅ DONE - Requires app restart to test.
+
+---
+
+## Quality Gates - IN PROGRESS (Jan 26, 2026)
+
+**Goal:** Stop shipping dumb bugs with automated checks.
+
+| Gate | Status | Owner |
+|------|--------|-------|
+| Gate 1: mypy (Python) | ✅ DONE | Worker B |
+| Gate 2: ESLint (JS) | ✅ DONE | Worker A |
+| Gate 3: IPC Protocol Tests | ⏳ Pending | Lead |
+| Gate 4: Serialization Tests | ✅ DONE | Worker B |
+| Gate 5: Pre-commit Hook | ✅ DONE | Worker B |
+
+**Gate 1 Results (Worker B):**
+- Fixed 9 type errors in `hivemind-sdk-v2.py`
+- Fixed 8 type errors in `hivemind-sdk.py`
+- Both files pass: `python -m mypy <file> --ignore-missing-imports`
+- Type fixes: Literal types, Optional params, collection annotations
+
+**Gate 2 Results (Worker A):**
+- Installed: ESLint 9.39.2, globals package
+- Config: `ui/eslint.config.js` (flat config format)
+- Scripts: `npm run lint`, `npm run lint:fix`
+- Results: **0 errors**, 44 warnings (unused vars only)
+
+**Gate 4 Results (Worker B):**
+- Created `tests/test-serialization.py` (~300 lines)
+- Tests: basic types, nested structures, default=str fallback, SDK message shapes, edge cases
+- All 30+ test cases pass
+- Added Windows encoding fix for emoji output
+
+**Gate 5 Results (Worker B):**
+- Created `.git/hooks/pre-commit`
+- Runs: mypy (Python), ESLint (JS), syntax check, serialization tests
+- Tested: All 4 gates pass
+- Blocks commit on failure (bypass: `git commit --no-verify`)
+
+**Commands:**
+```bash
+# Python type check
+python -m mypy hivemind-sdk-v2.py --ignore-missing-imports
+
+# JavaScript lint
+cd ui && npm run lint
+
+# Test pre-commit hook
+sh .git/hooks/pre-commit
+```
+
+---
+
+## SDK V2 Code Quality Fixes - ✅ APPLIED (Jan 26, 2026)
+
+**Owner:** Reviewer (deep trace review)
+
+**Issues found during full message flow trace:**
+
+| Issue | File | Fix |
+|-------|------|-----|
+| Duplicate code | sdk-bridge.js:257-259 | Removed duplicate `this.ready = false`, fixed indentation |
+| Unhandled event | sdk-bridge.js | Added handler for `message_received` (was showing raw JSON) |
+| Unhandled event | sdk-bridge.js | Added handler for `all_stopped` (was showing raw JSON) |
+| Magic number | sdk-bridge.js:709 | Removed arbitrary setTimeout(500), sendMessage queues properly |
+
+**Review:** `workspace/build/reviews/sdk-v2-deep-trace-findings.md`
+
+---
+
+## SDK Message Type Handlers - ✅ APPLIED (Jan 26, 2026)
+
+**Owner:** Reviewer (proactive audit)
+
+**Audit:** Cross-referenced all `_emit()` in Python against `formatMessage()` in sdk-renderer.js.
+
+**5 unhandled types found and fixed:**
+
+| Type | File | Handler |
+|------|------|---------|
+| `warning` | sdk-renderer.js:287 | Yellow warning icon |
+| `interrupted` | sdk-renderer.js:291 | Stop icon + role name |
+| `agent_started` | sdk-renderer.js:295 | Rocket icon + role name |
+| `ready` | sdk-bridge.js:576 | Log + emit 'python-ready' |
+| `sessions` | sdk-bridge.js:582 | Log + emit 'sessions-list' |
+
+**Review:** `workspace/build/reviews/sdk-renderer-audit.md`
+
+---
+
+## SDK V2 Critical Runtime Fixes - ✅ APPROVED (Jan 26, 2026)
+
+**Status:** Reviewer approved + code quality fixes applied. Ready for user test.
+
+**Problem:** SDK mode sort of worked but had multiple issues during user testing.
+
+**Issues Found & Fixed:**
+
+| Issue | Symptom | Root Cause | Fix |
+|-------|---------|------------|-----|
+| Content mismatch | "Unknown [Object]" in panes | Python sends content as ARRAY, JS expected STRING | `sdk-renderer.js` - handle array format |
+| Missing user type | User messages not rendering | No handler for 'user' message type | `sdk-renderer.js` - added user handler |
+| No immediate feedback | User types but nothing shows | Waited for Python to echo back | `daemon-handlers.js` - display immediately |
+| Broadcast-only | Can't message specific pane | No pane targeting in SDK mode | `renderer.js` - added /1, /lead prefix syntax |
+| No role identity | Agents don't know their role | All used same workspace directory | `hivemind-sdk-v2.py` - role-specific cwd |
+| Fatal error crashes | "Fatal error in message reader" | Stale session IDs cause --resume to fail | `hivemind-sdk-v2.py` - disabled resume |
+| Permission prompts | Agents stuck at permission prompt | `acceptEdits` doesn't accept reads | `hivemind-sdk-v2.py` - use bypassPermissions |
+| No role identity | All agents respond as generic Claude | `setting_sources` was removed | `hivemind-sdk-v2.py` - re-enabled setting_sources=["project"] |
+| JSON serialization | "ToolResultBlock not JSON serializable" | SDK objects passed to json.dumps | `hivemind-sdk-v2.py` - added default=str to all json.dumps |
+| Broadcast to all | Single input went to all 4 agents | Default was sdk-broadcast | `renderer.js` - default now sends to Lead only, /all for broadcast |
+
+**Critical Discovery - Stale Sessions:**
+Session IDs in `session-state.json` were being passed to `--resume` flag, but those sessions no longer existed. SDK crashed with "Command failed with exit code 1". Fixed by disabling session resume and clearing session-state.json.
+
+**Files Modified:**
+- `ui/modules/sdk-renderer.js` - Content array handling, user message type
+- `ui/modules/daemon-handlers.js` - Immediate message display
+- `ui/renderer.js` - Pane targeting syntax
+- `hivemind-sdk-v2.py` - Role cwd, disabled resume, bypassPermissions
+- `session-state.json` - Cleared stale data
+
+**Status:** All fixes applied. Requires app restart to test.
+
+---
+
+## SDK V2 PTY Bypass Fix (Round 2) - ✅ APPROVED (Jan 26, 2026)
+
+**Problem:** User still saw "Claude running" badges and raw JSON in SDK mode after first fix.
+
+**Root Cause:** Multiple code paths bypassed SDK mode check:
+1. `checkAutoSpawn()` spawned Claude CLI regardless of SDK mode
+2. `spawnClaude()` had no SDK mode guard
+3. `freshStartAll()` could create PTY terminals in SDK mode
+4. "Spawn All" button was visible in SDK mode
+5. `terminal.setSDKMode()` not called from renderer
+
+**ROUND 2 FIXES Applied (Lead - Jan 26):**
+
+| File | Line | Change |
+|------|------|--------|
+| `ui/modules/settings.js` | ~147-151 | Added SDK mode check to `checkAutoSpawn()` |
+| `ui/modules/settings.js` | ~76-80 | Hide "Spawn All" button when SDK mode enabled |
+| `ui/modules/terminal.js` | ~24 | Added `sdkModeActive` module flag |
+| `ui/modules/terminal.js` | ~553-557 | Added `setSDKMode(enabled)` function |
+| `ui/modules/terminal.js` | ~560-564 | Added SDK guard to `spawnClaude()` |
+| `ui/modules/terminal.js` | ~143-147 | Added SDK guard to `initTerminals()` |
+| `ui/modules/terminal.js` | ~718-724 | Added SDK guard to `freshStartAll()` |
+| `ui/renderer.js` | ~44 | Call `terminal.setSDKMode(true)` on settings load |
+
+**Defense in Depth:** Multiple layers of SDK mode blocking:
+- Layer 1: daemon-handlers skips PTY on daemon-connected (from Round 1)
+- Layer 2: settings.js skips auto-spawn
+- Layer 3: terminal.js blocks spawnClaude/initTerminals/freshStartAll
+- Layer 4: UI hides spawn button
+- Layer 5: terminal.js early terminal existence check (Worker A - Jan 26)
+- Layer 6: ipc-handlers.js SDK guard on spawn-claude (Worker A - Jan 26)
+
+**Additional Defense-in-Depth (Worker A - Jan 26):**
+| File | Change |
+|------|--------|
+| `ui/modules/terminal.js:566-570` | Early check `!terminals.has(paneId)` before SDK guard |
+| `ui/modules/ipc-handlers.js:109-113` | SDK mode guard in `spawn-claude` IPC handler |
+
+**Status:** ✅ APPROVED FOR TESTING (see reviews/pty-bypass-fix-review.md) + defense-in-depth applied.
+
+---
+
+## SDK V2 Init Bug Fix (Round 1) - ✅ APPLIED (Jan 26, 2026)
+
+**Problem:** Raw JSON appearing in xterm panes - PTY created before SDK mode detected.
+
+**Root Cause:** Race condition - `daemon-connected` fired before settings loaded.
+
+**Fixes Applied:**
+- main.js: Added `sdkMode` flag to daemon-connected event
+- daemon-handlers.js: Check data.sdkMode, skip PTY if true
+- renderer.js: Set SDK mode flags on settings load, auto-init SDK panes
+
+**Status:** Applied but insufficient - Round 2 fixes additional bypass paths.
+
+---
+
+## SDK V2 Migration - ✅ READY FOR TESTING
+
+**Goal:** Replace PTY/keyboard hacks with 4 independent ClaudeSDKClient instances.
+
+**Architecture:** 4 full Claude sessions (NOT subagents), each with own context window.
+
+**Design Doc:** `workspace/build/sdk-architecture-v2.md`
+
+### Final Verification Complete (Jan 25, 2026)
+
+**Reviewer's Final Report:**
+- Files verified: `hivemind-sdk-v2.py` (575 lines), `sdk-bridge.js` (636 lines)
+- IPC Protocol: ALL 6 ASPECTS ALIGNED (command, pane_id, message, session_id, role, session format)
+- Issues found: NONE
+- Confidence: ✅ READY FOR TESTING
+
+**Review Files:**
+- `workspace/build/reviews/sdk-v2-audit-verification.md` - Audit fixes verified
+- `workspace/build/reviews/sdk-v2-final-verification.md` - Protocol alignment verified
+
+### Post-Audit Critical Fixes (Jan 25, 2026)
+
+**User requested full audit before testing. Audit revealed critical bugs:**
+
+| Issue | Status | Description |
+|-------|--------|-------------|
+| snake_case/camelCase mismatch | ✅ FIXED | Python sends `pane_id`, JS expected `paneId` - all routing broken |
+| Missing `sdk-status-changed` | ✅ FIXED | UI status indicators never updated |
+| Missing `sdk-message-delivered` | ✅ FIXED | No delivery confirmation in UI |
+| `interrupt` command missing | ✅ FIXED | Added to Python IPC handler |
+| Session file format mismatch | ✅ FIXED | Aligned JS to Python's nested format |
+| Race condition on startup | ⚠️ OPEN | Messages may queue before Python ready |
+
+**Fixes Applied by Lead:**
+1. `sdk-bridge.js`: Check both `msg.pane_id` AND `msg.paneId`, same for `session_id`/`sessionId`, `role`/`agent`
+2. `sdk-bridge.js`: Added `sdk-status-changed` emissions in 5 locations
+3. `sdk-bridge.js`: Added `sdk-message-delivered` emission in sendMessage()
+4. `sdk-bridge.js`: Session state now uses nested `{ sdk_sessions: {...} }` format
+5. `hivemind-sdk-v2.py`: Added `interrupt` command handler + `interrupt_agent()` method
+
+**Process Failure Noted:** Reviewer approved without integration review. Updated CLAUDE.md with mandatory integration review requirements.
+
+### Phase 1 Tasks
+
+| # | Task | Owner | Status |
+|---|------|-------|--------|
+| 1 | Create hivemind-sdk-v2.py | Lead | ✅ COMPLETE |
+| 2 | Update sdk-bridge.js for multi-session | Worker B | ✅ COMPLETE |
+| 3 | Add session status indicators to UI | Worker A | ✅ COMPLETE |
+| 4 | Review SDK V2 architecture | Reviewer | ✅ COMPLETE |
+
+### Review Summary (Task #4)
+
+**File:** `workspace/build/reviews/sdk-v2-architecture-review.md`
+**Verdict:** ✅ APPROVED with recommendations
+
+**Reviewer Recommendations:**
+1. Verify ClaudeSDKClient API with minimal test before full integration
+2. Confirm `setting_sources=["project"]` loads CLAUDE.md
+3. Implement `can_use_tool` path restrictions for security
+
+---
+
+## SDK V2 Migration - Phase 2 Tasks ✅ COMPLETE
+
+| # | Task | Owner | Status |
+|---|------|-------|--------|
+| 5 | Replace PTY input with SDK calls | Lead | ✅ COMPLETE |
+| 6 | Trigger integration (file → SDK) | Worker B | ✅ COMPLETE |
+| 7 | Session persistence + resume | Lead | ✅ COMPLETE |
+| 8 | Full verification | Reviewer | ✅ APPROVED |
+| 9 | Protocol alignment fixes | Lead | ✅ COMPLETE |
+
+### Final Review (Task #8)
+
+**File:** `workspace/build/reviews/sdk-v2-final-verification.md`
+**Verdict:** ✅ APPROVED FOR TESTING
+
+**Reviewer Notes:**
+- All protocol fixes verified
+- Minor: `interrupt` command not yet handled in Python (non-critical)
+- Ready for end-to-end testing once `claude-agent-sdk` is installed
+
+### Completed: Task #9 - Protocol Alignment Fixes (Lead)
+
+**Issue:** Reviewer identified protocol mismatches between JavaScript and Python.
+
+**Fixes Applied:**
+
+| Issue | Before | After | File |
+|-------|--------|-------|------|
+| Command key | `action: 'send'` | `command: 'send'` | sdk-bridge.js |
+| Pane ID key | `paneId` | `pane_id` | sdk-bridge.js |
+| Session ID key | `sessionId` | `session_id` | sdk-bridge.js |
+| Stop command | `action: 'stop-sessions'` | `command: 'stop'` | sdk-bridge.js |
+| Interrupt key | `action: 'interrupt'` | `command: 'interrupt'` | sdk-bridge.js |
+| IPC flag | Missing | `--ipc` added | sdk-bridge.js |
+| Session file path | `/ui/session-state.json` | `/session-state.json` | hivemind-sdk-v2.py |
+
+**Details:**
+- `sendMessage()` - Uses Python's expected keys (`command`, `pane_id`, `session_id`)
+- `stopSessions()` - Uses `command: 'stop'`
+- `interrupt()` - Uses `command: 'interrupt'`, `pane_id`
+- `startProcess()` - Spawns with `--ipc` flag for JSON protocol
+- Python session file - Aligned to project root (same as JS)
+
+**Status:** ✅ All protocol mismatches fixed. Ready for final testing.
+
+---
+
+### Completed: Task #5 - PTY to SDK Routing (Lead)
+
+**Changes Made:**
+1. `ui/modules/ipc-handlers.js` - Updated `sdk-broadcast` to use V2 `broadcast()` method
+2. `ui/modules/triggers.js` - Updated `sendStaggered()` to route via SDK when enabled
+3. `ui/main.js` - Connected SDK bridge to triggers, added SDK mode toggle on settings change
+
+**Flow:**
+- When `sdkMode` setting is true: Messages route through `sdkBridge.sendMessage(paneId, message)`
+- When `sdkMode` is false: Legacy PTY/keyboard injection via `inject-message` IPC
+
+**Key Integration Points:**
+- `triggers.setSDKBridge(sdkBridge)` - Called on app start
+- `triggers.setSDKMode(enabled)` - Called when settings change
+- `sendStaggered()` - Central routing function, checks SDK mode first
+
+### Completed: Task #1 - hivemind-sdk-v2.py (Lead)
+
+**File:** `hivemind-sdk-v2.py`
+
+**Features:**
+- `HivemindAgent` class - single persistent ClaudeSDKClient per agent
+- `HivemindManager` class - manages all 4 agents
+- Session persistence via `session-state.json`
+- IPC protocol (JSON over stdin/stdout) for Electron
+- `setting_sources=["project"]` for CLAUDE.md loading
+- CLI mode for testing, IPC mode for Electron integration
+
+**API:**
+```python
+# Each agent is a full Claude instance
+agents = {
+    '1': HivemindAgent(AgentConfig.lead(), workspace),
+    '2': HivemindAgent(AgentConfig.worker_a(), workspace),
+    '3': HivemindAgent(AgentConfig.worker_b(), workspace),
+    '4': HivemindAgent(AgentConfig.reviewer(), workspace),
+}
+```
+
+**Why NOT subagents:**
+- Subagents share/inherit context = less total context
+- Full instances compact independently = more context capacity
+- Each agent "sees everything in their domain" vs "hyperfocused summaries"
+
+### Completed: Task #2 - sdk-bridge.js multi-session (Worker B)
+
+**Files Modified:**
+- `ui/modules/sdk-bridge.js` - Complete V2 rewrite for 4 independent sessions
+- `ui/modules/ipc-handlers.js` - Added 8 new V2 IPC handlers
+
+**New IPC Handlers:**
+- `sdk-send-message(paneId, message)` - Send to specific agent
+- `sdk-subscribe/unsubscribe(paneId)` - Control streaming subscription
+- `sdk-get-session-ids` - Get all session IDs for persistence
+- `sdk-start-sessions(options)` - Initialize all 4 agents
+- `sdk-stop-sessions` - Graceful shutdown with session ID capture
+- `sdk-pane-status(paneId)` - Get agent status
+- `sdk-interrupt(paneId)` - Interrupt specific agent
+
+**Session Persistence:** `session-state.json` loaded on startup, saved on stop.
+
+**JSON Protocol:** Commands sent to Python via stdin, responses via stdout.
+
+### Completed: Task #3 - SDK Session Status Indicators (Worker A)
+
+**Files Modified:**
+- `ui/index.html` - CSS for SDK status states + HTML elements in pane headers
+- `ui/renderer.js` - Status update functions + IPC listeners
+
+**Features:**
+1. Status states: disconnected, connected, idle, thinking, responding, error
+2. Visual indicator: Animated dot badge in each pane header
+3. Message delivered: Flash animation confirms SDK receipt
+4. Session ID: Hidden by default, visible in debug mode
+
+**IPC Listeners Added:**
+- `sdk-status-changed` - Updates pane status indicator
+- `sdk-message-delivered` - Triggers delivery confirmation flash
+
+**Status:** ✅ COMPLETE - Blocked until sdk-bridge.js (Task #2) is ready.
+
+---
+
+## UI Layout Redesign - ✅ COMPLETE (Lead)
+
+**Goal:** Lead-focused layout - user only interacts with Lead, workers are monitoring-only.
+
+### Changes Made
+1. **Layout**: Lead takes full left side (65%), workers stacked on right (35%)
+2. **Input**: Changed from "broadcast to all" to "message to Lead only"
+3. **Expand buttons**: Worker panes have expand/collapse toggle
+4. **Removed keyboard shortcuts from worker headers** (Ctrl+1-4 still works)
+
+### Files Modified
+- `ui/index.html` - New grid CSS, restructured pane HTML, expand buttons
+- `ui/renderer.js` - Added toggleExpandPane(), expand button handlers
+- `ui/modules/terminal.js` - broadcast() now sends only to Lead (pane 1)
+
+### New Layout
+```
+┌───────────────────┬──────────────┐
+│                   │  Worker A [⤢] │
+│                   ├──────────────┤
+│      Lead         │  Worker B [⤢] │
+│    (Main Pane)    ├──────────────┤
+│                   │  Reviewer [⤢] │
+└───────────────────┴──────────────┘
+     [Message to Lead input]
+```
+
+**Status:** Requires app restart to test.
+
+---
+
+## SDK Migration Sprint - ⏸️ PAUSED (Lead)
+
+**Goal:** Integrate SDK mode into Electron app as user-selectable option.
+
+### Task #1: SDK Bridge Startup Integration - ✅ COMPLETE (Lead)
+- Added `sdkMode` to DEFAULT_SETTINGS in main.js
+- SDK bridge already initialized via ipc-handlers.js
+- Broadcast routing now checks sdkMode and routes through SDK or PTY
+
+### Task #2: SDK Mode Toggle UI - ✅ COMPLETE (Lead)
+- Added toggle switch in Settings panel (index.html)
+- Added sdkModeNotice indicator
+- Updated settings.js to show/hide SDK mode notice
+
+### Task #3: Test SDK Broadcast - ⏳ PENDING
+Requires manual testing with SDK mode enabled.
+
+### Task #4: Test SDK Subagent Delegation - ⏳ PENDING
+Blocked by Task #3.
+
+**Files Modified:**
+- `ui/main.js` - Added sdkMode to DEFAULT_SETTINGS
+- `ui/index.html` - Added SDK mode toggle and notice
+- `ui/modules/settings.js` - Added sdkModeNotice visibility handling
+- `ui/renderer.js` - Added sendBroadcast() helper with SDK/PTY routing
+
+---
+
+## SDK Prototype Sprint - ✅ COMPLETE (Acceptance Test Passed)
+
+### Task #1: SDK Backend Integration - ✅ COMPLETE (Worker B)
+- `hivemind-sdk.py` - SDK orchestrator with subagent definitions
+- Installed claude-agent-sdk
+- Verified query() API works
+
+### Task #3: Multi-Agent Coordination - ✅ COMPLETE (Lead)
+- `ui/modules/sdk-bridge.js` - Electron ↔ SDK bridge
+- IPC handlers: sdk-start, sdk-stop, sdk-write, sdk-status, sdk-broadcast
+- Spawn/manage Python SDK process from Electron
+
+### Task #4: Validation - ✅ COMPLETE (Reviewer)
+Conditional pass - SDK prototype works, Windows encoding fixed.
+
+---
+
+### Task #2: SDK Message UI Renderer - ✅ COMPLETE (Worker A)
+
+**Goal:** Replace xterm.js terminals with SDK message display for Agent SDK integration.
+
+**Files Created/Modified:**
+- `ui/modules/sdk-renderer.js` - NEW (~260 lines)
+  - initSDKPane(), initAllSDKPanes() - pane initialization
+  - appendMessage(), formatMessage() - message display with type-specific styling
+  - streamingIndicator() - thinking animation
+  - clearPane(), scrollToBottom() - pane control
+  - getSessionId() - session management for resume
+
+- `ui/index.html` - Added SDK CSS (~130 lines)
+  - .sdk-assistant, .sdk-tool-use, .sdk-tool-result, .sdk-system, .sdk-error
+  - Collapsible tool results, streaming animation
+
+- `ui/renderer.js` - Added SDK integration
+  - Import sdk-renderer module
+  - window.hivemind.sdk API (start, stop, enableMode, disableMode)
+  - IPC handlers: sdk-message, sdk-streaming, sdk-session-start, sdk-session-end, sdk-error
+
+**Status:** ✅ COMPLETE - Ready for integration test with Lead's coordinator.
+
+---
+
+## ID-1: Session Identity Injection - ✅ FIXED (Worker B)
+
+**Problem:** When using `/resume` in Claude Code, sessions are hard to identify. All 4 agent sessions look the same - no way to tell Lead from Worker B.
+
+**Original Bug:** Identity message was written directly to PTY via daemon, but V16 proved PTY writes don't properly submit to Claude. Message appeared but wasn't processed.
+
+**Solution (v2):** Moved identity injection from daemon to renderer, using `sendToPane()` which properly dispatches keyboard events.
+
+1. **Shell Banner (on spawn):** Still works - daemon echoes role banner to terminal
+2. **Claude Identity (4s after `spawn-claude`):** Now uses `sendToPane()` in renderer:
+   ```
+   [HIVEMIND SESSION: Worker B] Started 2026-01-25
+   ```
+   This shows up in `/resume` session list AND is submitted to Claude.
+
+**Files Changed (v2 fix):**
+- `ui/modules/ipc-handlers.js`:
+  - REMOVED daemon identity injection (was line 129-137)
+  - Added comment noting fix moved to renderer
+- `ui/modules/terminal.js`:
+  - Added `PANE_ROLES` constant
+  - Added identity injection in `spawnClaude()` using `sendToPane()`
+
+**Why This Works:** `sendToPane()` uses keyboard events with `_hivemindBypass` marker, same as working trigger system.
+
+**Status:** ✅ FIXED - Requires app restart to test.
 
 ---
 
@@ -455,13 +983,13 @@ Commit: `f4e9453` - All 8 tasks complete.
 | D1 | Worker A | ✅ DONE | Settings toggle + header indicator |
 | D2 | Worker B | ✅ DONE | Daemon dry-run mode (mock terminals) |
 
-### Sprint 3.2: History & Projects
+### Sprint 3.2: History & Projects ✅ COMPLETE
 
 | Task | Owner | Status | Description |
 |------|-------|--------|-------------|
-| H1 | Worker A | PENDING | Session History tab UI |
+| H1 | Worker A | ✅ DONE | Session History tab UI |
 | H2 | Worker B | ✅ DONE | Session History data + IPC handler |
-| J1 | Worker A | PENDING | Projects tab UI |
+| J1 | Worker A | ✅ DONE | Projects tab UI |
 | J2 | Worker B | ✅ DONE | Recent projects backend + IPC handlers |
 
 #### Worker B Completion Notes (H2 + J2)
@@ -485,6 +1013,30 @@ Commit: `f4e9453` - All 8 tasks complete.
 
 **Handoff to Worker A (H1 + J1):**
 Backend APIs are ready. See `workspace/checkpoint.md` for API reference.
+
+#### Worker A Completion Notes (H1 + J1)
+
+**Files modified:**
+- `ui/index.html` - Added tab HTML structure + CSS styles
+- `ui/modules/tabs.js` - Added UI logic and IPC integration
+- `ui/renderer.js` - Wired up setup functions
+
+**H1: Session History UI:**
+- Tab pane with list container (`historyList`)
+- Refresh button (`refreshHistoryBtn`)
+- CSS: `.history-list`, `.history-item`, `.history-item-header`, `.history-item-agent`, `.history-item-duration`, `.history-item-time`, `.history-empty`
+- Functions: `setupHistoryTab()`, `loadSessionHistory()`, `renderHistoryList()`, `formatHistoryTime()`, `formatDuration()`
+- Uses `get-usage-stats` IPC (returns `recentSessions`)
+
+**J1: Projects UI:**
+- Tab pane with list container (`projectsList`)
+- Add Project button (`addProjectBtn`) + Refresh button (`refreshProjectsBtn`)
+- CSS: `.projects-list`, `.project-item`, `.project-item-info`, `.project-item-name`, `.project-item-path`, `.project-item-remove`, `.projects-empty`
+- Functions: `setupProjectsTab()`, `loadRecentProjects()`, `renderProjectsList()`, `addCurrentProject()`, `getProjectName()`
+- Uses `get-recent-projects`, `switch-project`, `remove-recent-project` IPC handlers
+- Listens for `project-changed` event
+
+**Note:** Implementation was completed in a previous session but status.md was not updated.
 
 #### Worker B Completion Notes (D2)
 
