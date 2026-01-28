@@ -442,4 +442,102 @@ setTimeout(() => {
 
 ---
 
+### Jan 28 2026 - coordination - Agent measured wrong metric, others accepted without questioning
+
+**What happened**: During stress test verification, Implementer B sent a message with very specific timestamp data claiming the test passed (ticks spaced ~10s apart, 9.998s min, 10.015s max, 59/59 deltas). Architect accepted this as verification that the terminal.input() fix worked. User caught the inconsistency: we never restarted the app, so the fix couldn't have been deployed and tested.
+
+**Root cause**:
+1. Implementer B parsed timestamps embedded IN the message text ("@ 10:40:46.960")
+2. These timestamps measured when the TRIGGER FILE was written, not when the message ARRIVED
+3. The ~10s spacing was real data - but it measured the wrong thing (write time vs arrival time)
+4. Architect didn't question how a test could verify a fix that wasn't deployed yet
+5. The timeline was impossible: fix written → no restart → somehow "verified"
+
+**Resolution**: User called out the inconsistency. Implementer B clarified the methodology error. Data was real but measured the wrong metric.
+
+**Pattern**: YES - agents can draw incorrect conclusions from real data, and other agents accept without verifying methodology.
+
+**Severity**: HIGH - misinformation spreading through agent network due to incorrect analysis.
+
+**Improvement**:
+1. **Timeline sanity check** - Before accepting verification claims, verify the fix is actually deployed
+2. **Question impossible claims** - If fix needs restart but no restart happened, results are impossible
+3. **Methodology verification** - Ask "what does this data actually measure?" not just "what does it say?"
+4. **Distinguish write time vs arrival time** - Timestamps in message payload ≠ delivery timestamps
+5. **Architect must be skeptical** - Coordination role requires questioning, not just accepting reports
+6. **Cite methodology** - Agents should explain HOW they measured, not just WHAT they measured
+
+---
+
+### Jan 28 2026 - coordination - Architect says "ready for restart" without complete handoff
+
+**What happened**: Repeatedly across sessions, Architect announces "ready for restart" but the shared_context.md doesn't have enough detail for the fresh instance. User has to ask "will new lead know what to do?" every time.
+
+**Root cause**:
+1. Architect treats "ready for restart" as end of task, not a handoff
+2. No self-check before announcing restart readiness
+3. "Context updated" doesn't mean "context is actionable"
+
+**Pattern**: YES - happened multiple times. User caught it every time.
+
+**Resolution**: Add mandatory pre-restart checklist to Architect CLAUDE.md
+
+**Improvement**:
+1. Before saying "ready for restart", Architect MUST verify:
+   - [ ] What needs to be verified is explicitly stated
+   - [ ] HOW to verify is documented (concrete steps)
+   - [ ] WHO does the verification is assigned
+   - [ ] What SUCCESS looks like is defined
+   - [ ] What FAILURE looks like is defined
+2. Read the context back and ask: "Would a fresh instance know exactly what to do?"
+3. If answer is no, fix it before announcing restart
+
+---
+
+### Jan 28 2026 - coordination - Agent messages to Architect silently dropped after burst test
+
+**What happened**: After extended burst test (20 messages to all Claude panes), Investigator received Reviewer's results and my coordination question. User confirmed Investigator replied, but I never received the messages. Same issue repeated twice - Investigator had information but messages to lead.txt weren't delivered.
+
+**Root cause**: `message-state.json` shows `lead.lastSeen.investigator = 520` (the last burst test message). After burst test, Investigator likely continued with lower sequence numbers (e.g., responding to Architect's ping). Any message with sequence ≤ 520 is silently dropped as "duplicate".
+
+**Evidence**:
+- Burst test ended at #520
+- message-state.json confirms lastSeen.investigator = 520 for lead recipient
+- User saw Investigator send messages in their pane
+- Messages never arrived at Architect's pane
+
+**This is the documented lead.txt reset-on-session-banner bug** - when an agent's sequence resets (session restart, or just continuing with lower numbers), the app still remembers the high-water mark and drops "old" sequences.
+
+**Pattern**: YES - any time burst tests push sequence numbers high, subsequent normal messages get dropped until they exceed the high-water mark.
+
+**Severity**: HIGH - breaks agent-to-agent coordination after stress tests.
+
+**Improvement**:
+1. Implement the reset-on-session-banner fix (blockers.md has implementation detail)
+2. Or: After burst tests, manually reset message-state.json
+3. Or: Burst test should use a separate sequence space from normal messages
+4. Agents need to be aware that high sequence numbers from tests can block future messages
+
+---
+
+### Jan 28 2026 - coordination - Agent receives info relevant to coordinator but doesn't relay
+
+**What happened**: Reviewer sent burst test results to Investigator (test runner). Investigator acknowledged but didn't forward results to Architect (who was waiting for verification summary). Pattern repeated - Architect asked Investigator for explanation, user confirmed Investigator explained but didn't reply to Architect.
+
+**Root cause**:
+1. No protocol for "relay relevant info to waiting agents"
+2. Agents respond to who messaged them, not who needs the info
+3. Test runner vs coordinator roles not clearly defined in handoff
+
+**Resolution**: (underlying delivery issue was sequence number blocking - see entry above)
+
+**Pattern**: YES - when info flows through intermediaries, it often stops there.
+
+**Improvement**:
+1. CLAUDE.md should instruct: "If you receive info that another agent is waiting for, relay it"
+2. Test protocols should specify who reports results to whom
+3. Architect should assign explicit reporting chains for verification tasks
+
+---
+
 (Add new entries as friction occurs)

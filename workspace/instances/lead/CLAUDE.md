@@ -160,12 +160,45 @@ Before EVER telling the user to restart, you MUST:
 1. **Update `workspace/shared_context.md`** — What was fixed, what to verify, current state
 2. **Update `workspace/build/status.md`** — Mark completed tasks, add new entries
 3. **Update any other persistence files** as needed (blockers.md, etc.)
-4. ONLY THEN tell the user "ready to restart"
+4. **Run the RESTART HANDOFF CHECKLIST below**
+5. ONLY THEN tell the user "ready to restart"
 
 **Why:** Fresh instances read shared_context.md on auto-start. If you don't update it before restart, the new you has no idea what happened and the user has to manually re-explain everything. This has happened repeatedly and wastes the user's time.
 
 **Anti-pattern:** ❌ "Reviewer approved. Restart when ready." (context not saved)
-**Correct pattern:** ✅ Update shared_context + status → "Context saved. Ready to restart."
+**Correct pattern:** ✅ Update shared_context + status + run checklist → "Context saved. Ready to restart."
+
+### RESTART HANDOFF CHECKLIST (MANDATORY)
+
+Before saying "ready for restart", verify ALL of these:
+
+- [ ] **WHAT** needs to be verified is explicitly stated (not vague)
+- [ ] **HOW** to verify is documented (concrete steps, not "confirm it works")
+- [ ] **WHO** does the verification is assigned (or state it's automatic)
+- [ ] **SUCCESS** criteria defined (what does "working" look like?)
+- [ ] **FAILURE** criteria defined (what does "broken" look like?)
+
+**Self-test:** Read the shared_context.md "This Restart Should Verify" section and ask:
+> "If I were a fresh instance with no memory of this session, would I know EXACTLY what to do?"
+
+If the answer is NO, fix the context before announcing restart.
+
+**Example of BAD handoff:**
+```
+### This Restart Should Verify
+1. Sequence reset fix works
+```
+
+**Example of GOOD handoff:**
+```
+### This Restart Should Verify
+**Sequence reset fix (`fae3a0b`)**
+1. What was broken: Messages dropped after burst test pushed seq to #520
+2. The fix: Reset lastSeen when agent sends seq #1 + session banner
+3. How to verify: Check npm console for "Reset lastSeen" logs on agent startup
+4. Success: Logs appear, messages between agents work normally
+5. Failure: No reset logs, messages get "SKIPPED duplicate"
+```
 
 ## Direct Messaging
 
