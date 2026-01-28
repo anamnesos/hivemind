@@ -18,6 +18,7 @@
 - Next: Reviewer to spot-check return shapes and confirm no regressions.
 - Implementer B: Added `interrupt-pane` IPC (Ctrl+C) + auto Ctrl+C after 120s no output in main-process stuck detection.
 - Investigator: Added ANSI bold yellow `[TRIGGER]` prefix for PTY injections (notifyAgents/auto-sync/trigger file/routeTask/auto-handoff/direct messages). Updated status bar hint text in `ui/index.html`.
+- Architect: Fixed Codex exec running-state detection to be case-insensitive so trigger delivery no longer skips Codex panes showing "Codex exec mode ready".
 - Next: Reviewer verify auto-interrupt behavior + IPC channel response.
 
 ---
@@ -331,3 +332,30 @@ echo "(YOUR-ROLE #N): message" > "D:\projects\hivemind\workspace\triggers\lead.t
 ## Previous Context
 
 See `workspace/build/status.md` for full sprint history.
+
+---
+
+## Offline agent feedback (Jan 28)
+
+### Investigator notes
+- **Trigger messages visual distinction**: Implemented ANSI prefix in `ui/modules/triggers.js` for PTY injections: `\x1b[1;33m[TRIGGER]\x1b[0m ` applied to notifyAgents, auto-sync, handleTriggerFile, routeTask, auto-handoff, and direct messages. Broadcast path unchanged.
+- **Status bar text**: Updated `ui/index.html` status bar to match current behavior: "Enter to send to Lead | /all to broadcast | /3 to target pane 3".
+- **Broadcast bar behavior (PTY)**: In PTY mode, broadcast input routes to pane 1 only (terminal.broadcast in `ui/modules/terminal.js`), and `/all` targeting exists only in SDK path. This is why user input only reaches Architect.
+- **Interrupt/ESC path exists but no UI entrypoint**: `(UNSTICK)` or `(AGGRESSIVE_NUDGE)` messages are intercepted in `ui/modules/daemon-handlers.js` and call `terminal.sendUnstick()` / `terminal.aggressiveNudge()` (ESC keyboard events), but there is no IPC/UI command for Architect to trigger this per-pane.
+- **Stuck detection**: Auto-nudge exists in `ui/terminal-daemon.js` (`checkAndNudgeStuckAgents` using `lastInputTime`), but requires daemon restart after code updates (see errors.md V18.1).
+- **xterm input() API**: Web research indicates `Terminal.input(data, wasUserInput?)` exists in xterm.js ≥5.4.0 and can inject data without focus (set `wasUserInput=false`). Installed version is **5.3.0** in `ui/node_modules`, so the API is likely missing until upgrade.
+
+## Offline agent feedback (Jan 28)
+
+- CSS Module 4 extraction approved (tabs.css + sdk-renderer.css linked, prefers-reduced-motion present).
+- IPC handler regression review: 6/9 modules missing defensive ctx null checks (state-handlers, completion-quality, conflict-queue, smart-routing, auto-handoff, activity-log). Functional now but fragile if init order changes; recommend guards next pass.
+- Sprint 2 routing completed: Implementer A on structured logger; Implementer B on IPC null checks; Investigator on version-fix audit; Reviewer monitoring both pipelines.
+- Session 19 issues routed: Implementer A on broadcast input bar + trigger message styling + active/stuck UI; Implementer B on IPC interrupt/Esc + stuck detection hooks; Investigator on stuck detection/recovery analysis; Reviewer notified.
+- Awaiting: Investigator auto-submit verification (prior), and current Sprint 2 deliverables from Implementer A/B/Investigator.
+
+
+## Offline agent feedback (Jan 28)
+
+- Implementer B: Added IPC `interrupt-pane` (Ctrl+C) in `ui/modules/ipc/pty-handlers.js` and auto Ctrl+C after 120s no output in `ui/main.js` stuck detection. Default stuckThreshold now 120000; clears lastInterruptAt on output.
+- Implementer B: Version-fix scan counts (pattern `^//(V#|BUG|FIX)` in ui/): terminal-daemon.js 32, modules/terminal.js 25, modules/triggers.js 23, main.js 14, renderer.js 12, modules/watcher.js 9, modules/sdk-bridge.js 7, modules/sdk-renderer.js 3. Began cleanup by removing version/fix prefixes in `ui/modules/daemon-handlers.js`, `ui/daemon-client.js`, `ui/modules/settings.js`.
+- Implementer B (coverage assumption): Implementer A to pick up console.* remnants in smart-routing/activity-log during logger rollout; Reviewer to verify auto-interrupt + IPC channel response.

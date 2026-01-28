@@ -1,8 +1,19 @@
 ﻿# Build Status
 
-Last updated: 2026-01-28 - Trigger prefix + auto interrupt
+Last updated: 2026-01-28 - Codex running state detection
 
 **Process note:** Reviewer offline; user approved temporary bypass for this session. Orchestrator/Implementer B/Investigator asked to provide review coverage.
+
+---
+
+## Sprint 2 — Codex Running-State Detection (Jan 28, 2026)
+
+**Owner:** Architect
+
+**Summary:** Made running-state detection case-insensitive so Codex exec panes marked "Codex exec mode ready" are treated as running. This prevents trigger delivery from being skipped due to `claudeRunning` staying idle.
+
+**Files updated:**
+- `ui/main.js`
 
 ---
 
