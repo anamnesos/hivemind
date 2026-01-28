@@ -1,10 +1,705 @@
-# Build Status
+﻿# Build Status
 
-Last updated: 2026-01-26 - QUALITY GATES + SDK V2 FIXES + UI FIX
+Last updated: 2026-01-28 - Hardening Phase 2: ipc-handlers docs/perf/error split
 
 ---
 
-## UI Fix: Agent Message Styling - ✅ DONE (Jan 26, 2026)
+## Hardening Phase 2 — CSS Extraction COMPLETE (Jan 28, 2026)
+
+**Owner:** Implementer A
+
+**Summary:** Extracted ALL inline CSS from `ui/index.html` into 8 external files. File reduced from 4164 to 564 lines (zero inline CSS remaining).
+
+| Module | Files Created | Status |
+|--------|---------------|--------|
+| Module 1 | `styles/base.css`, `styles/layout.css` | DONE |
+| Module 2 | `styles/panes.css`, `styles/state-bar.css` | DONE |
+| Module 3 | `styles/settings-panel.css`, `styles/friction-panel.css` | DONE |
+| Module 4 | `styles/tabs.css`, `styles/sdk-renderer.css` | DONE |
+
+**Files:** All 8 `<link>` tags in `<head>`, no remaining `<style>` block.
+
+**Next:** Reviewer smoke test for Module 4 (tabs.css + sdk-renderer.css).
+
+---
+
+## Hardening Phase 2 — ipc-handlers Split (Step 1–3) (Jan 28, 2026)
+
+**Owner:** Implementer B
+
+**Step 1: ipc registry + ctx**
+- Added `ui/modules/ipc/index.js` with `createIpcContext` (state getters) + `createIpcRegistry`
+
+**Step 2: shared state module**
+- Added `ui/modules/ipc/ipc-state.js` for shared IPC state
+- `ui/modules/ipc-handlers.js` now uses `ctx` getters instead of module globals
+
+**Step 3: SDK handlers extracted**
+- Added `ui/modules/ipc/sdk-handlers.js` and `ui/modules/ipc/sdk-v2-handlers.js`
+- `ui/modules/ipc-handlers.js` registers SDK modules via registry
+- Removed SDK sections from `ipc-handlers.js`
+- Stripped version-fix comments from extracted SDK code
+
+**Smoke tests:**
+- `npx eslint modules/ipc/index.js modules/ipc/ipc-state.js modules/ipc/sdk-handlers.js modules/ipc/sdk-v2-handlers.js modules/ipc-handlers.js`
+- Warnings only (existing unused vars), no errors
+
+**Next:**
+- Reviewer: per-module regression review (sdk-handlers, sdk-v2-handlers)
+- Implementer B: proceed to MCP split after review
+
+---
+
+## Hardening Phase 2 — ipc-handlers Split (MCP) (Jan 28, 2026)
+
+**Owner:** Implementer B
+
+**MCP bridge handlers**
+- Added `ui/modules/ipc/mcp-handlers.js` (MCP bridge IPC)
+- Registered via ipc registry; removed MCP bridge block from `ui/modules/ipc-handlers.js`
+- Stripped version-fix comments from extracted MCP code
+
+**MCP auto-configuration**
+- Added `ui/modules/ipc/mcp-autoconfig-handlers.js` (configure/reconnect/remove)
+- Registered via ipc registry; removed auto-config block from `ui/modules/ipc-handlers.js`
+- Adjusted MCP server path for new module location
+
+**Smoke tests:**
+- `npx eslint modules/ipc/mcp-handlers.js modules/ipc-handlers.js`
+- `npx eslint modules/ipc/mcp-autoconfig-handlers.js modules/ipc-handlers.js`
+- Warnings only (existing unused vars), no errors
+
+**Next:**
+- Reviewer: per-module regression review (mcp-handlers, mcp-autoconfig-handlers)
+- Implementer B: proceed to test/CI handlers after review
+
+---
+
+## Hardening Phase 2 — ipc-handlers Split (Test/CI) (Jan 28, 2026)
+
+**Owner:** Implementer B
+
+**Test execution**
+- Added `ui/modules/ipc/test-execution-handlers.js` (detect/run tests, results/status)
+- Registered via ipc registry; removed test execution block from `ui/modules/ipc-handlers.js`
+
+**Pre-commit validation**
+- Added `ui/modules/ipc/precommit-handlers.js` (pre-commit checks, CI status/enable/block)
+- Registered via ipc registry; removed pre-commit block from `ui/modules/ipc-handlers.js`
+- Exposed `ctx.calculateConfidence` + `ctx.INCOMPLETE_PATTERNS` for shared validation helpers
+
+**Test failure notifications**
+- Added `ui/modules/ipc/test-notification-handlers.js` (notify/settings/block-on-failure)
+- Registered via ipc registry; removed notification block from `ui/modules/ipc-handlers.js`
+
+**Smoke tests:**
+- `npx eslint modules/ipc/test-execution-handlers.js modules/ipc-handlers.js`
+- `npx eslint modules/ipc/precommit-handlers.js modules/ipc-handlers.js`
+- `npx eslint modules/ipc/test-notification-handlers.js modules/ipc-handlers.js`
+- Warnings only (existing unused vars), no errors
+
+**Next:**
+- Reviewer: per-module regression review (test-execution, precommit, test-notification)
+- Implementer B: proceed to messaging handlers after review
+
+---
+
+## Hardening Phase 2 — ipc-handlers Split (Messaging) (Jan 28, 2026)
+
+**Owner:** Implementer B
+
+**Message queue handlers**
+- Added `ui/modules/ipc/message-queue-handlers.js` (init/send/get/clear queue + watcher start)
+- Registered via ipc registry; removed MQ4 block from `ui/modules/ipc-handlers.js`
+- Stripped version-fix comments from extracted messaging code
+
+**Smoke tests:**
+- `npx eslint modules/ipc/message-queue-handlers.js modules/ipc-handlers.js`
+- Warnings only (existing unused vars), no errors
+
+**Next:**
+- Reviewer: per-module regression review (message-queue-handlers)
+- Implementer B: proceed to docs/perf/error handlers after review
+
+---
+
+## Hardening Phase 2 — ipc-handlers Split (Docs/Perf/Error) (Jan 28, 2026)
+
+**Owner:** Implementer B
+
+**API docs**
+- Added `ui/modules/ipc/api-docs-handlers.js`
+- Registered via ipc registry; removed API docs block from `ui/modules/ipc-handlers.js`
+
+**Performance audit**
+- Added `ui/modules/ipc/perf-audit-handlers.js`
+- Registered via ipc registry; removed perf audit block from `ui/modules/ipc-handlers.js`
+- Exposed `ctx.recordHandlerPerf` for future instrumentation
+
+**Error handling**
+- Added `ui/modules/ipc/error-handlers.js`
+- Registered via ipc registry; removed error message block from `ui/modules/ipc-handlers.js`
+
+**Smoke tests:**
+- `npx eslint modules/ipc/api-docs-handlers.js modules/ipc/perf-audit-handlers.js modules/ipc/error-handlers.js modules/ipc-handlers.js`
+- Warnings only (existing unused vars), no errors
+
+**Next:**
+- Reviewer: per-module regression review (api-docs, perf-audit, error-handlers)
+- Implementer B: proceed to remaining modules after review
+
+---
+
+## Hardening Phase 2 — ipc-handlers Split (State) (Jan 28, 2026)
+
+**Owner:** Implementer B
+
+**State handlers**
+- Added `ui/modules/ipc/state-handlers.js` (get-state, set-state, trigger-sync, broadcast-message, start-planning)
+- Registered via ipc registry; removed state handlers block from `ui/modules/ipc-handlers.js`
+
+**Smoke tests:**
+- `npx eslint modules/ipc/state-handlers.js modules/ipc-handlers.js`
+- Warnings only (existing unused vars), no errors
+
+**Next:**
+- Reviewer: per-module regression review (state-handlers)
+- Implementer B: proceed to next module after review
+
+---
+
+## Hardening Phase 2 — ipc-handlers Split (Smart Routing) (Jan 28, 2026)
+
+**Owner:** Implementer B
+
+**Smart routing handlers**
+- Added `ui/modules/ipc/smart-routing-handlers.js` (route-task, get-best-agent, get-agent-roles)
+- Registered via ipc registry; removed smart routing block from `ui/modules/ipc-handlers.js`
+
+**Smoke tests:**
+- `npx eslint modules/ipc/smart-routing-handlers.js modules/ipc-handlers.js`
+- Warnings only (existing unused vars), no errors
+
+**Next:**
+- Reviewer: per-module regression review (smart-routing-handlers)
+- Implementer B: proceed to next module after review
+
+---
+
+## Hardening Phase 2 — ipc-handlers Split (Auto-Handoff) (Jan 28, 2026)
+
+**Owner:** Implementer B
+
+**Auto-handoff handlers**
+- Added `ui/modules/ipc/auto-handoff-handlers.js` (trigger-handoff, get-handoff-chain)
+- Registered via ipc registry; removed auto-handoff block from `ui/modules/ipc-handlers.js`
+
+**Smoke tests:**
+- `npx eslint modules/ipc/auto-handoff-handlers.js modules/ipc-handlers.js`
+- Warnings only (existing unused vars), no errors
+
+**Next:**
+- Reviewer: per-module regression review (auto-handoff-handlers)
+- Implementer B: proceed to next module after review
+
+---
+
+## Hardening Phase 2 — ipc-handlers Split (Conflict Queue) (Jan 28, 2026)
+
+**Owner:** Implementer B
+
+**Conflict queue handlers**
+- Added `ui/modules/ipc/conflict-queue-handlers.js` (request-file-access, release-file-access, get-conflict-queue-status, clear-all-locks)
+- Registered via ipc registry; removed conflict queue block from `ui/modules/ipc-handlers.js`
+
+**Smoke tests:**
+- `npx eslint modules/ipc/conflict-queue-handlers.js modules/ipc-handlers.js`
+- Warnings only (existing unused vars), no errors
+
+**Next:**
+- Reviewer: per-module regression review (conflict-queue-handlers)
+- Implementer B: proceed to next module after review
+
+---
+
+## Hardening Phase 2 — ipc-handlers Split (Learning Data) (Jan 28, 2026)
+
+**Owner:** Implementer B
+
+**Learning data handlers**
+- Added `ui/modules/ipc/learning-data-handlers.js` (record-task-outcome, get-learning-data, get-best-agent-for-task, reset-learning, get-routing-weights)
+- Registered via ipc registry; removed learning data block from `ui/modules/ipc-handlers.js`
+
+**Smoke tests:**
+- `npx eslint modules/ipc/learning-data-handlers.js modules/ipc-handlers.js`
+- Warnings only (existing unused vars), no errors
+
+**Next:**
+- Reviewer: per-module regression review (learning-data-handlers)
+- Implementer B: proceed to next module after review
+
+---
+
+## Hardening Phase 2 — ipc-handlers Split (Output Validation) (Jan 28, 2026)
+
+**Owner:** Implementer B
+
+**Output validation handlers**
+- Added `ui/modules/ipc/output-validation-handlers.js` (validate-output, validate-file, get-validation-patterns)
+- Registered via ipc registry; removed output validation block from `ui/modules/ipc-handlers.js`
+- Exposed `ctx.INCOMPLETE_PATTERNS` + `ctx.calculateConfidence` for quality checks
+
+**Smoke tests:**
+- `npx eslint modules/ipc/output-validation-handlers.js modules/ipc-handlers.js`
+- Warnings only (existing unused vars), no errors
+
+**Next:**
+- Reviewer: per-module regression review (output-validation-handlers)
+- Implementer B: proceed to next module after review
+
+---
+
+## Hardening Phase 2 — ipc-handlers Split (Completion Quality) (Jan 28, 2026)
+
+**Owner:** Implementer B
+
+**Completion quality handlers**
+- Added `ui/modules/ipc/completion-quality-handlers.js` (check-completion-quality, validate-state-transition, get-quality-rules)
+- Registered via ipc registry; removed completion quality block from `ui/modules/ipc-handlers.js`
+
+**Smoke tests:**
+- `npx eslint modules/ipc/completion-quality-handlers.js modules/ipc-handlers.js`
+- Warnings only (existing unused vars), no errors
+
+**Next:**
+- Reviewer: per-module regression review (completion-quality-handlers)
+- Implementer B: proceed to next module after review
+
+---
+
+## Hardening Phase 2 — ipc-handlers Split (Checkpoint) (Jan 28, 2026)
+
+**Owner:** Implementer B
+
+**Checkpoint handlers**
+- Added `ui/modules/ipc/checkpoint-handlers.js` (create-checkpoint, list-checkpoints, get-checkpoint-diff, rollback-checkpoint, delete-checkpoint)
+- Registered via ipc registry; removed checkpoint rollback block from `ui/modules/ipc-handlers.js`
+
+**Smoke tests:**
+- `npx eslint modules/ipc/checkpoint-handlers.js modules/ipc-handlers.js`
+- Warnings only (existing unused vars), no errors
+
+**Next:**
+- Reviewer: per-module regression review (checkpoint-handlers)
+- Implementer B: proceed to next module after review
+
+---
+
+## Hardening Phase 2 — ipc-handlers Split (Activity Log) (Jan 28, 2026)
+
+**Owner:** Implementer B
+
+**Activity log handlers**
+- Added `ui/modules/ipc/activity-log-handlers.js` (get-activity-log, clear-activity-log, save-activity-log, log-activity)
+- Registered via ipc registry; removed activity log block from `ui/modules/ipc-handlers.js`
+
+**Smoke tests:**
+- `npx eslint modules/ipc/activity-log-handlers.js modules/ipc-handlers.js`
+- Warnings only (existing unused vars), no errors
+
+**Next:**
+- Reviewer: per-module regression review (activity-log-handlers)
+- Implementer B: proceed to next module after review
+
+---
+
+## Fix Z — Trigger File Encoding Normalization (Jan 28, 2026)
+
+**Owner:** Architect
+
+**Problem:** Codex panes writing trigger files via Windows cmd.exe echo or PowerShell produced garbled messages. cmd.exe uses OEM CP437, PowerShell defaults to UTF-16LE, but trigger reader assumed UTF-8.
+
+**Investigation (Investigator):**
+- cmd.exe echo ASCII-only: OK
+- cmd.exe echo with `& | % ^ !`: breaks/truncates file
+- PowerShell default redirect: writes UTF-16LE BOM — garbles on UTF-8 read
+- PowerShell `Set-Content -Encoding UTF8`: works correctly
+- Codex exec degrades unicode to `???` before cmd even runs
+
+**Fix:** `triggers.js` `handleTriggerFile()` now reads raw bytes and detects encoding:
+1. UTF-16LE BOM (FF FE) → convert via `utf16le`
+2. UTF-8 BOM (EF BB BF) → strip BOM
+3. Default → UTF-8
+4. Strip null bytes and control characters
+
+**File Modified:** `ui/modules/triggers.js` (lines 491-515)
+
+**Verification:** Reviewer approved Jan 28, 2026. Needs restart to test live.
+
+---
+
+## Codex CLAUDE.md Trigger Instructions Update (Jan 28, 2026)
+
+**Owner:** Architect
+
+**Problem:** Orchestrator (Codex pane) failed 4 consecutive times to reply via trigger files. Responded in terminal output instead. User had to manually push messages. Other Codex panes (Implementer B, Investigator) worked correctly.
+
+**Root Cause:** Codex defaults to conversational terminal output. Conceptual instructions ("write to trigger file") didn't translate to action. Only succeeded when given exact bash command to execute.
+
+**Fix:** Updated CLAUDE.md for all 3 Codex panes with:
+- Explicit "EVERY REPLY MUST USE THIS COMMAND" section with copy-paste echo template
+- Command-first framing (bash template before explanation)
+- Orchestrator gets additional "PRIME DIRECTIVE" section at top of file
+
+**Files Modified:**
+- `workspace/instances/orchestrator/CLAUDE.md`
+- `workspace/instances/worker-b/CLAUDE.md`
+- `workspace/instances/investigator/CLAUDE.md`
+
+**Next:** Verify on next session that Orchestrator uses triggers without manual push.
+
+---
+
+## Bug 2 - Codex Exec Output Line Breaks (Jan 28, 2026)
+
+**Owner:** Implementer B
+
+**Problem:** Codex exec responses render as a single mashed line with no separation between events or runs.
+
+**Fix:** Append `\r\n` to non-delta text in `handleCodexExecLine()` so completed messages are line-broken while streaming deltas remain unmodified.
+
+**File Modified:** `ui/modules/codex-exec.js`
+
+**Next:** Reviewer verify Codex panes show proper line breaks.
+**Verification:** Reviewer approved on Jan 28, 2026.\r\n
+---
+
+## Fix Y - Codex Exec JSONL Format Mismatch + windowsHide (Jan 27, 2026)
+
+**Owner:** Architect
+
+**Problem:** Codex panes showed "[Codex exec mode ready]" then "Codex exec exited 0" with no output. Also 3 external cmd.exe windows appeared on desktop.
+
+**Root Cause (confirmed via manual test):** Codex exec outputs `{"type":"item.completed","item":{"text":"Hello!"}}` but the JSONL parser only checked `payload.delta.text`, `payload.text`, etc. The `item.text` path was missing entirely, so all response text was silently discarded as "Unhandled event". Additionally, `shell: true` without `windowsHide: true` spawned visible cmd.exe windows. Session tracking expected `session_meta` but Codex uses `thread.started` with `thread_id`.
+
+**Fixes (3 in 1):**
+1. Added `payload.item.text` extraction in `extractCodexText()` â€” catches `item.completed` events
+2. Added `windowsHide: true` to `spawn()` options â€” hides cmd.exe windows
+3. Added `thread.started` handler to capture `thread_id` for session resume
+4. Added `turn.started`, `turn.completed` (dot notation) to `SILENT_EVENT_TYPES`
+
+**File Modified:** `ui/modules/codex-exec.js`
+
+**Next:** Restart and verify Codex panes display actual responses, no external windows, resume works.
+
+---
+
+## Fix X - Unsilence `message_delta` Event (Jan 27, 2026) â€” FAILED
+
+**Owner:** Architect
+
+**Problem:** Codex panes showed "Codex exec mode ready" then "Codex exec exited 0" with no agent output. Fix W's `SILENT_EVENT_TYPES` included `message_delta`, which carries `payload.delta.text` â€” the actual streamed response text.
+
+**Fix:** Removed `message_delta` from `SILENT_EVENT_TYPES`. Added debug logging for silent events.
+
+**File Modified:** `ui/modules/codex-exec.js` (lines 31, 101)
+
+**Next:** Restart and verify Codex panes display actual responses.
+
+---
+
+## Fix V - Remove Conflicting `--full-auto` Flag (Jan 27, 2026)
+
+**Owner:** Architect
+
+**Problem:** Codex panes failed with `the argument '--full-auto' cannot be used with '--dangerously-bypass-approvals-and-sandbox'` â€” the two flags are mutually exclusive in Codex CLI.
+
+**Fix:** Removed `--full-auto` from both initial and resume exec arg arrays. `--dangerously-bypass-approvals-and-sandbox` already implies full autonomy.
+
+**File Modified:** `ui/modules/codex-exec.js` (lines 108-109)
+
+**Next:** Restart and verify Codex panes spawn cleanly.
+
+---
+
+## Codex Exec Swap Assessment (Jan 27, 2026)
+
+**Owner:** Worker B
+
+**What:** Mapped current Codex spawn path (ipc-handlers -> terminal.js -> daemon PTY) and assessed `codex exec --json --full-auto` swap. Conclusion: non-interactive exec needs a new child_process path (no PTY), JSONL parsing for outputs, and per-pane session id/resume handling; PTY-based piping would be brittle due to shell prompts/quoting.
+
+**Notes:** `codex exec --help` confirms prompt via stdin/arg, `--json` for JSONL events, `--full-auto` and `--dangerously-bypass-approvals-and-sandbox`, plus `--cd` for per-pane cwd. Session logs in `~/.codex/sessions/` include `session_meta` with `payload.id` (UUID), likely emitted in `--json` output for tracking.
+
+**Next:** Architect decide whether to implement exec-mode process path + JSON parsing for Codex panes.
+
+## Fix S - Codex Exec Mode (Jan 27, 2026)
+
+**Owner:** Worker B
+
+**What:** Implemented Codex exec pipeline for Codex panes (non-interactive). New module `ui/modules/codex-exec.js` spawns `codex exec --json --full-auto --dangerously-bypass-approvals-and-sandbox` and streams JSONL to xterm; renderer sends prompts via new `codex-exec` IPC and injects identity prefix on first prompt. PTY remains for Claude/Gemini.
+
+**Files Modified:**
+- `ui/terminal-daemon.js`
+- `ui/modules/codex-exec.js`
+- `ui/modules/terminal.js`
+- `ui/modules/ipc-handlers.js`
+- `ui/daemon-client.js`
+- `ui/preload.js`
+- `ui/renderer.js`
+- `ui/config.js`
+
+**Notes:** Initial exec uses `--cd <instanceDir>` and stdin prompt; subsequent exec uses `resume <sessionId>` (captured from JSONL `session_meta`). JSONL parsing extracts text when possible, falls back to raw JSON line.
+**Update:** Reviewer requested resume flag ordering fix (flags before `resume`); applied in `ui/modules/codex-exec.js`.
+
+**Next:** Reviewer verify Codex panes run via exec, output renders, and resume continuity holds; Investigator to confirm `resume --last` keeps full context.
+
+## Codex Auto-Submit Fix B - Dynamic Codex Panes (Jan 27, 2026)
+
+**Owner:** Worker B
+
+**What:** terminal.js now uses a dynamic CLI identity map (from pane-cli-identity) to detect Codex panes instead of a hardcoded list.
+
+**Files Modified:**
+- `ui/modules/terminal.js`
+
+**Next:** Reviewer verify Codex panes auto-submit and non-Codex panes use trusted Enter.
+
+
+## CLI Identity Badge - IPC Forwarding + Detection DONE (Jan 27, 2026)
+
+**Owner:** Worker B
+
+**What:** main.js now forwards `pane-cli-identity` to renderer and infers CLI identity from pane spawn command on daemon spawn/reconnect.
+
+**Files Modified:**
+- `ui/main.js`
+
+**Next:** Reviewer verify badges render for Claude/Codex/Gemini panes.
+
+
+## Codex Prompt Suppression Hardening - DONE (Jan 27, 2026)
+
+**Owner:** Worker B
+
+**Problem:** Codex CLI still showed approval prompts on some panes even with `--full-auto --ask-for-approval never`.
+
+**Fixes Applied:**
+- Codex spawn now appends `--dangerously-bypass-approvals-and-sandbox` (alias `--yolo`) for maximum suppression
+- Daemon auto-approval fallback: detects approval prompt text and sends `2` ("Yes and don't ask again")
+
+**Files Modified:**
+- `ui/modules/ipc-handlers.js`
+- `ui/terminal-daemon.js`
+
+**Notes:** Best-effort fallback; Windows Codex prompts may still occur due to upstream behavior.
+
+## ðŸŽ¯ MULTI-MODEL MILESTONE (Jan 26, 2026)
+
+**STATUS:** PROVEN WORKING
+
+Claude (Anthropic) and Codex (OpenAI) successfully collaborated in real-time:
+- Codex replaced Claude in Reviewer pane (pane 4)
+- Cross-model messaging via trigger files works
+- Codex autonomously diagnosed and fixed ESC dispatch bug
+- Direct pane routing restored after fix
+
+### Fixes Applied by Codex (Reviewer)
+
+| Fix | File | Lines | Description |
+|-----|------|-------|-------------|
+| ESC dispatch removal | `ui/modules/terminal.js` | - | Removed ESC being sent after message injection - was interrupting agents |
+| Trigger diagnostics | `ui/modules/triggers.js` | - | Added logging for lead.txt debugging (KEEP - useful for multi-model) |
+
+### Learnings for Multi-Model Setup
+
+1. **Any pane can run any AI CLI** - just swap the binary
+2. **Trigger file system is model-agnostic** - Claude, Codex, Gemini can all read/write files
+3. **Different models bring different perspectives** - Codex found bugs Claude might miss
+4. **Broadcast more reliable than direct** - use `all.txt` as fallback if `lead.txt` fails
+5. **Restart clears context** - document everything before shutdown
+
+### Upcoming: 6 Panes, 2 New Roles, 3 AI Models
+
+External agent is expanding architecture:
+- 6 panes (up from 4)
+- 2 new roles (TBD)
+- Claude Code + Codex CLI + Gemini CLI
+
+---
+
+## ðŸ’¡ FUTURE IDEAS
+
+| Idea | Doc | Status |
+|------|-----|--------|
+| Distributed Hivemind (NAS) | `distributed-hivemind-nas-setup.md` | Documented, untested |
+| Telegram Bot Messaging | `telegram-agent-messaging.md` | Documented, untested |
+| SDKâ†’xterm hybrid mode | - | Concept only |
+
+---
+
+## â³ PENDING SDK TESTS (Switch to SDK mode to verify)
+
+These features are code-complete and Reviewer-approved but untested because app is in PTY mode:
+
+| Feature | Tag | Status | Blocker |
+|---------|-----|--------|---------|
+| Honeycomb thinking animation | `[SDK]` | âœ… Approved | Needs SDK mode |
+| Streaming typewriter effect | `[SDK]` | âœ… Approved | Needs SDK mode |
+| SDK session status indicators | `[SDK]` | âœ… Approved | Needs SDK mode |
+
+**To test:** Enable SDK mode in settings, restart app.
+
+---
+
+## ðŸ”§ File Watcher Debounce Fix - âœ… DONE `[BOTH]` (Jan 26, 2026)
+
+**Owner:** Worker B
+**Priority:** MEDIUM (from blockers.md)
+
+**Problem:** No debounce on `handleFileChange()` - big git operations (checkout, npm install) could queue up 50+ events within the 1-second polling window.
+
+**Solution:** Added 200ms debounce wrapper with Set-based deduplication.
+
+**Changes to `ui/modules/watcher.js`:**
+- Added `DEBOUNCE_DELAY_MS = 200` constant
+- Added `pendingFileChanges` Set for deduplication
+- Added `handleFileChangeDebounced()` - batches events within 200ms window
+- Renamed original logic to `handleFileChangeCore()`
+- Updated watcher event handlers to use debounced version
+- Export `handleFileChange` points to debounced version for backward compatibility
+
+**How it works:**
+1. File change triggers `handleFileChangeDebounced()`
+2. File path added to `pendingFileChanges` Set (dedupes same file)
+3. Debounce timer reset to 200ms
+4. After 200ms of no new changes, all pending files processed together
+5. Log shows: `[Watcher] Processing N batched file change(s)`
+
+**Status:** âœ… DONE - Requires app restart to test.
+
+---
+
+## ðŸ Hivemind Honeycomb Animation - âœ… APPROVED `[SDK]` (Jan 26, 2026)
+
+**Goal:** Replace generic braille spinner with branded honeycomb pulse animation.
+
+**User Request:** "Make the thinking animation feel alive, use your imagination"
+
+### Design
+- 7 hexagons (1 center + 6 surrounding) in honeycomb pattern
+- Wave pulse animation radiating from center
+- Color-coded by tool type (thinking=gold, read=teal, write=red, search=blue, bash=purple)
+- Respects `prefers-reduced-motion`
+- Fade in/out transitions
+
+### Files Modified
+- `ui/index.html` - ~140 lines CSS (honeycomb styles, keyframes, tool colors)
+- `ui/modules/sdk-renderer.js` - `generateHoneycombHTML()` + updated `streamingIndicator()`
+
+### Status
+| Task | Status |
+|------|--------|
+| Research & design | âœ… DONE |
+| CSS implementation | âœ… DONE |
+| JS implementation | âœ… DONE |
+| Lead's preliminary audit | âœ… PASS |
+| Reviewer full audit | âœ… PASS |
+| Live testing | â³ PENDING (needs SDK mode) |
+
+**Proposal doc:** `workspace/build/thinking-animation-proposals.md`
+**Review doc:** `workspace/build/reviews/honeycomb-animation-audit.md`
+
+---
+
+## ðŸŽ¬ SDK Streaming Animation Sprint - âœ… COMPLETE (Jan 26, 2026)
+
+**Goal:** Make SDK mode feel ALIVE - typewriter effect like real Claude Code CLI.
+
+**Discovery:** SDK supports `include_partial_messages=True` for real character-by-character streaming via `StreamEvent` with `text_delta`.
+
+### Task Status
+
+| ID | Task | Owner | Status |
+|----|------|-------|--------|
+| STR-1 | Add `include_partial_messages=True` to Python | Worker B | âœ… DONE |
+| STR-2 | Handle StreamEvent, emit text_delta to JS | Worker B | âœ… DONE |
+| STR-3 | Handle text_delta in sdk-bridge.js | Worker B | âœ… DONE |
+| STR-4 | Handle sdk-text-delta IPC in renderer | Worker A | âœ… DONE |
+| STR-5 | Typewriter effect in sdk-renderer.js | Worker A | âœ… DONE |
+| STR-6 | CSS polish for streaming text | Worker A | âœ… DONE |
+| R-1 | Integration review - trace end-to-end | Lead (acting) | âœ… APPROVED |
+| R-2 | UX review - does it feel alive? | Lead (acting) | âœ… APPROVED |
+
+### Worker A Completion Notes (STR-4, STR-5, STR-6)
+
+**Files Modified:**
+- `ui/renderer.js` - Added `sdk-text-delta` IPC listener, status update to 'responding'
+- `ui/modules/sdk-renderer.js` - Added typewriter streaming functions:
+  - `appendTextDelta(paneId, text)` - Appends text with blinking cursor
+  - `finalizeStreamingMessage(paneId)` - Removes cursor when streaming stops
+  - `clearStreamingState(paneId)` - Clears state on new turn
+- `ui/index.html` - Added CSS for `.sdk-streaming-text`, `.sdk-cursor`, `.sdk-typewriter`
+
+**How It Works:**
+1. Worker B sends `sdk-text-delta` IPC event with `{ paneId, text }`
+2. `appendTextDelta()` creates or updates a streaming message element
+3. New text is inserted before a blinking cursor (â–Œ)
+4. When streaming stops (`sdk-streaming` with active=false), cursor is removed
+
+**Handoff to Worker B:** STR-1,2,3 - Python backend needs to:
+1. Set `include_partial_messages=True` in ClaudeAgentOptions
+2. Handle `StreamEvent` messages and extract `text_delta`
+3. Emit to JS via IPC: `{"type": "text_delta", "pane_id": "1", "text": "partial..."}`
+4. sdk-bridge.js routes this as `sdk-text-delta` to renderer
+
+**Status:** âœ… UI layer complete, waiting for Worker B's backend work.
+
+### Worker B Completion Notes (STR-1, STR-2, STR-3)
+
+**Files Modified:**
+- `hivemind-sdk-v2.py` - Added streaming support:
+  - Imported `StreamEvent` from claude_agent_sdk
+  - Added `include_partial_messages=True` to ClaudeAgentOptions (line ~170)
+  - Added `StreamEvent` handler in `_parse_message()` (lines ~360-395)
+  - Extracts `text_delta` from `content_block_delta` events
+  - Also handles `thinking_delta` for extended thinking streaming
+- `ui/modules/sdk-bridge.js` - Added routing:
+  - Added `text_delta` case in `routeMessage()` (lines ~533-540)
+  - Forwards to renderer via `sdk-text-delta` IPC event
+  - Also added `thinking_delta` handler for future use
+
+**How It Works (Full Pipeline):**
+1. `include_partial_messages=True` enables `StreamEvent` messages from SDK
+2. SDK emits `StreamEvent` with raw Anthropic API events during response
+3. Python `_parse_message()` detects `content_block_delta` with `text_delta` type
+4. Emits `{"type": "text_delta", "pane_id": "1", "text": "partial..."}`
+5. sdk-bridge.js routes as `sdk-text-delta` to renderer
+6. Worker A's `appendTextDelta()` displays with blinking cursor
+
+**Message Format:**
+```json
+{"type": "text_delta", "pane_id": "1", "text": "Hello", "session_id": "..."}
+```
+
+**Status:** âœ… Backend complete! Ready for Reviewer integration test (R-1).
+
+### Lead Review Notes (R-1, R-2) - âœ… APPROVED
+
+Lead performed integration review while user was AFK.
+
+**Review Document:** `workspace/build/reviews/streaming-animation-review.md`
+
+**Commits:**
+- `66ff886` - feat: Add real-time text streaming with typewriter effect (SDK mode)
+- `4e52899` - fix: Improve UTF-8 encoding for Python-JS communication
+
+**Integration Trace:** Full data flow verified from Python StreamEvent â†’ sdk-bridge â†’ renderer â†’ typewriter display.
+
+**Status:** âœ… APPROVED FOR TESTING - User can restart app to test streaming animation.
+
+---
+
+## UI Fix: Agent Message Styling - âœ… DONE (Jan 26, 2026)
 
 **Owner:** Worker A
 **Problem:** All trigger messages showed as "You:" with person icon - confusing UX.
@@ -17,16 +712,16 @@ Last updated: 2026-01-26 - QUALITY GATES + SDK V2 FIXES + UI FIX
 **Distinct Agent Styling:**
 | Role | Icon | Color | CSS Class |
 |------|------|-------|-----------|
-| Lead | 👑 | Gold (#ffd700) | .sdk-agent-lead |
-| Worker A | 🔧 | Teal (#4ecca3) | .sdk-agent-worker-a |
-| Worker B | ⚙️ | Purple (#9b59b6) | .sdk-agent-worker-b |
-| Reviewer | 🔍 | Orange (#ff9800) | .sdk-agent-reviewer |
+| Lead | ðŸ‘‘ | Gold (#ffd700) | .sdk-agent-lead |
+| Worker A | ðŸ”§ | Teal (#4ecca3) | .sdk-agent-worker-a |
+| Worker B | âš™ï¸ | Purple (#9b59b6) | .sdk-agent-worker-b |
+| Reviewer | ðŸ” | Orange (#ff9800) | .sdk-agent-reviewer |
 
 **Files Modified:**
 - `ui/modules/sdk-renderer.js` - Updated formatMessage() to detect and parse agent prefixes
 - `ui/index.html` - Added CSS for .sdk-agent-msg and role-specific styles
 
-**Status:** ✅ DONE - Requires app restart to test.
+**Status:** âœ… DONE - Requires app restart to test.
 
 ---
 
@@ -36,11 +731,11 @@ Last updated: 2026-01-26 - QUALITY GATES + SDK V2 FIXES + UI FIX
 
 | Gate | Status | Owner |
 |------|--------|-------|
-| Gate 1: mypy (Python) | ✅ DONE | Worker B |
-| Gate 2: ESLint (JS) | ✅ DONE | Worker A |
-| Gate 3: IPC Protocol Tests | ⏳ Pending | Lead |
-| Gate 4: Serialization Tests | ✅ DONE | Worker B |
-| Gate 5: Pre-commit Hook | ✅ DONE | Worker B |
+| Gate 1: mypy (Python) | âœ… DONE | Worker B |
+| Gate 2: ESLint (JS) | âœ… DONE | Worker A |
+| Gate 3: IPC Protocol Tests | â³ Pending | Lead |
+| Gate 4: Serialization Tests | âœ… DONE | Worker B |
+| Gate 5: Pre-commit Hook | âœ… DONE | Worker B |
 
 **Gate 1 Results (Worker B):**
 - Fixed 9 type errors in `hivemind-sdk-v2.py`
@@ -80,7 +775,7 @@ sh .git/hooks/pre-commit
 
 ---
 
-## SDK V2 Code Quality Fixes - ✅ APPLIED (Jan 26, 2026)
+## SDK V2 Code Quality Fixes - âœ… APPLIED (Jan 26, 2026)
 
 **Owner:** Reviewer (deep trace review)
 
@@ -97,7 +792,7 @@ sh .git/hooks/pre-commit
 
 ---
 
-## SDK Message Type Handlers - ✅ APPLIED (Jan 26, 2026)
+## SDK Message Type Handlers - âœ… APPLIED (Jan 26, 2026)
 
 **Owner:** Reviewer (proactive audit)
 
@@ -117,7 +812,7 @@ sh .git/hooks/pre-commit
 
 ---
 
-## SDK V2 Critical Runtime Fixes - ✅ APPROVED (Jan 26, 2026)
+## SDK V2 Critical Runtime Fixes - âœ… APPROVED (Jan 26, 2026)
 
 **Status:** Reviewer approved + code quality fixes applied. Ready for user test.
 
@@ -152,7 +847,7 @@ Session IDs in `session-state.json` were being passed to `--resume` flag, but th
 
 ---
 
-## SDK V2 PTY Bypass Fix (Round 2) - ✅ APPROVED (Jan 26, 2026)
+## SDK V2 PTY Bypass Fix (Round 2) - âœ… APPROVED (Jan 26, 2026)
 
 **Problem:** User still saw "Claude running" badges and raw JSON in SDK mode after first fix.
 
@@ -190,11 +885,11 @@ Session IDs in `session-state.json` were being passed to `--resume` flag, but th
 | `ui/modules/terminal.js:566-570` | Early check `!terminals.has(paneId)` before SDK guard |
 | `ui/modules/ipc-handlers.js:109-113` | SDK mode guard in `spawn-claude` IPC handler |
 
-**Status:** ✅ APPROVED FOR TESTING (see reviews/pty-bypass-fix-review.md) + defense-in-depth applied.
+**Status:** âœ… APPROVED FOR TESTING (see reviews/pty-bypass-fix-review.md) + defense-in-depth applied.
 
 ---
 
-## SDK V2 Init Bug Fix (Round 1) - ✅ APPLIED (Jan 26, 2026)
+## SDK V2 Init Bug Fix (Round 1) - âœ… APPLIED (Jan 26, 2026)
 
 **Problem:** Raw JSON appearing in xterm panes - PTY created before SDK mode detected.
 
@@ -209,7 +904,7 @@ Session IDs in `session-state.json` were being passed to `--resume` flag, but th
 
 ---
 
-## SDK V2 Migration - ✅ READY FOR TESTING
+## SDK V2 Migration - âœ… READY FOR TESTING
 
 **Goal:** Replace PTY/keyboard hacks with 4 independent ClaudeSDKClient instances.
 
@@ -223,7 +918,7 @@ Session IDs in `session-state.json` were being passed to `--resume` flag, but th
 - Files verified: `hivemind-sdk-v2.py` (575 lines), `sdk-bridge.js` (636 lines)
 - IPC Protocol: ALL 6 ASPECTS ALIGNED (command, pane_id, message, session_id, role, session format)
 - Issues found: NONE
-- Confidence: ✅ READY FOR TESTING
+- Confidence: âœ… READY FOR TESTING
 
 **Review Files:**
 - `workspace/build/reviews/sdk-v2-audit-verification.md` - Audit fixes verified
@@ -235,12 +930,12 @@ Session IDs in `session-state.json` were being passed to `--resume` flag, but th
 
 | Issue | Status | Description |
 |-------|--------|-------------|
-| snake_case/camelCase mismatch | ✅ FIXED | Python sends `pane_id`, JS expected `paneId` - all routing broken |
-| Missing `sdk-status-changed` | ✅ FIXED | UI status indicators never updated |
-| Missing `sdk-message-delivered` | ✅ FIXED | No delivery confirmation in UI |
-| `interrupt` command missing | ✅ FIXED | Added to Python IPC handler |
-| Session file format mismatch | ✅ FIXED | Aligned JS to Python's nested format |
-| Race condition on startup | ⚠️ OPEN | Messages may queue before Python ready |
+| snake_case/camelCase mismatch | âœ… FIXED | Python sends `pane_id`, JS expected `paneId` - all routing broken |
+| Missing `sdk-status-changed` | âœ… FIXED | UI status indicators never updated |
+| Missing `sdk-message-delivered` | âœ… FIXED | No delivery confirmation in UI |
+| `interrupt` command missing | âœ… FIXED | Added to Python IPC handler |
+| Session file format mismatch | âœ… FIXED | Aligned JS to Python's nested format |
+| Race condition on startup | âš ï¸ OPEN | Messages may queue before Python ready |
 
 **Fixes Applied by Lead:**
 1. `sdk-bridge.js`: Check both `msg.pane_id` AND `msg.paneId`, same for `session_id`/`sessionId`, `role`/`agent`
@@ -255,15 +950,15 @@ Session IDs in `session-state.json` were being passed to `--resume` flag, but th
 
 | # | Task | Owner | Status |
 |---|------|-------|--------|
-| 1 | Create hivemind-sdk-v2.py | Lead | ✅ COMPLETE |
-| 2 | Update sdk-bridge.js for multi-session | Worker B | ✅ COMPLETE |
-| 3 | Add session status indicators to UI | Worker A | ✅ COMPLETE |
-| 4 | Review SDK V2 architecture | Reviewer | ✅ COMPLETE |
+| 1 | Create hivemind-sdk-v2.py | Lead | âœ… COMPLETE |
+| 2 | Update sdk-bridge.js for multi-session | Worker B | âœ… COMPLETE |
+| 3 | Add session status indicators to UI | Worker A | âœ… COMPLETE |
+| 4 | Review SDK V2 architecture | Reviewer | âœ… COMPLETE |
 
 ### Review Summary (Task #4)
 
 **File:** `workspace/build/reviews/sdk-v2-architecture-review.md`
-**Verdict:** ✅ APPROVED with recommendations
+**Verdict:** âœ… APPROVED with recommendations
 
 **Reviewer Recommendations:**
 1. Verify ClaudeSDKClient API with minimal test before full integration
@@ -272,20 +967,20 @@ Session IDs in `session-state.json` were being passed to `--resume` flag, but th
 
 ---
 
-## SDK V2 Migration - Phase 2 Tasks ✅ COMPLETE
+## SDK V2 Migration - Phase 2 Tasks âœ… COMPLETE
 
 | # | Task | Owner | Status |
 |---|------|-------|--------|
-| 5 | Replace PTY input with SDK calls | Lead | ✅ COMPLETE |
-| 6 | Trigger integration (file → SDK) | Worker B | ✅ COMPLETE |
-| 7 | Session persistence + resume | Lead | ✅ COMPLETE |
-| 8 | Full verification | Reviewer | ✅ APPROVED |
-| 9 | Protocol alignment fixes | Lead | ✅ COMPLETE |
+| 5 | Replace PTY input with SDK calls | Lead | âœ… COMPLETE |
+| 6 | Trigger integration (file â†’ SDK) | Worker B | âœ… COMPLETE |
+| 7 | Session persistence + resume | Lead | âœ… COMPLETE |
+| 8 | Full verification | Reviewer | âœ… APPROVED |
+| 9 | Protocol alignment fixes | Lead | âœ… COMPLETE |
 
 ### Final Review (Task #8)
 
 **File:** `workspace/build/reviews/sdk-v2-final-verification.md`
-**Verdict:** ✅ APPROVED FOR TESTING
+**Verdict:** âœ… APPROVED FOR TESTING
 
 **Reviewer Notes:**
 - All protocol fixes verified
@@ -315,7 +1010,7 @@ Session IDs in `session-state.json` were being passed to `--resume` flag, but th
 - `startProcess()` - Spawns with `--ipc` flag for JSON protocol
 - Python session file - Aligned to project root (same as JS)
 
-**Status:** ✅ All protocol mismatches fixed. Ready for final testing.
+**Status:** âœ… All protocol mismatches fixed. Ready for final testing.
 
 ---
 
@@ -398,11 +1093,11 @@ agents = {
 - `sdk-status-changed` - Updates pane status indicator
 - `sdk-message-delivered` - Triggers delivery confirmation flash
 
-**Status:** ✅ COMPLETE - Blocked until sdk-bridge.js (Task #2) is ready.
+**Status:** âœ… COMPLETE - Blocked until sdk-bridge.js (Task #2) is ready.
 
 ---
 
-## UI Layout Redesign - ✅ COMPLETE (Lead)
+## UI Layout Redesign - âœ… COMPLETE (Lead)
 
 **Goal:** Lead-focused layout - user only interacts with Lead, workers are monitoring-only.
 
@@ -419,13 +1114,13 @@ agents = {
 
 ### New Layout
 ```
-┌───────────────────┬──────────────┐
-│                   │  Worker A [⤢] │
-│                   ├──────────────┤
-│      Lead         │  Worker B [⤢] │
-│    (Main Pane)    ├──────────────┤
-│                   │  Reviewer [⤢] │
-└───────────────────┴──────────────┘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚                   â”‚  Worker A [â¤¢] â”‚
+â”‚                   â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚      Lead         â”‚  Worker B [â¤¢] â”‚
+â”‚    (Main Pane)    â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚                   â”‚  Reviewer [â¤¢] â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
      [Message to Lead input]
 ```
 
@@ -433,24 +1128,24 @@ agents = {
 
 ---
 
-## SDK Migration Sprint - ⏸️ PAUSED (Lead)
+## SDK Migration Sprint - â¸ï¸ PAUSED (Lead)
 
 **Goal:** Integrate SDK mode into Electron app as user-selectable option.
 
-### Task #1: SDK Bridge Startup Integration - ✅ COMPLETE (Lead)
+### Task #1: SDK Bridge Startup Integration - âœ… COMPLETE (Lead)
 - Added `sdkMode` to DEFAULT_SETTINGS in main.js
 - SDK bridge already initialized via ipc-handlers.js
 - Broadcast routing now checks sdkMode and routes through SDK or PTY
 
-### Task #2: SDK Mode Toggle UI - ✅ COMPLETE (Lead)
+### Task #2: SDK Mode Toggle UI - âœ… COMPLETE (Lead)
 - Added toggle switch in Settings panel (index.html)
 - Added sdkModeNotice indicator
 - Updated settings.js to show/hide SDK mode notice
 
-### Task #3: Test SDK Broadcast - ⏳ PENDING
+### Task #3: Test SDK Broadcast - â³ PENDING
 Requires manual testing with SDK mode enabled.
 
-### Task #4: Test SDK Subagent Delegation - ⏳ PENDING
+### Task #4: Test SDK Subagent Delegation - â³ PENDING
 Blocked by Task #3.
 
 **Files Modified:**
@@ -461,24 +1156,24 @@ Blocked by Task #3.
 
 ---
 
-## SDK Prototype Sprint - ✅ COMPLETE (Acceptance Test Passed)
+## SDK Prototype Sprint - âœ… COMPLETE (Acceptance Test Passed)
 
-### Task #1: SDK Backend Integration - ✅ COMPLETE (Worker B)
+### Task #1: SDK Backend Integration - âœ… COMPLETE (Worker B)
 - `hivemind-sdk.py` - SDK orchestrator with subagent definitions
 - Installed claude-agent-sdk
 - Verified query() API works
 
-### Task #3: Multi-Agent Coordination - ✅ COMPLETE (Lead)
-- `ui/modules/sdk-bridge.js` - Electron ↔ SDK bridge
+### Task #3: Multi-Agent Coordination - âœ… COMPLETE (Lead)
+- `ui/modules/sdk-bridge.js` - Electron â†” SDK bridge
 - IPC handlers: sdk-start, sdk-stop, sdk-write, sdk-status, sdk-broadcast
 - Spawn/manage Python SDK process from Electron
 
-### Task #4: Validation - ✅ COMPLETE (Reviewer)
+### Task #4: Validation - âœ… COMPLETE (Reviewer)
 Conditional pass - SDK prototype works, Windows encoding fixed.
 
 ---
 
-### Task #2: SDK Message UI Renderer - ✅ COMPLETE (Worker A)
+### Task #2: SDK Message UI Renderer - âœ… COMPLETE (Worker A)
 
 **Goal:** Replace xterm.js terminals with SDK message display for Agent SDK integration.
 
@@ -499,11 +1194,11 @@ Conditional pass - SDK prototype works, Windows encoding fixed.
   - window.hivemind.sdk API (start, stop, enableMode, disableMode)
   - IPC handlers: sdk-message, sdk-streaming, sdk-session-start, sdk-session-end, sdk-error
 
-**Status:** ✅ COMPLETE - Ready for integration test with Lead's coordinator.
+**Status:** âœ… COMPLETE - Ready for integration test with Lead's coordinator.
 
 ---
 
-## ID-1: Session Identity Injection - ✅ FIXED (Worker B)
+## ID-1: Session Identity Injection - âœ… FIXED (Worker B)
 
 **Problem:** When using `/resume` in Claude Code, sessions are hard to identify. All 4 agent sessions look the same - no way to tell Lead from Worker B.
 
@@ -528,11 +1223,11 @@ Conditional pass - SDK prototype works, Windows encoding fixed.
 
 **Why This Works:** `sendToPane()` uses keyboard events with `_hivemindBypass` marker, same as working trigger system.
 
-**Status:** ✅ FIXED - Requires app restart to test.
+**Status:** âœ… FIXED - Requires app restart to test.
 
 ---
 
-## V18.2: Auto-Nudge False Positive Fix - ✅ FIXED (Worker B)
+## V18.2: Auto-Nudge False Positive Fix - âœ… FIXED (Worker B)
 
 **Problem:** Auto-nudge was detecting stuck agents and sending `(AGGRESSIVE_NUDGE)`, but then immediately marking them as "responded" because the nudge itself updated `lastInputTime`.
 
@@ -547,11 +1242,11 @@ return lastInput > nudgeCompleteTime;
 
 **File Changed:** `ui/terminal-daemon.js` - `hasAgentResponded()` function
 
-**Status:** ✅ FIXED - Requires app restart to test.
+**Status:** âœ… FIXED - Requires app restart to test.
 
 ---
 
-## FX4-v7: Ghost Text Bug Fix - ✅ FIXED (Worker A)
+## FX4-v7: Ghost Text Bug Fix - âœ… FIXED (Worker A)
 
 **Problem:** Ghost text appearing in terminals after broadcasts. Phantom interrupts happening without user action.
 
@@ -571,13 +1266,13 @@ setTimeout(() => {
 
 **Versions:**
 - v6: ESC before Enter (broke message delivery - no delay)
-- v7: ESC → 20ms delay → re-focus → Enter (CURRENT)
+- v7: ESC â†’ 20ms delay â†’ re-focus â†’ Enter (CURRENT)
 
-**Status:** ✅ FIXED - Requires app restart to test.
+**Status:** âœ… FIXED - Requires app restart to test.
 
 ---
 
-## D2: Dry-Run Mode Bug Fix - ✅ FIXED (Worker A)
+## D2: Dry-Run Mode Bug Fix - âœ… FIXED (Worker A)
 
 **Problem:** Dry-run mode was "100% non-functional" per Reviewer report. Toggling dryRun in settings had no effect.
 
@@ -594,11 +1289,11 @@ Object.assign(currentSettings, settings);
 
 **File Changed:** `ui/main.js` line 169
 
-**Status:** ✅ FIXED - Requires app restart to test. Ready for Reviewer verification.
+**Status:** âœ… FIXED - Requires app restart to test. Ready for Reviewer verification.
 
 ---
 
-## V18: Auto-Aggressive-Nudge - ✅ SHIPPED
+## V18: Auto-Aggressive-Nudge - âœ… SHIPPED
 
 **Owner:** Worker B
 **File:** `ui/terminal-daemon.js`
@@ -625,13 +1320,13 @@ Object.assign(currentSettings, settings);
 - `nudge-status` - get current nudge state for all agents
 - `nudge-reset` - reset nudge tracking
 
-**Status:** ✅ SHIPPED - Reviewer verified (see `workspace/build/reviews/v18-auto-nudge-verification.md`)
+**Status:** âœ… SHIPPED - Reviewer verified (see `workspace/build/reviews/v18-auto-nudge-verification.md`)
 
 **V18.1 BUG FIX (Jan 25):** Stuck detection not triggering because `lastActivity` was updated by PTY output (including thinking animation). Fixed by adding `lastInputTime` to track user INPUT instead of agent output. Requires restart to test.
 
 ---
 
-## Stuck Issue Fixes (External Claude Recommendations) - ✅ VERIFIED
+## Stuck Issue Fixes (External Claude Recommendations) - âœ… VERIFIED
 
 **Issue:** Claude Code instances getting stuck - known bug (GitHub #13224, #13188)
 
@@ -645,11 +1340,11 @@ Object.assign(currentSettings, settings);
 
 | Fix | Status | Description |
 |-----|--------|-------------|
-| FIX1 | ✅ APPLIED | AUTOCOMPACT_PCT_OVERRIDE=70 in settings.json |
-| FIX2 | ✅ VERIFIED | Stagger agent activity in triggers.js (avoid thundering herd) |
-| FIX3 | ✅ VERIFIED | Aggressive nudge (ESC + Enter) - recovered 3 stuck agents in test |
-| FIX4 | ⏸️ DEFERRED | Circuit breaker pattern (bigger code change) |
-| FIX5 | ✅ VERIFIED | Focus steal prevention - save/restore user focus during message injection |
+| FIX1 | âœ… APPLIED | AUTOCOMPACT_PCT_OVERRIDE=70 in settings.json |
+| FIX2 | âœ… VERIFIED | Stagger agent activity in triggers.js (avoid thundering herd) |
+| FIX3 | âœ… VERIFIED | Aggressive nudge (ESC + Enter) - recovered 3 stuck agents in test |
+| FIX4 | â¸ï¸ DEFERRED | Circuit breaker pattern (bigger code change) |
+| FIX5 | âœ… VERIFIED | Focus steal prevention - save/restore user focus during message injection |
 
 ### FIX3 Details (Aggressive Nudge)
 
@@ -678,7 +1373,7 @@ Object.assign(currentSettings, settings);
 
 ---
 
-## V17: Adaptive Heartbeat - ✅ SHIPPED
+## V17: Adaptive Heartbeat - âœ… SHIPPED
 
 **Proposal:** #11 from improvements.md
 **Owner:** Worker B
@@ -691,16 +1386,16 @@ Object.assign(currentSettings, settings);
 
 | Task | Status | Description |
 |------|--------|-------------|
-| HB-A1 | ✅ DONE | Add `getHeartbeatInterval()` to terminal-daemon.js |
-| HB-A2 | ✅ DONE | Check status.md mtime for staleness detection |
-| HB-A3 | ✅ DONE | Check shared_context.md for pending tasks |
-| HB-A4 | ✅ DONE | Add "recovering" state (45sec grace period) |
-| HB-A5 | ⏸️ DEFERRED | Make intervals configurable in settings (can add later) |
-| HB-A6 | ✅ DONE | Fallback if status.md missing (default to "active") |
-| HB-A7 | ✅ DONE | Event forwarding: daemon → client → main → renderer |
-| HB-UI | ✅ DONE | Heartbeat mode indicator in status bar (Worker A) |
-| R1 | ✅ PASSED | Worker A sanity check |
-| R2 | ✅ APPROVED | Reviewer formal verification |
+| HB-A1 | âœ… DONE | Add `getHeartbeatInterval()` to terminal-daemon.js |
+| HB-A2 | âœ… DONE | Check status.md mtime for staleness detection |
+| HB-A3 | âœ… DONE | Check shared_context.md for pending tasks |
+| HB-A4 | âœ… DONE | Add "recovering" state (45sec grace period) |
+| HB-A5 | â¸ï¸ DEFERRED | Make intervals configurable in settings (can add later) |
+| HB-A6 | âœ… DONE | Fallback if status.md missing (default to "active") |
+| HB-A7 | âœ… DONE | Event forwarding: daemon â†’ client â†’ main â†’ renderer |
+| HB-UI | âœ… DONE | Heartbeat mode indicator in status bar (Worker A) |
+| R1 | âœ… PASSED | Worker A sanity check |
+| R2 | âœ… APPROVED | Reviewer formal verification |
 
 ### Files Changed
 
@@ -721,11 +1416,11 @@ Object.assign(currentSettings, settings);
 
 ### IPC Events (New)
 
-- `heartbeat-state-changed` → { state, interval } for UI indicator
+- `heartbeat-state-changed` â†’ { state, interval } for UI indicator
 
 ---
 
-## V16.11: Trigger System Fix - ✅ SHIPPED
+## V16.11: Trigger System Fix - âœ… SHIPPED
 
 **Problem:** Agents getting stuck and interrupted during trigger-based communication.
 
@@ -746,41 +1441,41 @@ Object.assign(currentSettings, settings);
 | V16.3 | Remove hidden ESC in auto-unstick | Improved |
 | V16.4-V16.9 | Various timing/buffering attempts | Partial |
 | V16.10 | Keyboard events + bypass marker | Almost |
-| V16.11 | Auto-refocus after injection | ✅ SUCCESS |
+| V16.11 | Auto-refocus after injection | âœ… SUCCESS |
 
 **User Verified:** NO manual unsticking needed! All 4 agents processing automatically.
 
 **Key Lessons Learned:**
-1. PTY ESC ≠ Keyboard ESC (kills vs dismisses)
+1. PTY ESC â‰  Keyboard ESC (kills vs dismisses)
 2. xterm.paste() buffers differently than keystrokes
 3. Timing delays alone don't fix buffering
 4. Auto-refocus ensures Claude sees the input
 
 ---
 
-## V16.3: Auto-Unstick ESC Bug Fix - ✅ MERGED INTO V16.11
+## V16.3: Auto-Unstick ESC Bug Fix - âœ… MERGED INTO V16.11
 
 ---
 
-## V13: Autonomous Operation - ✅ SHIPPED
+## V13: Autonomous Operation - âœ… SHIPPED
 
 | Task | Owner | Status | Description |
 |------|-------|--------|-------------|
-| HB1 | Worker B | ✅ DONE | Heartbeat timer (5 min interval) |
-| HB2 | Worker B | ✅ DONE | Lead response tracking (15s timeout) |
-| HB3 | Worker B | ✅ DONE | Worker fallback (after 2 failed nudges) |
-| HB4 | Worker A+B | ✅ DONE | User alert notification |
-| HB5 | Lead | ✅ DONE | Heartbeat response logic |
-| R1 | Reviewer | ✅ DONE | Verification - PARTIAL PASS |
-| BUG1 | Worker B | ✅ FIXED | Heartbeat timer not firing |
-| BUG2 | Lead | ✅ FIXED | False positive response detection |
+| HB1 | Worker B | âœ… DONE | Heartbeat timer (5 min interval) |
+| HB2 | Worker B | âœ… DONE | Lead response tracking (15s timeout) |
+| HB3 | Worker B | âœ… DONE | Worker fallback (after 2 failed nudges) |
+| HB4 | Worker A+B | âœ… DONE | User alert notification |
+| HB5 | Lead | âœ… DONE | Heartbeat response logic |
+| R1 | Reviewer | âœ… DONE | Verification - PARTIAL PASS |
+| BUG1 | Worker B | âœ… FIXED | Heartbeat timer not firing |
+| BUG2 | Lead | âœ… FIXED | False positive response detection |
 
 ### R1 Verification Summary
 
 **Result:** PARTIAL PASS - Core flow works, fallbacks untested
 
-- Heartbeat fires every 5 minutes ✅
-- Lead responds within timeout ✅
+- Heartbeat fires every 5 minutes âœ…
+- Lead responds within timeout âœ…
 - Fallback to workers: NOT TRIGGERED (Lead responsive)
 - User alert: NOT TRIGGERED (no escalation needed)
 
@@ -788,18 +1483,18 @@ Object.assign(currentSettings, settings);
 
 ---
 
-## V12: Stability & Robustness - ✅ SHIPPED
+## V12: Stability & Robustness - âœ… SHIPPED
 
 | Task | Owner | Status | Commit | Description |
 |------|-------|--------|--------|-------------|
-| FX1 | Worker A | ✅ DONE | `fa2c8aa` | ESC key interrupt |
-| FX2 | Worker B | ✅ DONE | `8301e7f` | Session persistence |
-| FX3 | Lead | ✅ DONE | (in triggers.js) | Workflow gate unblock |
-| FX4 | Worker A | ✅ DONE | (pending commit) | Ghost text fix v2 - ESC dismiss + isTrusted + debounce |
-| FX5 | Worker A | ✅ DONE | (pending commit) | Re-enable broadcast Enter key (was over-blocked) |
-| BUG2 | Lead | ✅ FIXED | (pending commit) | V13 watchdog - thinking animation counted as activity |
+| FX1 | Worker A | âœ… DONE | `fa2c8aa` | ESC key interrupt |
+| FX2 | Worker B | âœ… DONE | `8301e7f` | Session persistence |
+| FX3 | Lead | âœ… DONE | (in triggers.js) | Workflow gate unblock |
+| FX4 | Worker A | âœ… DONE | (pending commit) | Ghost text fix v2 - ESC dismiss + isTrusted + debounce |
+| FX5 | Worker A | âœ… DONE | (pending commit) | Re-enable broadcast Enter key (was over-blocked) |
+| BUG2 | Lead | âœ… FIXED | (pending commit) | V13 watchdog - thinking animation counted as activity |
 
-### FX2: Session Persistence (Worker B) - ✅ DONE
+### FX2: Session Persistence (Worker B) - âœ… DONE
 
 **Commit:** `8301e7f`
 
@@ -815,7 +1510,7 @@ Object.assign(currentSettings, settings);
 
 ---
 
-## CRITICAL: ESC Key Fix - ✅ IMPLEMENTED (Pending Restart)
+## CRITICAL: ESC Key Fix - âœ… IMPLEMENTED (Pending Restart)
 
 **Issue:** ESC key stopped working - xterm.js was capturing all keyboard input, preventing users from interrupting stuck agents. All agents (Lead, Worker A, Worker B) became stuck and unresponsive. Only Reviewer remained active.
 
@@ -832,7 +1527,7 @@ Object.assign(currentSettings, settings);
 
 ---
 
-## Post-V11: Autocomplete Bug Fix - ✅ COMMITTED
+## Post-V11: Autocomplete Bug Fix - âœ… COMMITTED
 
 **Commit:** `0ba5cb7`
 
@@ -848,7 +1543,7 @@ Object.assign(currentSettings, settings);
 
 ---
 
-## V11: MCP Integration - ✅ SHIPPED
+## V11: MCP Integration - âœ… SHIPPED
 
 **Commit:** `c4b841a` (+ fix `c567726`)
 
@@ -856,20 +1551,20 @@ Object.assign(currentSettings, settings);
 
 | Task | Owner | Status | Description |
 |------|-------|--------|-------------|
-| MC1 | Lead | ✅ DONE | MCP server skeleton with stdio transport |
-| MC2 | Lead | ✅ DONE | Core messaging tools (send_message, get_messages) |
-| MC3 | Lead | ✅ DONE | Workflow tools (get_state, trigger_agent, claim_task) |
-| MC4 | Worker B | ✅ DONE | Connect MCP server to existing message queue |
-| MC5 | Worker B | ✅ DONE | Agent identification via MCP handshake |
-| MC6 | Worker B | ✅ DONE | State machine integration |
-| MC7 | Worker A | ✅ DONE | MCP status indicator in UI |
-| MC8 | Worker A | ✅ DONE | Auto-configure MCP per agent on startup |
-| MC9 | Worker A | ✅ DONE | MCP connection health monitoring |
-| R1 | Reviewer | ✅ DONE | Verify all MCP tools work correctly |
+| MC1 | Lead | âœ… DONE | MCP server skeleton with stdio transport |
+| MC2 | Lead | âœ… DONE | Core messaging tools (send_message, get_messages) |
+| MC3 | Lead | âœ… DONE | Workflow tools (get_state, trigger_agent, claim_task) |
+| MC4 | Worker B | âœ… DONE | Connect MCP server to existing message queue |
+| MC5 | Worker B | âœ… DONE | Agent identification via MCP handshake |
+| MC6 | Worker B | âœ… DONE | State machine integration |
+| MC7 | Worker A | âœ… DONE | MCP status indicator in UI |
+| MC8 | Worker A | âœ… DONE | Auto-configure MCP per agent on startup |
+| MC9 | Worker A | âœ… DONE | MCP connection health monitoring |
+| R1 | Reviewer | âœ… DONE | Verify all MCP tools work correctly |
 
 ---
 
-## V10: Messaging System Improvements - ✅ SHIPPED
+## V10: Messaging System Improvements - âœ… SHIPPED
 
 **Commit:** `6d95f20`
 
@@ -877,13 +1572,13 @@ Object.assign(currentSettings, settings);
 
 | Task | Owner | Status | Description |
 |------|-------|--------|-------------|
-| MQ1 | Lead | ✅ DONE | Message queue backend - JSON array with append |
-| MQ2 | Lead | ✅ DONE | Delivery confirmation IPC events |
-| MQ3 | Worker A | ✅ DONE | Message history UI panel |
-| MQ4 | Worker B | ✅ DONE | Message queue file watcher integration |
-| MQ5 | Worker B | ✅ DONE | Gate bypass for direct messages |
-| MQ6 | Worker A | ✅ DONE | Group messaging UI (workers only, custom) |
-| R1 | Reviewer | ✅ DONE | Verify all messaging features |
+| MQ1 | Lead | âœ… DONE | Message queue backend - JSON array with append |
+| MQ2 | Lead | âœ… DONE | Delivery confirmation IPC events |
+| MQ3 | Worker A | âœ… DONE | Message history UI panel |
+| MQ4 | Worker B | âœ… DONE | Message queue file watcher integration |
+| MQ5 | Worker B | âœ… DONE | Gate bypass for direct messages |
+| MQ6 | Worker A | âœ… DONE | Group messaging UI (workers only, custom) |
+| R1 | Reviewer | âœ… DONE | Verify all messaging features |
 
 ### Worker A Completion Notes (MQ3 + MQ6)
 
@@ -896,7 +1591,7 @@ Object.assign(currentSettings, settings);
 - New "Messages" tab in right panel
 - Shows conversation history with from/to/time/content
 - Filter buttons: All, Lead, Worker A, Worker B, Reviewer
-- Delivery status indicators (✓ Delivered / ⏳ Pending)
+- Delivery status indicators (âœ“ Delivered / â³ Pending)
 - Auto-scroll to newest messages
 
 **MQ6: Group Messaging UI:**
@@ -917,80 +1612,80 @@ Object.assign(currentSettings, settings);
 
 ---
 
-## V9: Documentation & Polish - ✅ SHIPPED
+## V9: Documentation & Polish - âœ… SHIPPED
 
 Commit: `ac4e13c` - All 7 tasks complete.
 
 ---
 
-## V8: Testing & Automation - ✅ SHIPPED
+## V8: Testing & Automation - âœ… SHIPPED
 
 Commit: `4e8d7c3` - All tasks complete.
 
 ---
 
-## V7: Quality & Observability - ✅ SHIPPED
+## V7: Quality & Observability - âœ… SHIPPED
 
 Commit: `1df828b` - All 7 tasks complete.
 
 ---
 
-## V6: Smart Automation - ✅ SHIPPED
+## V6: Smart Automation - âœ… SHIPPED
 
 **Goal:** Intelligent task routing and automated coordination.
 
 | Task | Owner | Status | Description |
 |------|-------|--------|-------------|
-| SR1 | Lead | ✅ DONE | Smart routing algorithm |
-| SR2 | Lead | ✅ DONE | Routing IPC handlers |
-| AH1 | Lead | ✅ DONE | Auto-handoff logic |
-| AH2 | Worker A | ✅ DONE | Handoff notification UI |
-| CR1 | Worker B | ✅ DONE | Conflict queue system |
-| CR2 | Worker A | ✅ DONE | Conflict resolution UI |
-| LM1 | Worker B | ✅ DONE | Learning data persistence |
-| R1 | Reviewer | 🔄 ACTIVE | Verify all V6 features |
+| SR1 | Lead | âœ… DONE | Smart routing algorithm |
+| SR2 | Lead | âœ… DONE | Routing IPC handlers |
+| AH1 | Lead | âœ… DONE | Auto-handoff logic |
+| AH2 | Worker A | âœ… DONE | Handoff notification UI |
+| CR1 | Worker B | âœ… DONE | Conflict queue system |
+| CR2 | Worker A | âœ… DONE | Conflict resolution UI |
+| LM1 | Worker B | âœ… DONE | Learning data persistence |
+| R1 | Reviewer | ðŸ”„ ACTIVE | Verify all V6 features |
 
 **All implementation complete.** Awaiting Reviewer verification (R1).
 
 ---
 
-## V5: Multi-Project & Performance - ✅ SHIPPED
+## V5: Multi-Project & Performance - âœ… SHIPPED
 
 Commit: `da593b1` - All tasks complete.
 
 ---
 
-## V4: Self-Healing & Autonomy - ✅ SHIPPED
+## V4: Self-Healing & Autonomy - âœ… SHIPPED
 
 Commit: `f4e9453` - All 8 tasks complete.
 
 ---
 
-## V3: Developer Experience - ✅ COMPLETE
+## V3: Developer Experience - âœ… COMPLETE
 
 **Goal:** Testing workflow, session history, project management
 
 | Sprint | Focus | Status |
 |--------|-------|--------|
-| 3.1 | Dry-Run Mode | ✅ COMPLETE |
-| 3.2 | History + Projects Tabs | ✅ COMPLETE |
-| 3.3 | Polish & Verification | ✅ COMPLETE |
+| 3.1 | Dry-Run Mode | âœ… COMPLETE |
+| 3.2 | History + Projects Tabs | âœ… COMPLETE |
+| 3.3 | Polish & Verification | âœ… COMPLETE |
 
-### Sprint 3.1: Dry-Run Mode ✅ COMPLETE
-
-| Task | Owner | Status | Description |
-|------|-------|--------|-------------|
-| D1 | Worker A | ✅ DONE | Settings toggle + header indicator |
-| D2 | Worker B | ✅ DONE | Daemon dry-run mode (mock terminals) |
-
-### Sprint 3.2: History & Projects ✅ COMPLETE
+### Sprint 3.1: Dry-Run Mode âœ… COMPLETE
 
 | Task | Owner | Status | Description |
 |------|-------|--------|-------------|
-| H1 | Worker A | ✅ DONE | Session History tab UI |
-| H2 | Worker B | ✅ DONE | Session History data + IPC handler |
-| J1 | Worker A | ✅ DONE | Projects tab UI |
-| J2 | Worker B | ✅ DONE | Recent projects backend + IPC handlers |
+| D1 | Worker A | âœ… DONE | Settings toggle + header indicator |
+| D2 | Worker B | âœ… DONE | Daemon dry-run mode (mock terminals) |
+
+### Sprint 3.2: History & Projects âœ… COMPLETE
+
+| Task | Owner | Status | Description |
+|------|-------|--------|-------------|
+| H1 | Worker A | âœ… DONE | Session History tab UI |
+| H2 | Worker B | âœ… DONE | Session History data + IPC handler |
+| J1 | Worker A | âœ… DONE | Projects tab UI |
+| J2 | Worker B | âœ… DONE | Recent projects backend + IPC handlers |
 
 #### Worker B Completion Notes (H2 + J2)
 
@@ -1076,42 +1771,42 @@ See `workspace/shared_context.md` for full task breakdown.
 
 ---
 
-## V2 COMPLETE 🎉
+## V2 COMPLETE ðŸŽ‰
 
-## Sprint 2.3: Polish ✅ COMPLETE (Jan 24, 2026)
+## Sprint 2.3: Polish âœ… COMPLETE (Jan 24, 2026)
 
 **Final sprint of V2 - All features verified by Reviewer**
 
 | Task | Owner | Feature | Status |
 |------|-------|---------|--------|
-| D1 | Worker B | Daemon logging to file | ✅ |
-| D2 | Worker B | Health check endpoint | ✅ |
-| D3 | Worker B | Graceful shutdown | ✅ |
-| U1 | Worker A | Scrollback persistence | ✅ |
-| U2 | Worker A | Visual flash on trigger | ✅ |
-| U3 | Lead | Kill All button | ✅ |
-| U4 | Lead | Others triggers | ✅ |
-| P1 | Reviewer | Final verification | ✅ |
+| D1 | Worker B | Daemon logging to file | âœ… |
+| D2 | Worker B | Health check endpoint | âœ… |
+| D3 | Worker B | Graceful shutdown | âœ… |
+| U1 | Worker A | Scrollback persistence | âœ… |
+| U2 | Worker A | Visual flash on trigger | âœ… |
+| U3 | Lead | Kill All button | âœ… |
+| U4 | Lead | Others triggers | âœ… |
+| P1 | Reviewer | Final verification | âœ… |
 
 ---
 
-## Sprint 2.2: Modularize ✅ COMPLETE (Jan 24, 2026)
+## Sprint 2.2: Modularize âœ… COMPLETE (Jan 24, 2026)
 
-Renderer.js: 1635→185 lines (89%↓), main.js: 1401→343 lines (76%↓)
+Renderer.js: 1635â†’185 lines (89%â†“), main.js: 1401â†’343 lines (76%â†“)
 
 ---
 
-## Sprint 2.1: Test Suite ✅ COMPLETE (Jan 24, 2026)
+## Sprint 2.1: Test Suite âœ… COMPLETE (Jan 24, 2026)
 
 **Goal:** Add test suite (was at 0 tests)
 **Result:** 86+ tests passing
 
 | File | Owner | Tests | Status |
 |------|-------|-------|--------|
-| config.test.js | Worker A | ~20 | ✅ |
-| protocol.test.js | Worker A | ~25 | ✅ |
-| daemon.test.js | Worker B | 28 | ✅ |
-| triggers.test.js | Worker B | 24 | ✅ |
+| config.test.js | Worker A | ~20 | âœ… |
+| protocol.test.js | Worker A | ~25 | âœ… |
+| daemon.test.js | Worker B | 28 | âœ… |
+| triggers.test.js | Worker B | 24 | âœ… |
 
 **Bonus:** Lead created shared `ui/config.js` consolidating constants.
 
@@ -1119,12 +1814,12 @@ Renderer.js: 1635→185 lines (89%↓), main.js: 1401→343 lines (76%↓)
 
 ---
 
-## Cleanup Sprint: ✅ COMPLETE (Jan 24, 2026)
+## Cleanup Sprint: âœ… COMPLETE (Jan 24, 2026)
 
 **All cleanup tasks verified by Reviewer:**
-- Worker A: A1-A4 code fixes ✅
-- Worker B: B1-B4 file cleanup ✅
-- Reviewer: R1-R3 verification ✅
+- Worker A: A1-A4 code fixes âœ…
+- Worker B: B1-B4 file cleanup âœ…
+- Reviewer: R1-R3 verification âœ…
 
 **V1 STATUS: APPROVED FOR RELEASE**
 
@@ -1132,26 +1827,26 @@ See: `workspace/build/cleanup-sprint.md` for details
 
 ---
 
-## Chain Test: ✅ SUCCESS (Jan 24, 2026)
+## Chain Test: âœ… SUCCESS (Jan 24, 2026)
 
 Agent-to-agent autonomous triggering verified:
-- Lead triggered → Worker A responded → Worker B responded → Reviewer completed chain
+- Lead triggered â†’ Worker A responded â†’ Worker B responded â†’ Reviewer completed chain
 - See: `workspace/build/chain-test.md`
 
 ---
 
-## SPRINT #2: Terminal Daemon Architecture ✅ COMPLETE
+## SPRINT #2: Terminal Daemon Architecture âœ… COMPLETE
 
 **Goal:** Separate PTY management into daemon process so terminals survive app restarts.
 
 | Task | Owner | Status | Description |
 |------|-------|--------|-------------|
-| D1 | Worker B | ✅ VERIFIED | Create `terminal-daemon.js` |
-| D2 | Worker B | ✅ VERIFIED | Create `daemon-client.js` |
-| D3 | Worker B | ✅ VERIFIED | Add daemon scripts to package.json |
-| D4 | Lead | ✅ VERIFIED | Refactor `main.js` to use daemon |
-| D5 | Worker A | ✅ VERIFIED | Update renderer for reconnection UI |
-| D6 | Reviewer | ✅ DONE | Verify daemon survives app restart |
+| D1 | Worker B | âœ… VERIFIED | Create `terminal-daemon.js` |
+| D2 | Worker B | âœ… VERIFIED | Create `daemon-client.js` |
+| D3 | Worker B | âœ… VERIFIED | Add daemon scripts to package.json |
+| D4 | Lead | âœ… VERIFIED | Refactor `main.js` to use daemon |
+| D5 | Worker A | âœ… VERIFIED | Update renderer for reconnection UI |
+| D6 | Reviewer | âœ… DONE | Verify daemon survives app restart |
 
 **Verification:** See `workspace/build/reviews/daemon-verification.md`
 
@@ -1179,8 +1874,8 @@ Agent-to-agent autonomous triggering verified:
 - `npm run daemon:status` - Check if daemon is running
 
 **Protocol implemented per spec:**
-- Client → Daemon: spawn, write, resize, kill, list, attach, ping, shutdown
-- Daemon → Client: data, exit, spawned, list, attached, killed, error, connected, pong
+- Client â†’ Daemon: spawn, write, resize, kill, list, attach, ping, shutdown
+- Daemon â†’ Client: data, exit, spawned, list, attached, killed, error, connected, pong
 
 ### Lead Completion Notes (D4)
 
@@ -1208,11 +1903,11 @@ Agent-to-agent autonomous triggering verified:
 - Called `setupDaemonListeners()` in DOMContentLoaded
 
 **Behavior:**
-- When app starts and daemon has existing terminals → shows "Reconnecting to existing sessions..." → reattaches each terminal → shows "[Session restored from daemon]" in terminal
-- When app reconnects after disconnect → shows "Daemon reconnected" in status bar
-- When daemon disconnects → shows warning in status bar
+- When app starts and daemon has existing terminals â†’ shows "Reconnecting to existing sessions..." â†’ reattaches each terminal â†’ shows "[Session restored from daemon]" in terminal
+- When app reconnects after disconnect â†’ shows "Daemon reconnected" in status bar
+- When daemon disconnects â†’ shows warning in status bar
 
-**Handoff to Reviewer:** D6 ready - test full flow: start app, spawn terminals, close app, reopen → terminals should still be there.
+**Handoff to Reviewer:** D6 ready - test full flow: start app, spawn terminals, close app, reopen â†’ terminals should still be there.
 
 ---
 
@@ -1244,7 +1939,7 @@ Agent-to-agent autonomous triggering verified:
     - Tracks: total spawns, sessions today, total session time
     - Persists to: `ui/usage-stats.json`
     - UI: Usage Stats section in Build Progress tab
-- [x] Document failure modes (MEDIUM) - Lead DONE → `docs/failure-modes.md`
+- [x] Document failure modes (MEDIUM) - Lead DONE â†’ `docs/failure-modes.md`
 - [x] Atomic writes for state.json (MEDIUM) - Worker B DONE
 - [x] Clean up outdated docs (HIGH) - Worker B DONE
 - [x] Document "Windows-first" (LOW) - Worker B DONE (added to CLAUDE.md)
@@ -1277,11 +1972,11 @@ Agent-to-agent autonomous triggering verified:
 
 | Test | Result |
 |------|--------|
-| 4 terminals visible | ✓ PASS |
-| All terminals connected | ✓ PASS |
-| Broadcast to all panes | ✓ PASS |
-| Workers acknowledged roles | ✓ PASS |
-| Layout responsive | ✓ PASS |
+| 4 terminals visible | âœ“ PASS |
+| All terminals connected | âœ“ PASS |
+| Broadcast to all panes | âœ“ PASS |
+| Workers acknowledged roles | âœ“ PASS |
+| Layout responsive | âœ“ PASS |
 | ~5 sec delay on messages | Expected (Claude startup) |
 | Permission prompts | Expected (normal Claude behavior) |
 
@@ -1296,16 +1991,16 @@ Agent-to-agent autonomous triggering verified:
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| Phase 1 | Shell (Electron + xterm + node-pty) | ✓ COMPLETE |
-| Phase 2 | State Machine (chokidar + transitions) | ✓ COMPLETE |
-| Phase 3 | UX (settings, folder picker, friction) | ✓ COMPLETE |
-| Phase 4 | Right Panel with Tabs | ✓ CORE COMPLETE |
+| Phase 1 | Shell (Electron + xterm + node-pty) | âœ“ COMPLETE |
+| Phase 2 | State Machine (chokidar + transitions) | âœ“ COMPLETE |
+| Phase 3 | UX (settings, folder picker, friction) | âœ“ COMPLETE |
+| Phase 4 | Right Panel with Tabs | âœ“ CORE COMPLETE |
 
 **See:** `shell-verification.md`, `phase2-verification.md`, `phase3-verification.md`, `phase4-verification.md`
 
 ---
 
-## ✅ QUICK WINS SPRINT - VERIFIED COMPLETE
+## âœ… QUICK WINS SPRINT - VERIFIED COMPLETE
 
 **Files:**
 - `lead-response-friction.md` - Lead agreed to quick wins
@@ -1316,39 +2011,39 @@ Agent-to-agent autonomous triggering verified:
 
 ---
 
-## Phase 4 Tasks - RIGHT PANEL WITH TABS (✓ CORE COMPLETE)
+## Phase 4 Tasks - RIGHT PANEL WITH TABS (âœ“ CORE COMPLETE)
 
 | Task | Owner | Status |
 |------|-------|--------|
-| Right panel structure (toggleable) | Worker A | ✓ VERIFIED |
-| Screenshots tab (full) | Worker A+B | ✓ VERIFIED |
-| Build Progress tab | Worker A | ✓ VERIFIED |
-| Processes tab | Worker B | ✓ VERIFIED |
+| Right panel structure (toggleable) | Worker A | âœ“ VERIFIED |
+| Screenshots tab (full) | Worker A+B | âœ“ VERIFIED |
+| Build Progress tab | Worker A | âœ“ VERIFIED |
+| Processes tab | Worker B | âœ“ VERIFIED |
 | Projects tab | - | DEFERRED |
 | Live Preview tab | - | DEFERRED |
 | User Testing tab | - | DEFERRED |
 
 **See:** `phase4-verification.md` for full review.
 
-### Quick Wins Sprint - ✓ COMPLETE
+### Quick Wins Sprint - âœ“ COMPLETE
 
 | # | Task | Owner | Status |
 |---|------|-------|--------|
-| QW-1 | Console log capture | Worker A | ✓ VERIFIED |
-| QW-2 | Track Claude running state | Worker A | ✓ VERIFIED |
-| QW-3 | Re-enable notifyAgents | Worker A | ✓ VERIFIED |
-| QW-4 | Agent status badges | Worker B | ✓ VERIFIED |
-| QW-5 | Refresh button per pane | Worker B | ✓ VERIFIED |
+| QW-1 | Console log capture | Worker A | âœ“ VERIFIED |
+| QW-2 | Track Claude running state | Worker A | âœ“ VERIFIED |
+| QW-3 | Re-enable notifyAgents | Worker A | âœ“ VERIFIED |
+| QW-4 | Agent status badges | Worker B | âœ“ VERIFIED |
+| QW-5 | Refresh button per pane | Worker B | âœ“ VERIFIED |
 
 **See:** `quickwins-verification.md` for full review.
 
 ---
 
-## ✅ PHASE 2 COMPLETE - STATE MACHINE
+## âœ… PHASE 2 COMPLETE - STATE MACHINE
 
 | Task | Owner | Status |
 |------|-------|--------|
-| Create `state.json` structure | Lead | **DONE** → `workspace/state.json` |
+| Create `state.json` structure | Lead | **DONE** â†’ `workspace/state.json` |
 | Add chokidar file watcher | Worker A | **DONE** |
 | Add transition logic | Worker A | **DONE** (included with watcher) |
 | Add UI state display | Worker B | **DONE** |
@@ -1369,7 +2064,7 @@ Added to `ui/renderer.js`:
 
 ---
 
-## ✅ PHASE 3 COMPLETE - UX IMPROVEMENTS
+## âœ… PHASE 3 COMPLETE - UX IMPROVEMENTS
 
 | Task | Owner | Status | File |
 |------|-------|--------|------|
@@ -1436,7 +2131,7 @@ Added to `ui/renderer.js`:
 
 ---
 
-## 🚨 ARCHITECTURE PIVOT - NEW PLAN FOR REVIEW
+## ðŸš¨ ARCHITECTURE PIVOT - NEW PLAN FOR REVIEW
 
 **File**: `workspace/build/plan.md`
 
@@ -1466,8 +2161,8 @@ Added to `ui/renderer.js`:
 ### Phase 2 - Input (Worker B) - DONE
 | Task | Status | Description |
 |------|--------|-------------|
-| U4 | **DONE** | Input bar per pane → sends to that instance |
-| U5 | **DONE** | Broadcast input bar → sends to all (included in U1) |
+| U4 | **DONE** | Input bar per pane â†’ sends to that instance |
+| U5 | **DONE** | Broadcast input bar â†’ sends to all (included in U1) |
 | U6 | **DONE** | Keyboard shortcuts (Ctrl+1-4 focus) (included in U1) |
 
 ### Phase 3 - Context (Lead) - DONE
@@ -1605,3 +2300,14 @@ npm start
 - Included in spawner.py and manager.py respectively
 - `spawn_with_timeout()` in spawner.py
 - `WorkerManager.spawn_all()` / `wait_all()` for parallel execution
+
+## Jan 27, 2026 - Codex Sandbox Config Fix (Worker B) - DONE
+- Ensured %USERPROFILE%\.codex\config.toml includes sandbox_mode = "workspace-write" (appended, no overwrite).
+
+## Jan 27, 2026 - Codex Config Bootstrap in main.js (Worker B) - DONE
+- Added ensureCodexConfig() to create/append sandbox_mode = "workspace-write" before window creation.
+- File: ui/main.js
+
+## Jan 27, 2026 - Codex Config Bootstrap Refinement (Worker B) - DONE
+- main.js: ensureCodexConfig() updates sandbox_mode value to "workspace-write" if present; appends if missing. Added comment on dependency.
+

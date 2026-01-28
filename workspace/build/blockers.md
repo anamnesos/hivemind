@@ -4,6 +4,90 @@ Write questions here. Lead will resolve and respond.
 
 ---
 
+## 🔴 Codex Exec Display Bugs (Jan 28, 2026)
+
+### [Reviewer] - BUG: User input not echoed in Codex panes
+**Owner**: Implementer A (terminal.js)
+**Priority**: HIGH - Codex panes unusable
+**Status**: RESOLVED (Reviewer verified Jan 28, 2026)
+**File**: `ui/modules/terminal.js` line 490-495
+**Problem**: `doSendToPane()` pipes to codexExec but never writes input to xterm. No echo path.
+**Fix**: Write `> {text}` to terminal before calling codexExec().
+**Evidence (Investigator Jan 28, 2026)**: `ui/modules/terminal.js` `doSendToPane()` now writes `\r\n\x1b[36m> ${text}\x1b[0m\r\n` before `window.hivemind.pty.codexExec(...)`.
+
+### [Reviewer] - BUG: Codex output mashed together
+**Owner**: Implementer B (codex-exec.js)
+**Priority**: HIGH - Output unreadable
+**Status**: RESOLVED (Reviewer verified Jan 28, 2026)
+**File**: `ui/modules/codex-exec.js` line 118
+**Problem**: Extracted text broadcast without `\r\n`. All responses concatenate into blob.
+**Fix**: Append `\r\n` to non-delta text in handleCodexExecLine().
+**Evidence (Investigator Jan 28, 2026)**: `ui/modules/codex-exec.js` `handleCodexExecLine()` now uses `const formatted = isDelta ? text : \`${text}\r\n\`` before broadcast.
+
+**Full review**: `workspace/build/reviews/codex-exec-display-bugs.md`
+
+---
+
+## 🚨 ACTIVE STATUS (Jan 27, 2026)
+
+**6-Pane Expansion:** External changes applied to terminal.js and triggers.js
+
+| Agent | Status | Notes |
+|-------|--------|-------|
+| Lead (Claude) | ✅ Online | Pane 1 - Architect |
+| Worker A | ❓ Unknown | Pane 2 - Orchestrator |
+| Worker B | ❓ Unknown | Pane 3 - Implementer A |
+| Worker C | ❓ Unknown | Pane 4 - Implementer B |
+| Investigator | ❓ Unknown | Pane 5 - NEW ROLE |
+| Reviewer | ❓ Unknown | Pane 6 - NEW ROLE |
+
+**Yesterday's Achievement:** Multi-model communication proven (Claude ↔ Codex)
+
+---
+
+## 🔴 6-PANE EXPANSION RISKS (Jan 27, 2026)
+
+**Source:** Lead + Codex (REVIEWER #11) joint review of external agent changes
+
+### RISK 1: SDK Mode Hard-Coded to 4 Panes
+**Priority:** HIGH
+**Files:** `ui/modules/sdk-renderer.js`, `ui/renderer.js`
+**Problem:** SDK mode UI still forces a 4‑pane layout. `sdk-renderer.js` sets `SDK_PANE_IDS = ['1','2','3','4']` and `renderer.js` `applySDKPaneLayout()` explicitly hides panes `5` and `6`.
+**Impact:** SDK mode will only render panes 1–4; panes 5–6 are hidden so messages for Investigator/Reviewer never display (ghost/black‑hole behavior) even though backend now supports 6 panes.
+**Fix Required:** Expand SDK pane config to 6 (update `SDK_PANE_IDS/SDK_PANE_ROLES`, labels) and remove/adjust the hide logic for panes 5–6 in `applySDKPaneLayout()`. If intentional to keep 4, explicitly disable pane 5/6 SDK sessions to avoid orphaned output.
+**Owner:** Lead (suggested: Worker A - UI)
+**Investigation (Jan 27):** `ui/modules/sdk-bridge.js` and `hivemind-sdk-v2.py` already handle 6 panes; the remaining 4‑pane hardcoding is in the renderer layer.
+
+### RISK 2: Missing CLAUDE.md for New Roles - RESOLVED
+**Priority:** MEDIUM
+**Files:** `workspace/instances/orchestrator/`, `workspace/instances/investigator/`
+**Problem:** New role directories don't exist or have no CLAUDE.md. Agents won't know their identity.
+**Impact:** New roles will behave as generic Claude without role-specific instructions.
+**Fix Required:** Create CLAUDE.md files for Orchestrator and Investigator roles.
+**Owner:** Lead
+**Status:** RESOLVED (Jan 27, 2026)
+- Created `workspace/instances/orchestrator/CLAUDE.md`
+- Created `workspace/instances/investigator/CLAUDE.md`
+- Created trigger files: `orchestrator.txt`, `investigator.txt`
+
+### RISK 3: Running Detection False Positives (Windows)
+**Priority:** LOW
+**File:** `ui/modules/terminal.js`
+**Problem:** Running detection could false-positive on Windows error messages containing common keywords.
+**Impact:** Badges may incorrectly show "running" state.
+**Fix Required:** Tighten pattern matching for running detection.
+**Owner:** Worker A
+
+### RISK 4: paneCommands No UI
+**Priority:** LOW
+**File:** `ui/modules/terminal.js`
+**Problem:** Default paneCommands config uses codex/gemini CLIs but there's no UI to configure which CLI runs in which pane.
+**Impact:** Users can't easily swap between Claude/Codex/Gemini per pane.
+**Fix Required:** Add UI dropdown or settings panel for CLI selection per pane.
+**Owner:** Worker A
+
+---
+
 ## Format
 
 ```
@@ -34,6 +118,100 @@ Ready for assignment.
 
 ## Open Blockers
 
+### [Reviewer] - STREAMING ANIMATION: Integration Bugs (Jan 26, 2026)
+**Owner**: Worker A (STR-4, STR-5, STR-6)
+**Priority**: HIGH - Blocks typewriter feature from working correctly
+**Status**: ✅ RESOLVED - All 3 bugs fixed, approved for testing
+**Date**: Jan 26, 2026
+
+**AUDIT SCOPE**: hivemind-sdk-v2.py, sdk-bridge.js, sdk-renderer.js, renderer.js
+
+### ⚠️ DISCOVERY: CODE ALREADY EXISTS BUT HAS BUGS
+
+STR-1 through STR-5 are **ALREADY IMPLEMENTED** in code but **NOT WORKING CORRECTLY**.
+
+**Evidence:**
+- `hivemind-sdk-v2.py:175` - `include_partial_messages=True` ✅
+- `hivemind-sdk-v2.py:363-394` - `StreamEvent` text_delta parsing ✅
+- `sdk-bridge.js:533-540` - `text_delta` → `sdk-text-delta` IPC ✅
+- `renderer.js:726-733` - `sdk-text-delta` listener ✅
+- `sdk-renderer.js:609-713` - `appendTextDelta()`, `finalizeStreamingMessage()` ✅
+
+### 🐛 BUG 1: finalizeStreamingMessage() NEVER CALLED
+
+**File**: `renderer.js` lines 712-721
+**Problem**: When streaming ends (`sdk-streaming` with `active=false`), we only call `streamingIndicator()`:
+
+```javascript
+ipcRenderer.on('sdk-streaming', (event, data) => {
+    if (!data) return;
+    const { paneId, active } = data;
+    sdkRenderer.streamingIndicator(paneId, active);
+    // ⚠️ MISSING: if (!active) sdkRenderer.finalizeStreamingMessage(paneId);
+});
+```
+
+**Impact**: The blinking cursor (`▌`) NEVER gets removed when streaming ends.
+
+**Fix Required**:
+```javascript
+ipcRenderer.on('sdk-streaming', (event, data) => {
+    if (!data) return;
+    const { paneId, active } = data;
+    sdkRenderer.streamingIndicator(paneId, active);
+    // Finalize streaming message when streaming stops
+    if (!active) {
+        sdkRenderer.finalizeStreamingMessage(paneId);
+    }
+});
+```
+
+### 🐛 BUG 2: DOUBLE RENDERING - Streamed message + Full message
+
+**File**: `sdk-renderer.js:485` and `renderer.js:684-707`
+**Problem**: When response completes, Python sends:
+1. Many `text_delta` messages → rendered via `appendTextDelta()`
+2. One `assistant` message with FULL text → rendered via `appendMessage()`
+
+Result: User sees the message TWICE.
+
+**Root Cause**: `appendMessage()` at line 485 calls `streamingIndicator(paneId, false)` but does NOT:
+1. Check if streaming message exists
+2. Skip rendering if we already streamed this content
+
+**Fix Required in `sdk-renderer.js`**:
+```javascript
+function appendMessage(paneId, message, options = {}) {
+    // ... existing container recovery code ...
+
+    // If this is an assistant message and we have streaming state,
+    // the content was already displayed via text_delta - skip duplicate
+    if (message.type === 'assistant') {
+        const streamState = streamingMessages.get(paneId);
+        if (streamState && streamState.buffer.length > 0) {
+            // Content already displayed via streaming - just finalize
+            finalizeStreamingMessage(paneId);
+            return null;
+        }
+    }
+
+    // Remove streaming indicator if present
+    streamingIndicator(paneId, false);
+    // ... rest of function ...
+}
+```
+
+### 🐛 BUG 3: clearStreamingState() Not Called on New Turn
+
+**File**: `sdk-renderer.js:704-713`
+**Problem**: `clearStreamingState()` exists but is never called. A new assistant turn should clear old streaming state.
+
+**Impact**: Old streaming state could interfere with new response.
+
+**Fix**: Call `clearStreamingState(paneId)` when a new `status: thinking` message arrives.
+
+---
+
 ### [Reviewer] - UI Button Race Condition Gap (Jan 26, 2026)
 **Owner**: Worker A
 **Priority**: LOW - edge case, not critical
@@ -60,10 +238,42 @@ Ready for assignment.
 
 ---
 
+### [Investigator] - Focus Steal During Auto-Inject (Jan 27, 2026)
+**Owner**: Worker A (UI/terminal)
+**Priority**: MEDIUM
+**Status**: OPEN
+**Date**: Jan 27, 2026
+
+**Symptom (from errors.md)**: "Terminal output steals focus from broadcast input."
+
+**Investigation summary**:
+- I could not find any focus call in PTY output handlers. `window.hivemind.pty.onData` only writes to the terminal.
+- The only explicit focus changes are in `focusPane()` (user-initiated click/shortcut) and `doSendToPane()` (message injection).
+- Verified Jan 28, 2026: `rg "focus(" ui/` only hits `ui/modules/terminal.js` (no focus in output handlers).
+
+**Likely root cause**:
+`doSendToPane()` focuses the target pane's `.xterm-helper-textarea` to synthesize input, then restores focus only to `lastUserUIFocus`, which is tracked *only* for UI inputs/textarea. If the user is focused inside a terminal or on a non-input element, `lastUserUIFocus` is null or stale, so focus stays on the target terminal textarea and appears to be "stolen" during auto-inject (broadcasts, triggers, system sends). This is not tied to output; it's tied to the send path.
+
+**Verified in code (Jan 28, 2026)**:
+- `initUIFocusTracker()` only records INPUT/TEXTAREA focus (excluding `.xterm-helper-textarea`) — `ui/modules/terminal.js:99-107`
+- `doSendToPane()` always focuses the target pane textarea, then restores focus only to `lastUserUIFocus` — `ui/modules/terminal.js:483-616`
+- No focus calls in PTY output handlers; `pty.onData` only writes to terminal — `ui/modules/terminal.js:437-444`
+
+**Affected files/lines**:
+- `ui/modules/terminal.js` ~490-620 (`doSendToPane` focus/restore)
+- `ui/modules/terminal.js` ~85-110 (`initUIFocusTracker` only tracks input/textarea)
+
+**Suggested fix approach**:
+- Capture `document.activeElement` at the start of `doSendToPane()` when it is *not* an `.xterm-helper-textarea`, and restore to it after injection (if still in DOM).
+- Alternatively, track `lastNonXtermFocus` on any `focusin` (not just inputs) and restore to that.
+- Optional: track last focused xterm textarea per pane and restore when the user was already in a terminal (avoid cross-pane focus jumps).
+
+---
+
 ### [Reviewer] - File Watcher Event Batching Gap (Jan 26, 2026)
 **Owner**: Worker B
 **Priority**: MEDIUM - Could cause performance issues on large operations
-**Status**: OPEN - Tracking for future sprint
+**Status**: ✅ RESOLVED (Jan 26, 2026) - Worker B added 200ms debounce
 **Date**: Jan 26, 2026
 
 **IDENTIFIED VIA**: Pop quiz during comms check (Reviewer → Worker B)
@@ -577,3 +787,17 @@ This keeps Claude Code as the engine. We're not replacing it - we're wrapping it
 **Error**: `mypy: Unexpected keyword argument "roles_path" for "HivemindOrchestrator"`
 **Status**: resolved
 **Resolution**: Removed `roles_path` param from main.py (manager gets it from settings internally). Also fixed same issue in ui.py.
+
+---
+
+### [Investigator] - SDK mode 4-pane hardcoding confirmed
+**Owner**: Lead (suggested: Worker A - UI)
+**Priority**: HIGH
+**Status**: OPEN
+**Root cause**: SDK renderer and layout hardcode 4 panes; panes 5 and 6 are explicitly hidden in SDK mode.
+**Evidence**:
+- `ui/modules/sdk-renderer.js:11-36` defines 6-pane defaults but `SDK_PANE_IDS = ['1','2','3','4']` and `setSDKPaneConfig()` overrides to 4.
+- `ui/renderer.js:186-205` `applySDKPaneLayout()` hard-hides panes `5` and `6` via `style.display = 'none'`.
+- `ui/renderer.js:12-19` defines `SDK_PANE_LABELS` for 6 panes, but the hide logic prevents panes 5/6 from rendering.
+**Impact**: In SDK mode, Investigator/Reviewer panes are hidden and their messages never display.
+**Suggested fix**: Expand SDK pane config/roles/labels to 6 and remove the hide logic, or explicitly disable SDK sessions for panes 5/6 to avoid orphan output.

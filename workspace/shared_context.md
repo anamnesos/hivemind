@@ -1,918 +1,290 @@
-# Hivemind Shared Context
+﻿# Hivemind Shared Context
 
-**Last Updated:** Jan 26, 2026 - UI POLISH SPRINT COMPLETE ✅
-**Status:** ✅ Ready for Restart - All features implemented
+**Last Updated:** Jan 28, 2026 (session 17)
+**Status:** Hardening sprint in progress — Phase 2: Execution (ipc-handlers docs/perf/error split).
 
 ---
 
-## 🎨 UI POLISH SPRINT - COMPLETE ✅
+## CURRENT SPRINT: Hardening (Session 17)
 
-**Goal:** Improve visual feedback for thinking, idle, and message states.
+**Goal:** Reduce tech debt — file splits, structured logging, comment cleanup.
+**Electron upgrade:** Deferred to separate sprint.
 
-**Origin:** Team brainstorm session - all 4 agents contributed ideas.
+### Phase 1 — Investigation (DONE)
+- **Investigator:** Audit ipc-handlers.js + index.html, produce split plans, categorize console.logs and version-fix comments
+- **Reviewer:** Approved plan with granularity adjustments (split order enforced)
 
-### Task Assignments
+### Phase 2 — Execution (IN PROGRESS)
+- **Implementer A:** Execute index.html split per approved plan
+- **Implementer B:** ipc-handlers split activity-log DONE; checkpoint-handlers DONE; completion-quality DONE; output-validation DONE; smart-routing + auto-handoff + conflict-queue + learning-data DONE; state-handlers DONE; docs/perf/error DONE (api-docs + perf-audit + error-handlers); messaging + test/CI + MCP + SDK + ipc-state already done
+- **Reviewer:** Review activity-log + checkpoint-handlers + completion-quality + output-validation + state-handlers + routing/coordination modules (smart-routing, auto-handoff, conflict-queue, learning-data)
+- Structured logger TBD after splits land
 
-| ID | Task | Owner | Status |
-|----|------|-------|--------|
-| UX-1 | Shimmer bar for thinking | Worker A | ✅ DONE |
-| UX-2 | Message delivery states (○→●→✓) | Worker A | ✅ DONE |
-| UX-3 | Breathing idle animation | Worker A | ✅ DONE |
-| UX-4 | Pane transition animations | Worker A | ✅ DONE |
-| UX-5 | Message slide-in animation | Worker A | ✅ DONE |
-| UX-6 | Agent avatars (👑🔧⚙️🔍) | Worker A | ✅ DONE |
-| UX-7 | Optimistic UI backend | Worker B | ✅ DONE |
-| UX-8 | Contextual thinking states | Worker B | ✅ DONE |
-| UX-9 | Reduce trigger debounce (50ms!) | Worker B | ✅ DONE |
-| UX-10 | Virtual scrolling (stretch) | Worker B | ⏸️ Deferred |
-| R-1 to R-4 | Verification + accessibility | Reviewer | ✅ APPROVED |
-| A11Y | prefers-reduced-motion fix | Worker A | ✅ DONE |
+### Verified This Session
+- Fix Z (trigger encoding): Confirmed offline + live
+- Codex trigger replies: Orchestrator using triggers correctly
+- Backlog changes (SDK 6-pane, focus restore, Codex display fixes): Reviewer approved, kept
+- Both Codex exec display blockers: RESOLVED
+- Hardening Phase 2 Step 1–3: ipc-handlers split (ipc/index + ipc-state + SDK modules)
+- Hardening Phase 2 MCP: mcp-handlers + mcp-autoconfig-handlers extracted
+- Hardening Phase 2 Test/CI: test-execution + precommit + test-notification extracted
+- Hardening Phase 2 Messaging: message-queue-handlers extracted
+- Hardening Phase 2 Docs/Perf/Error: api-docs + perf-audit + error-handlers extracted
+- Hardening Phase 2 State: state-handlers extracted
+- Hardening Phase 2 Routing/Coord: smart-routing + auto-handoff + conflict-queue + learning-data extracted
+- Hardening Phase 2 Output Validation: output-validation-handlers extracted
+- Hardening Phase 2 Completion Quality: completion-quality-handlers extracted
+- Hardening Phase 2 Checkpoint: checkpoint-handlers extracted
+- Hardening Phase 2 Activity Log: activity-log-handlers extracted
+- Handoff: Reviewer verify activity-log + checkpoint + completion-quality + output-validation + state-handlers + routing/coord modules (`ui/modules/ipc/*-handlers.js` in state/routing/quality group); eslint warnings only
 
-### Key Files
-- `ui/index.html` - CSS animations (Worker A)
-- `ui/renderer.js` - UI logic (Worker A)
-- `ui/modules/sdk-renderer.js` - Message display (Worker A + B)
-- `ui/modules/watcher.js` - Trigger debounce (Worker B)
+---
 
-### CSS Snippet (Worker A to implement)
-```css
-.sdk-streaming-shimmer {
-  height: 4px;
-  background: linear-gradient(90deg, transparent, var(--sdk-accent-green), transparent);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s ease-in-out infinite;
-}
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
+## 🚨 ARCHITECT: READ THIS FIRST (Jan 28, 2026)
+
+You are the Architect (pane 1). Here's what happened:
+
+### Session 16 Summary — Trigger Encoding Fix + Codex Communication Fix
+
+**Fix Z — Trigger file encoding normalization (Reviewer APPROVED)**
+- **Problem:** Codex panes writing trigger files via Windows `echo` or PowerShell produced garbled messages. cmd.exe uses OEM CP437, PowerShell defaults to UTF-16LE. The trigger reader assumed UTF-8.
+- **Root cause:** `fs.readFileSync(filePath, 'utf-8')` in `triggers.js` can't decode UTF-16LE or handle BOM bytes.
+- **Fix:** `triggers.js` `handleTriggerFile()` now reads raw bytes and detects encoding: UTF-16LE BOM → convert, UTF-8 BOM → strip, default → UTF-8. Also strips null bytes and control chars.
+- **File modified:** `ui/modules/triggers.js` (lines 491-515)
+- **Investigator findings:** cmd.exe echo breaks on `& | % ^ !` chars, PowerShell writes UTF-16LE by default, Codex exec degrades unicode to `???` before cmd even runs.
+
+**Codex CLAUDE.md updates — Trigger reply instructions**
+- **Problem:** Orchestrator (Codex pane 2) repeatedly responded to agent messages in terminal output instead of writing to trigger files. Required user to manually push messages. 4 consecutive failures before succeeding.
+- **Root cause:** Codex defaults to conversational output. Needed explicit bash command template, not conceptual instructions.
+- **Fix:** Updated CLAUDE.md for all 3 Codex panes (orchestrator, worker-b, investigator) with explicit "EVERY REPLY MUST USE THIS COMMAND" section including copy-paste echo template. Orchestrator got additional "PRIME DIRECTIVE" section at top of file.
+- **Files modified:** `workspace/instances/orchestrator/CLAUDE.md`, `workspace/instances/worker-b/CLAUDE.md`, `workspace/instances/investigator/CLAUDE.md`
+
+**Team consensus: Hardening sprint recommended**
+- All 5 agents (Reviewer, Implementer A, Implementer B, Investigator, Orchestrator) unanimously recommend a hardening sprint before new features.
+- Key concerns: ipc-handlers.js ~3800 lines, index.html ~4100 lines, 200+ console.logs with no logger, Electron 12 majors behind, 83 version-fix comments.
+- Electron upgrade should be a separate sprint (Investigator recommendation).
+
+### Backlog
+- Focus-steal fix: save/restore activeElement unconditionally (low priority)
+- Newline normalization in extracted Codex text (minor)
+- Hardening sprint: file splits, structured logger, comment cleanup (pending user approval)
+
+### This restart: verify
+1. Trigger messages from Codex panes render without garbled characters (Fix Z)
+2. Codex agents reply via trigger files, not terminal output (CLAUDE.md updates)
+3. All 6 agents orient and communicate
+4. Previous fixes still working (Codex display, line breaks, resume, badges)
+
+### Session 13 Summary (previous)
+- Fix X FAILED, Fix Y APPLIED â€” Codex exec JSONL format mismatch + windowsHide + thread.started
+4. Claude panes unaffected
+5. Second message to Codex pane uses resume (check npm console for "Captured thread id")
+
+### Session 11 Summary
+- **Fix V CONFIRMED** â€” Codex exec spawns without flag conflict (verified visually)
+- **Fix W APPLIED** â€” JSONL parser overhaul (too aggressive â€” silenced responses)
+
+### Session 10 Summary
+- **Fix V APPLIED â€” Remove `--full-auto` from Codex exec args (conflicting flags)**
+
+### Session 9 Summary
+- **Fix U APPLIED â€” Codex exec `shell: true` (Windows ENOENT fix)**
+  - Codex panes failed with `spawn codex ENOENT` â€” Node couldn't find `codex.cmd` without shell
+  - Root cause: `child_process.spawn('codex', ...)` doesn't resolve `.cmd` wrappers on Windows without `shell: true`
+  - Fix: Added `shell: true` to spawn options in `ui/modules/codex-exec.js` (line ~112)
+  - **Lesson: On Windows, always use `shell: true` when spawning npm-installed CLIs (they're `.cmd` batch wrappers)**
+
+### Session 8 Summary
+- **Fix T APPLIED â€” Codex auto-start identity injection**
+  - Codex panes (2, 4, 5) were showing "Codex exec mode ready" but never receiving their first prompt
+  - Root cause: `spawnClaude()` returned early for Codex panes before the identity auto-send code
+  - Fix: Added `setTimeout` (2s) in the Codex early-return block to auto-send identity via `sendToPane()`
+  - File modified: `ui/modules/terminal.js` (line ~681)
+  - This restart: Codex panes should auto-start with `# HIVEMIND SESSION: {Role}` prompt
+
+### This restart: verify
+1. Codex panes auto-start (not stuck on "Codex exec mode ready")
+2. Identity prompt triggers codex exec pipeline
+3. Codex agents orient and respond
+4. Claude panes unaffected
+5. Resume works on second message
+
+### Session 7 Summary
+- **Fix R FAILED** â€” `\n` did not fix Codex auto-submit (same as `\r`). Interactive ink TUI cannot be driven via PTY writes on Windows.
+- **Fix S APPLIED â€” Codex exec pipeline (MAJOR CHANGE)**
+  - Codex panes (2, 4, 5) now use `codex exec --json --full-auto --dangerously-bypass-approvals-and-sandbox` instead of interactive Codex
+  - New module: `ui/modules/codex-exec.js` â€” child_process.spawn, JSONL parsing, session management
+  - First message: `codex exec --json --full-auto --dangerously-bypass-approvals-and-sandbox --cd <instanceDir> -` (prompt via stdin)
+  - Subsequent messages: `codex exec resume <sessionId> --json --full-auto --dangerously-bypass-approvals-and-sandbox -`
+  - SessionId captured from JSONL `session_meta` event
+  - Files modified: codex-exec.js (new), terminal-daemon.js, terminal.js, ipc-handlers.js, daemon-client.js, preload.js, renderer.js, config.js
+  - Reviewer approved after 2 rounds (BUG-S1 sessionId fixed, BUG-S2 flag ordering fixed)
+- **Investigator finding:** SDK mode hardcodes 4 panes â€” sdk-renderer.js hides panes 5/6 (low priority, PTY mode)
+- **Minor gap:** Gemini CLI lacks permission suppression flag (low priority)
+
+### This restart: verify
+1. Codex panes receive messages and respond via codex exec pipeline (Fix S)
+2. Resume works on second message (sessionId captured from first)
+3. JSONL events render readable text in Codex panes (not raw JSON)
+4. Claude/Gemini panes unaffected (PTY path unchanged)
+5. All 6 agents orient autonomously
+
+### Implementer B note (Jan 27, 2026)
+- Codex spawn path is interactive PTY (ipc-handlers -> terminal.js -> daemon shell PTY).
+- `codex exec --json` is non-interactive; best swap is a new child_process path (no PTY) with JSONL parsing + per-pane session id.
+- Detailed recommendation sent to Architect via `lead.txt`.
+
+### Implementer B update - Fix S (Jan 27, 2026)
+- Codex exec mode implemented: Codex panes use daemon `codex-exec` (child_process.spawn) with JSONL parsing and stdout to xterm.
+- New module: `ui/modules/codex-exec.js` handles exec spawn + JSONL parsing; daemon delegates to it.
+- Renderer sends prompts via `codex-exec`; identity prefix injected on first prompt.
+- Files updated: `ui/terminal-daemon.js`, `ui/modules/codex-exec.js`, `ui/modules/terminal.js`, `ui/modules/ipc-handlers.js`, `ui/daemon-client.js`, `ui/preload.js`, `ui/renderer.js`, `ui/config.js`.
+- Needs review/testing: verify Codex pane output rendering and resume continuity.
+- Handoff: Reviewer verify Codex exec output rendering + no PTY injection; Investigator confirm `codex exec resume <sessionId>` preserves full context. Gotcha: resume relies on session_id from JSONL `session_meta`, and parsing falls back to raw lines when no text extracted.
+
+### Previous fixes (all confirmed working):
+#### Fix N â€” Force autonomy flags
+- `allowAllPermissions` default changed `false` â†’ `true` in main.js (line 50)
+- Autonomy flags are now UNCONDITIONAL in ipc-handlers.js (lines 163-173) â€” removed `if (currentSettings.allowAllPermissions)` guard
+- Claude always gets `--dangerously-skip-permissions`
+- Codex always gets `--full-auto --ask-for-approval never`
+- Files: `main.js`, `ipc-handlers.js`
+
+### Fix O Ã¢â‚¬â€ Codex prompt suppression hardening (Jan 27, 2026)
+- Codex spawn now also appends `--dangerously-bypass-approvals-and-sandbox` (alias: `--yolo`)
+- Added daemon fallback: detects approval prompt text and auto-sends `2` ("Yes and don't ask again")
+- Files: `ui/modules/ipc-handlers.js`, `ui/terminal-daemon.js`
+
+### What to verify after restart:
+1. No permission prompts on any Codex pane (Fix O â€” --yolo + auto-dismiss)
+2. Codex panes start clean without PowerShell errors (Fix L) or config errors (Fix M)
+3. All 6 agents orient and accept input
+4. If any Codex pane still prompts, daemon should auto-answer "2" within seconds
+
+### Previous Session Findings
+After restart, Codex panes (2, 4, 5) showed:
+1. **Identity injection broke PowerShell** â€” `[HIVEMIND SESSION: ...]` parsed as PowerShell attribute syntax, causing parse errors
+2. **Codex config.toml invalid** â€” `approval_policy = "never"` is NOT a valid Codex config key (expects boolean). Codex refused to start with: `invalid type: string "never", expected a boolean`
+
+### Fixes Applied (need restart to test)
+
+**Fix L â€” Identity message format**
+- Changed `[HIVEMIND SESSION: Role]` â†’ `# HIVEMIND SESSION: Role -`
+- `#` is a comment in PowerShell, harmless to Claude
+- Files: `terminal-daemon.js` (line 1365), `terminal.js` (line 636)
+
+**Fix M â€” Remove invalid approval_policy from config.toml**
+- Removed `approval_policy = "never"` from `~/.codex/config.toml`
+- Removed `ensureCodexConfig()` code in `main.js` that re-added it
+- Full autonomy is already handled by CLI flags: `--full-auto --ask-for-approval never` (in ipc-handlers.js)
+- Files: `~/.codex/config.toml`, `main.js` (ensureCodexConfig function)
+
+### What to verify after restart:
+1. Codex panes should NOT show PowerShell parse errors (Fix L)
+2. Codex CLI should start without config.toml errors (Fix M)
+3. Codex panes should accept text input and submit
+4. All 6 agents should orient themselves
+5. Trigger messages should deliver to all panes
+
+### Fix History
+- Fix A âœ… â€” CLI swap: pane 3=claude, pane 5=codex
+- Fix B âœ… â€” Daemon banner removed
+- Fix C âŒ â€” Trusted Enter via sendInputEvent (Codex ignored it)
+- Fix D âœ… â€” AGENTS.md created for Codex panes
+- Fix E âŒ â€” Clipboard paste Ctrl+V (Codex interpreted as image paste)
+- Fix F âŒ â€” --full-auto doesn't bypass sandbox prompt
+- Fix G âœ… â€” Sandbox config.toml preset (WORKS)
+- Fix H âœ… â€” PTY write + newline for Codex (WORKS)
+- Fix I âœ… â€” `\n` â†’ `\r` for Codex auto-submit
+- Fix J âŒ â€” `approval_policy = "never"` in config.toml (INVALID KEY â€” broke Codex startup)
+- Fix K âœ… â€” `--ask-for-approval never` CLI flag on Codex spawn
+- Fix L âœ… â€” Identity message `#` prefix instead of `[]` brackets (PowerShell compat)
+- Fix M âœ… â€” Removed invalid approval_policy from config.toml + ensureCodexConfig()
+- Fix N âœ… â€” Forced autonomy flags unconditionally (no setting dependency)
+- Fix O âœ… â€” `--yolo` flag + daemon auto-dismiss for Codex permission prompts
+- Fix P âœ… â€” triggers.js notifyAgents appends `\r` for Codex PTY write auto-submit
+- Fix Q âœ… â€” Dynamic Codex detection via pane-cli-identity (replaces hardcoded CODEX_PANES)
+- Fix R âŒ â€” Codex auto-submit `\r` â†’ `\n` (FAILED â€” neither `\r` nor `\n` submits ink TUI on Windows)
+- Fix S âœ… â€” Codex exec pipeline: non-interactive `codex exec --json` replaces interactive Codex (Reviewer approved)
+- Fix T âœ… â€” Codex auto-start identity injection (setTimeout 2s in spawnClaude early-return)
+- Fix U âœ… â€” `shell: true` for Codex exec spawn on Windows (ENOENT fix)
+- Fix V âœ… â€” Removed conflicting `--full-auto` flag (mutually exclusive with `--dangerously-bypass-approvals-and-sandbox`)
+
+---
+
+## ??? CLI IDENTITY BADGE (UNBLOCKED)
+
+**Status:** Bug 2 line-break fix verified by Reviewer (Jan 28, 2026).
+- IPC event: `pane-cli-identity {paneId, label, provider?, version?}`
+- Implementer B: main.js now forwards `pane-cli-identity` and infers CLI identity on daemon spawn/reconnect.
+- **Next:** Reviewer ? verify badges appear for Claude/Codex/Gemini panes on spawn + reconnect.
+- Codex auto-submit Fix B: terminal.js now tracks Codex panes dynamically from pane-cli-identity (no hardcoded list).
+- **Next:** Reviewer verify Codex auto-submit and non-Codex Enter path.
+
+---
+## ðŸ“‹ AGENT IDENTITY
+
+| Pane | Role | Instance Dir | Trigger File | CLI |
+|------|------|-------------|--------------|-----|
+| 1 | Architect | instances/lead | lead.txt | Claude |
+| 2 | Orchestrator | instances/orchestrator | orchestrator.txt | Codex |
+| 3 | Implementer A | instances/worker-a | worker-a.txt | Claude |
+| 4 | Implementer B | instances/worker-b | worker-b.txt | Codex |
+| 5 | Investigator | instances/investigator | investigator.txt | Codex |
+| 6 | Reviewer | instances/reviewer | reviewer.txt | Claude |
+
+### Message Protocol
+```
+(YOUR-ROLE #N): message here
+```
+- Increment N each time. Duplicates silently dropped.
+- Start from #1 each session.
+- Write to `workspace/triggers/{trigger-file}` to message an agent.
+
+
+## GLOBAL NOTE
+
+- Prefix any user-directed questions with @James:
+- Do NOT ask for permission to implement; proceed autonomously and report results.
+
+### Gemini CLI Note
+Gemini's file write tool is sandboxed. Use bash echo:
+```
+echo "(YOUR-ROLE #N): message" > "D:\projects\hivemind\workspace\triggers\lead.txt"
 ```
 
 ---
 
-## ✅ MESSAGE SEQUENCING SYSTEM - VERIFIED COMPLETE
+## ðŸ”§ PREVIOUS FIXES (Already working)
 
-**Problem solved:** Async trigger file messaging caused infinite confirmation loops.
+| Fix | File | What Changed |
+|-----|------|-------------|
+| BUG-1: Codex textarea retry | terminal.js | doSendToPane retries 5x100ms before PTY fallback |
+| BUG-2: Nudge keyboard Enter | terminal.js | aggressiveNudge uses keyboard Enter |
+| BUG-3: Trigger file re-read | watcher.js | handleTriggerFileWithRetry re-reads empty files |
+| BUG-4: Focus steal fix | terminal.js + renderer.js | Restores focus after injection |
+| 6-pane expansion | multiple files | All updated from 4-pane to 6-pane |
+| ensureCodexConfig | main.js | Auto-creates sandbox config at startup |
 
-**Solution:** Sequence numbers in messages. Format: `(ROLE #N): message content`
+## ðŸ“Š RESTART SURVIVAL LOG
 
-**Test Results (Jan 26, 2026 - Post-restart):**
-| Test | Expected | Actual | Status |
-|------|----------|--------|--------|
-| Duplicate #1 after seeing #1 | Dropped | Not received | ✅ PASS |
-| Fresh #2 after #1 | Delivered | Received | ✅ PASS |
-| Stale #1 after seeing #2 | Dropped | Not received | ✅ PASS |
-| Fresh #3 after #2 | Delivered | Received | ✅ PASS |
-
-**Verified by:** Lead + Reviewer collaboration
-
-**Files:**
-- `ui/modules/triggers.js` - Sequence tracking, dedup logic (Worker B)
-- `ui/modules/sdk-renderer.js` - UI parsing for `#N` in labels (Worker A)
-- `workspace/message-state.json` - Persistent state for counters
-- `workspace/build/message-sequence-spec.md` - Full spec (Reviewer)
-
-**Usage:** When sending inter-agent messages, use `(ROLE #N):` format and increment N each time.
+| Restart | P1 | P2 | P3 | P4 | P5 | P6 | Pattern |
+|---------|----|----|----|----|----|----|---------|
+| Jan 27 #1 | âœ… Claude | âŒ Codex | âŒ Claude | âŒ Codex | âœ… Codex | âœ… Claude | Panes 1,5,6 survived |
+| Jan 27 #2 | âœ… Claude | âŒ Codex | âŒ Claude | âŒ Codex | âœ… Codex | âœ… Claude | Same pattern |
 
 ---
 
----
+## ðŸš¦ MODE GATE
 
-## ✅ CONFIRMED - DO NOT ASK AGAIN
-
-- **claude-agent-sdk:** INSTALLED (v0.1.22) - VERIFIED via `pip show claude-agent-sdk`
-- **Reviewer audit:** APPROVED (see reviews/pty-bypass-fix-review.md)
-- **Defense-in-depth:** COMPLETE (Worker A applied both recommendations)
-
-**New instances: Do NOT ask user if SDK is installed. It is. Just proceed.**
-**DO NOT ask user to "accept terms" or check CLI - they have 5 instances open. Just debug.**
+**Source of truth:** `workspace/app-status.json` â€” check `sdkMode` field before any work.
 
 ---
 
-## 🔧 SDK V2 CRITICAL FIXES (Jan 26, 2026)
+## Previous Context
 
-**Session Summary:** Multiple bugs found and fixed through systematic debugging.
+See `workspace/build/status.md` for full sprint history.
 
-### Issues Found & Fixed
 
-| Issue | Root Cause | Fix Applied | File |
-|-------|------------|-------------|------|
-| "Unknown [Object]" in all panes | Python sends content as ARRAY, JS expected STRING | Handle array content format | `sdk-renderer.js` |
-| User messages not displaying | No handler for 'user' message type | Added 'user' type handler | `sdk-renderer.js` |
-| No immediate user message feedback | Waited for Python echo | Display immediately on send | `daemon-handlers.js` |
-| Broadcast-only input | No pane targeting in SDK mode | Added /1, /lead, etc. prefix syntax | `renderer.js` |
-| Agents don't know their roles | cwd was main workspace | Use role-specific directories | `hivemind-sdk-v2.py` |
-| "Fatal error in message reader" | Stale session IDs in session-state.json | Disabled session resume | `hivemind-sdk-v2.py` |
-| Permission prompts blocking | `acceptEdits` doesn't auto-accept reads | Changed to `bypassPermissions` | `hivemind-sdk-v2.py` |
 
-### Key Discovery: Stale Session IDs Crash SDK
 
-**Problem:** "Fatal error in message reader: Command failed with exit code 1" on all agents.
-
-**Investigation Process:**
-1. Read SDK source code at `C:\Users\James Kim\AppData\Roaming\Python\Python314\site-packages\claude_agent_sdk`
-2. Found error origin: `_internal\query.py:216` and `_internal\transport\subprocess_cli.py:624`
-3. Tested CLI directly with `claude --output-format stream-json` - WORKED
-4. Tested minimal Python SDK script - WORKED
-5. Tested hivemind-sdk-v2.py - FAILED with `"resumed": true` in output
-6. Cleared `session-state.json` - NO ERRORS
-
-**Root Cause:** Old session IDs stored in session-state.json were being passed to `--resume` flag, but those sessions no longer existed, causing SDK to crash.
-
-**Fix:** Disabled session resume feature in Python (causes crashes with stale sessions).
-
-### Code Changes Made
-
-**sdk-renderer.js - Content Array Handling:**
-```javascript
-// V2 FIX: Python sends content as ARRAY of content blocks, not string
-if (Array.isArray(content)) {
-  return content.map(block => {
-    if (block.type === 'text') return `<pre>${escapeHtml(block.text)}</pre>`;
-    if (block.type === 'thinking') return `<details class="sdk-thinking">...`;
-    if (block.type === 'tool_use') return `<div class="sdk-tool-header">...`;
-    // etc.
-  }).join('\n');
-}
-```
-
-**renderer.js - Pane Targeting Syntax:**
-```javascript
-// V2 FIX: Check for pane targeting prefix: /1, /2, /3, /4 or /lead, /worker-a, etc.
-const paneMatch = message.match(/^\/([1-4]|lead|worker-?a|worker-?b|reviewer)\s+/i);
-if (paneMatch) {
-  const target = paneMatch[1].toLowerCase();
-  const actualMessage = message.slice(paneMatch[0].length);
-  const paneMap = { '1': '1', 'lead': '1', 'worker-a': '2', 'worker-b': '3', 'reviewer': '4' };
-  ipcRenderer.invoke('sdk-send-message', paneMap[target], actualMessage);
-}
-```
-
-**hivemind-sdk-v2.py - Role Identity + Session Resume Disabled:**
-```python
-# Role-specific working directory
-role_dir_name = self.config.role.lower().replace(' ', '-')
-role_specific_cwd = self.workspace / "workspace" / "instances" / role_dir_name
-
-options = ClaudeAgentOptions(
-    allowed_tools=self.config.allowed_tools,
-    permission_mode="bypassPermissions",  # V2 FIX: acceptEdits still prompts
-    cwd=str(role_specific_cwd),
-    # NOTE: Disabled resume - causes crashes with stale sessions
-    # resume=resume_session_id,
-)
-```
-
-### Files Modified This Session
-
-| File | Changes |
-|------|---------|
-| `ui/modules/sdk-renderer.js` | Array content handling, user message type, status/result handlers |
-| `ui/modules/daemon-handlers.js` | Immediate user message display in SDK mode |
-| `ui/renderer.js` | Pane targeting syntax (/1, /lead, etc.) |
-| `hivemind-sdk-v2.py` | Role-specific cwd, disabled resume, bypassPermissions default |
-| `session-state.json` | Cleared stale session IDs |
-
-### Next Steps
-
-1. **Restart app** to test all fixes
-2. Verify: No "Unknown [Object]" errors
-3. Verify: User messages display immediately
-4. Verify: Pane targeting works (/1 message, /lead message, etc.)
-5. Verify: No "Fatal error" messages
-
----
-
-## ⚠️ SDK MODE - READ THIS FIRST (New Instances)
-
-**If you're starting fresh in SDK mode, this is what you need to know:**
-
-### What SDK Mode Is
-- You are 1 of 4 independent Claude sessions managed by Hivemind
-- Messages come through the SDK API, not keyboard simulation
-- Your role (Lead, Worker A, Worker B, Reviewer) comes from your instance CLAUDE.md
-- You have a full context window - you're NOT a subagent
-
-### What Just Happened (Jan 26, 2026)
-**SDK Initialization Bug Fix Applied**
-
-User reported: Raw JSON appearing in xterm panes instead of SDK UI
-Root Cause: PTY terminals were being created even when SDK mode enabled
-
-**Fixes (Lead - Jan 26):**
-1. `main.js` - Added `sdkMode` flag to `daemon-connected` event
-2. `daemon-handlers.js` - Skip PTY terminal creation when SDK mode true
-3. `renderer.js` - Auto-init SDK panes + start SDK sessions on startup
-4. `renderer.js` - Made `enableMode()` idempotent to prevent double-init
-
-**Files Changed:**
-- `ui/main.js` (line ~344)
-- `ui/modules/daemon-handlers.js` (line ~113-128)
-- `ui/renderer.js` (lines ~36-77, ~128-136)
-
-**Reviewer is auditing now.** Waiting for brutal review before next test.
-
-### Your Job
-1. Read your instance-specific CLAUDE.md for role details
-2. Read `workspace/build/status.md` for current sprint status
-3. Communicate via trigger files (`workspace/triggers/`)
-4. Use `workspace/build/blockers.md` for issues
-5. Report to Lead for coordination
-
-### Key Differences from PTY Mode
-- No terminal UI in your pane (output-only display)
-- Messages delivered directly via API (no keyboard injection)
-- Session IDs persist across restarts
-- No ghost text bugs, no focus issues
-
----
-
-## 🔄 SDK MIGRATION V2 - 4 INDEPENDENT SESSIONS
-
-**Goal:** Replace PTY keyboard hacks with SDK for reliable message delivery. Keep 4 full Claude instances (NOT subagents).
-
-**Design Doc:** `workspace/build/sdk-architecture-v2.md`
-
-### Architecture Decision (User Approved)
-
-**REJECTED:** Subagent model (1 Lead spawns temporary workers)
-**APPROVED:** 4 independent SDK sessions, each with full context window
-
-Why: Subagents are "hyperfocused" and bring back misleading info. Full instances are smarter.
-
-### Phase 1 Tasks - ✅ ALL COMPLETE
-
-| # | Task | Owner | Status |
-|---|------|-------|--------|
-| 1 | hivemind-sdk-v2.py | Lead | ✅ COMPLETE |
-| 2 | sdk-bridge.js V2 | Worker B | ✅ COMPLETE |
-| 3 | Session status UI | Worker A | ✅ COMPLETE |
-| 4 | Architecture review | Reviewer | ✅ APPROVED |
-
-### Phase 2 Tasks - ✅ ALL COMPLETE
-
-| # | Task | Owner | Status |
-|---|------|-------|--------|
-| 5 | PTY → SDK routing | Lead | ✅ COMPLETE |
-| 6 | Trigger SDK integration | Worker B | ✅ COMPLETE |
-| 7 | Session persistence | Lead | ✅ COMPLETE |
-| 8 | Full verification | Reviewer | ✅ APPROVED |
-| 9 | Protocol alignment | Lead | ✅ COMPLETE |
-
-### Next Steps
-
-**Ready for end-to-end testing.** Requires `claude-agent-sdk` to be installed:
-```bash
-pip install claude-agent-sdk
-```
-
-Then enable SDK mode in settings and test message delivery.
-
-### Key Files
-
-- `hivemind-sdk-v2.py` - 4 ClaudeSDKClient instances manager
-- `ui/modules/sdk-bridge.js` - Electron ↔ Python IPC
-- `ui/modules/triggers.js` - SDK routing in sendStaggered()
-- `ui/main.js` - SDK init + settings handler
-
-### What SDK Replaces
-- PTY write + keyboard events → `sdk.query(sessionId, message)`
-- 50ms delays, focus hacks, ESC tricks → Single API call
-- Ghost text bugs → No terminal input = no ghost text
-- "Message stuck in textarea" → Direct delivery
-
-### What Stays The Same
-- 4-pane UI layout (Lead big, workers on right)
-- Trigger files for inter-agent communication
-- xterm.js for OUTPUT display (works fine)
-- CLAUDE.md role injection
-- Message history panel
-
----
-
-## ✅ SDK PROTOTYPE SPRINT - COMPLETE
-
-**Acceptance Test:** PASSED (Jan 25, 2026)
-
-All 4 tasks completed:
-- Task #1: SDK Backend Integration (Worker B) - hivemind-sdk.py created
-- Task #2: SDK Message UI Renderer (Worker A) - sdk-renderer.js created
-- Task #3: Multi-Agent Coordination (Lead) - sdk-bridge.js + IPC handlers
-- Task #4: Validation (Reviewer) - Conditional pass
-
-**Key Files:**
-- `hivemind-sdk.py` - Main SDK orchestrator (~500 lines)
-- `ui/modules/sdk-bridge.js` - Electron ↔ SDK bridge
-- `ui/modules/sdk-renderer.js` - SDK message UI
-- `ui/modules/ipc-handlers.js` - SDK IPC handlers
-
----
-
-## Previous: V16.11 SHIPPED
-
----
-
-## ⚠️ CRITICAL NOTE FOR ALL AGENTS - READ THIS
-
-**How to tell where user input came from:**
-- `[BROADCAST TO ALL AGENTS]` prefix → User typed in broadcast input bar
-- NO prefix → User typed DIRECTLY in your terminal
-
-**DO NOT ask "did you use broadcast?" - just look at the message format.**
-
----
-
-## V16.11: Auto-Refocus Fix - ✅ SHIPPED (THE FIX!)
-
-**Problem:** Messages arriving in terminal but not being processed by Claude. Panes 1 & 4 (Lead/Reviewer) affected more than panes 2 & 3 (Workers).
-
-**Root Cause Discovery (via Lead + Reviewer debugging session):**
-- Focus was being lost between `textarea.focus()` and Enter event dispatch
-- The 50ms delay before sending Enter allowed focus to shift to another element
-- Keyboard Enter events were dispatched to wrong element or no element
-
-**Fix Applied:**
-- `terminal.js` doSendToPane() - Added re-focus check before Enter dispatch
-- If focus was lost during the 50ms delay, re-focus before sending Enter
-- Added diagnostic logging to track focus state
-
-**Code Change:**
-```javascript
-// V16.11: Re-check focus before dispatching
-const stillFocused = document.activeElement === textarea;
-if (!stillFocused) {
-  textarea.focus();  // Re-focus if lost
-}
-// Then dispatch Enter event
-```
-
-**Result:** All 4 panes now receive messages automatically. User confirmed NO manual intervention needed!
-
----
-
-## V16.10: Keyboard Events + sendUnstick() - ✅ SHIPPED
-
-**Changes:**
-- Replaced PTY `\r` with DOM keyboard events for Enter
-- Added `_hivemindBypass` marker to allow synthetic events through isTrusted check
-- Added `sendUnstick(paneId)` function - dispatches ESC keyboard event
-- Added `(UNSTICK)` trigger command - agents can unstick each other
-
----
-
-## V16.3: Auto-Unstick ESC Bug Fix - ✅ SHIPPED
-
-**Problem:** Agents getting stuck in "thinking animation" even with NO messages being sent
-
-**Root Cause Discovery (Jan 25 session):**
-- User reported Worker B stuck for 1m44s with NO NEW MESSAGES
-- V16 fixed trigger injection ESC, but missed the auto-unstick timer in main.js
-- main.js line 366 was sending `\x1b` (ESC) via PTY every 30 seconds
-- `autoNudge: true` is the DEFAULT setting
-- This periodic ESC was killing/interrupting agents!
-
-**Fix Applied:**
-- `main.js` - Removed ESC sending from auto-unstick timer
-- Now just notifies user via `agent-stuck-detected` IPC event
-- `renderer.js` - Added handler to show visual notification + flash pane header
-
-**New Behavior:**
-- Auto-unstick timer detects stuck agents but does NOT send ESC
-- User sees notification: "Pane X may be stuck - click pane and press ESC"
-- User must manually press ESC to unstick (keyboard ESC is safe, PTY ESC kills)
-
-**Key Learning (DOCUMENTED):** PTY ESC (`\x1b`) always kills/interrupts Claude Code agents. User keyboard ESC works to unstick. There is NO programmatic way to safely unstick agents.
-
-**Full ESC/Control Character Audit (Jan 25, 2026):**
-
-| Location | Char | Automatic? | Status |
-|----------|------|------------|--------|
-| `renderer.js:258` | `\x03` Ctrl+C | NO - user keyboard | ✅ INTENTIONAL |
-| `main.js:366` | `\x1b` ESC | YES - 30s timer | ✅ FIXED V16.3 |
-| `terminal-daemon.js:252-285` | ESC in heartbeat | YES | ✅ Fixed V16 |
-| `terminal.js:470-475` | ESC in nudgePane | YES | ✅ Fixed V16 |
-
-No other automatic control character sends found. All other PTY writes are user input, text, or Enter.
-
----
-
-## V16 FINAL: Trigger System Fixed - SHIPPED
-
-**Problem:** Triggers were killing active agents (ESC via PTY = interrupt)
-
-**Root Cause Discovery (via stress test):**
-- 3x ESC BEFORE message = killed active agents
-- 1x ESC AFTER message = also killed (V17 attempt failed)
-- PTY escape writes ≠ keyboard escape (different signal paths!)
-- User keyboard ESC = safe unstick
-- PTY \x1b write = always kills
-
-**Final Fix:** Remove ALL ESC from trigger injection. Just send text + Enter.
-
-**Files Changed:**
-- `daemon-handlers.js` - Removed ESC spam from processQueue()
-- `terminal.js` - Removed ESC from sendToPane()
-
-**Current Behavior:**
-- ✅ Triggers (file-based) = SAFE, no interrupts
-- ⚠️ Broadcasts = may interrupt active agents (unavoidable Claude behavior)
-- ⚠️ Stuck agents = user must manually ESC (documented limitation)
-
-**Key Learning:** Cannot programmatically unstick agents via PTY. User keyboard ESC works, PTY ESC kills.
-
----
-
-## V15: Trigger + Interrupt Fixes - SUPERSEDED BY V16
-
-**Superseded** - V16 replaced the ESC handling entirely.
-
----
-
-## V14: Random Interrupt Fix - SHIPPED
-
-**Problem:** Agents getting interrupted randomly by auto-Enter and aggressive auto-sync.
-
-**Fixes Implemented:**
-1. ✅ Worker A: Removed `\r` from terminal.js:346-348 and daemon-handlers.js:188-191
-2. ✅ Worker B: Added `autoSync` setting check in watcher.js handleFileChange()
-3. ✅ Reviewer: Documented Claude Code limitations
-
----
-
----
-
-## V13: Autonomous Operation
-
-**Goal:** User gives task, walks away, system keeps working without babysitting.
-
-**Problem:** Agents get stuck after completing tasks. User must manually nudge them. No way to give a large task and walk away.
-
-**Solution:** Lead-as-supervisor with daemon watchdog fallback.
-
-### Supervision Hierarchy
-
-```
-Normal:     Daemon timer → Lead → nudges workers
-Fallback 1: Lead stuck → Daemon nudges Lead
-Fallback 2: Lead still stuck → Daemon directly nudges workers
-Fallback 3: Everyone stuck → Alert user (sound/notification)
-```
-
-### Tasks
-
-| Task | Owner | Status | Description |
-|------|-------|--------|-------------|
-| HB1 | Worker B | ✅ DONE | Heartbeat timer in daemon (every 60s triggers Lead) |
-| HB2 | Worker B | ✅ DONE | Track Lead response. If no response in 30s, nudge Lead again |
-| HB3 | Worker B | ✅ DONE | If Lead unresponsive after 2 nudges, daemon directly nudges workers |
-| HB4 | Worker A+B | ✅ DONE | User alert (Worker A: UI f8a917b, Worker B: daemon a3e78ad) |
-| HB5 | Lead | ✅ DONE | Respond to heartbeat - check incomplete tasks, nudge stuck workers |
-| R1 | Reviewer | ✅ DONE | Verified - PARTIAL PASS (core flow works, fallbacks untested) |
-| BUG1 | Worker B | ✅ FIXED | Heartbeat timer not firing - removed overly aggressive activity check |
-| BUG2 | Lead | ✅ FIXED | Heartbeat false positive - removed terminal activity check from checkLeadResponse |
-| FX4-v2 | Worker A+B | ✅ READY | Ghost text fix - 4-layer defense (ESC, isTrusted, debounce, daemon dedup) |
-
-### File Ownership
-
-| Owner | Files |
-|-------|-------|
-| Worker B | ui/terminal-daemon.js, ui/modules/watcher.js |
-| Lead | Heartbeat response logic (via triggers) |
-| Worker A | UI for alert notification (if needed) |
-| Reviewer | Verification |
-
-### HB1-HB4: Daemon Watchdog (Worker B)
-
-**File:** `ui/terminal-daemon.js`
-
-```
-- Add heartbeat timer (configurable, default 60s)
-- On tick: write to triggers/lead.txt "(SYSTEM): Heartbeat - check team status"
-- Track if Lead responds (check if triggers/lead.txt gets cleared or response in triggers/workers.txt)
-- If no response after 30s: nudge Lead again
-- If still no response after 2nd nudge: read shared_context.md, find incomplete tasks, directly nudge workers
-- If workers don't respond: trigger desktop notification / sound alert
-```
-
-### HB5: Lead Heartbeat Response
-
-When Lead receives "(SYSTEM): Heartbeat":
-1. Read shared_context.md for incomplete tasks
-2. Check which workers should be working on them
-3. Send nudge via trigger: "(LEAD): You have task X assigned. Status?"
-4. If worker responds with completion, update shared_context.md
-
----
-
-## V12: Stability & Robustness ✅ SHIPPED
-
-**Goal:** Fix critical bugs blocking normal usage.
-
-**MANDATORY FOR ALL AGENTS:**
-1. When you receive a trigger message → REPLY via triggers (not terminal)
-2. When you complete a task → NOTIFY via triggers
-3. When you're stuck → ASK via triggers
-4. Terminal output = for USER only
-5. Triggers = for OTHER AGENTS
-
-**THIS IS NOT OPTIONAL. If you don't use triggers, coordination breaks down.**
-
-Trigger files:
-- `triggers/lead.txt` → Lead
-- `triggers/worker-a.txt` → Worker A
-- `triggers/worker-b.txt` → Worker B
-- `triggers/reviewer.txt` → Reviewer
-- `triggers/all.txt` → Everyone
-
-### Tasks
-
-| Task | Owner | Status | Description |
-|------|-------|--------|-------------|
-| FX1 | Worker A | ✅ DONE | ESC key interrupt - send Ctrl+C to focused terminal (fa2c8aa) |
-| FX2 | Worker B | ✅ DONE | Session persistence - save/restore context on restart |
-| FX3 | Lead | ✅ DONE | Unblock workflow gate during planning phase |
-| FX4 | Worker A | ✅ DONE | Fix autocomplete bug PROPERLY - still injecting messages |
-| CO1 | Worker B | ✅ DONE | Progress indicator when agents working |
-| R1 | Reviewer | ✅ DONE | Verify all V12 fixes |
-| BUG1 | Worker A | ✅ DONE | Self-sync bug - FIXED (3s debounce per pane) |
-| BUG2 | Worker A | ✅ DONE | Trigger flood causes terminal UI glitch - FIXED (throttle 150ms) |
-
-### File Ownership
-
-| Owner | Files |
-|-------|-------|
-| Lead | ui/main.js (state logic), ui/modules/watcher.js |
-| Worker A | ui/renderer.js, ui/modules/terminal.js, ui/index.html |
-| Worker B | ui/modules/watcher.js (file ops), ui/terminal-daemon.js |
-| Reviewer | Testing, verification |
-
-### FX1: ESC Key Interrupt (Worker A)
-- File: `ui/renderer.js`
-- When ESC pressed, send `\x03` (Ctrl+C) to focused terminal
-- Should interrupt running Claude process
-
-### FX2: Session Persistence (Worker B)
-- Save agent conversation context before restart
-- Restore on app reopen
-- Could use daemon to persist state
-
-### FX3: Workflow Gate (Lead)
-- File: `ui/modules/triggers.js`
-- Allow worker triggers during `friction_sync` and `planning` states
-- Current gate blocks workers unless state is `executing`
-
-### FX4: Autocomplete Bug (Worker A) - ⚠️ EXTERNAL DEPENDENCY
-- **RESOLVED:** Not a Hivemind bug
-- **Root Cause:** Claude Code's ghost text suggestions in terminals
-- User screenshot revealed: greyed-out text = Claude Code suggestions (Tab to accept, Enter submits)
-- We cannot control Claude Code's internal UI from Hivemind
-- Browser autocomplete fixes (v1-v5) were solving wrong problem
-- **Action:** Document as expected Claude Code behavior
-
----
-
-## Previous: V11 Shipped
-
-**Commit:** `0ba5cb7` - Collaborative fix by Worker A + Worker B
-
-**Issue:** During MCP testing, autocomplete suggestions were auto-submitted to agent terminals without user confirmation. Documented as HIGH PRIORITY in friction.md.
-
-**Fix Applied:**
-1. **Worker A:** Added `blurAllTerminals()` function + focusin listener to release xterm keyboard capture when input fields get focus
-2. **Worker B:** Made broadcast keydown handler defensive (check !isComposing, trim, block empty sends) + added autocomplete="off" attributes
-
-**Files Changed:**
-- `ui/index.html` - autocomplete/autocorrect/autocapitalize="off" on inputs
-- `ui/renderer.js` - defensive keydown handler + focusin blur
-- `ui/modules/terminal.js` - blurAllTerminals() export
-
-**Reviewer:** This fix was committed after your V11 verification. The friction.md you updated triggered this fix. No re-verification needed unless you want to confirm the autocomplete issue is resolved.
-
----
-
-## V11: MCP Integration
-
-**Goal:** Replace file-based triggers with Model Context Protocol for structured agent communication.
-
-### Tasks
-
-| Task | Owner | Status | Description |
-|------|-------|--------|-------------|
-| MC1 | Lead | ✅ DONE | MCP server skeleton with stdio transport |
-| MC2 | Lead | ✅ DONE | Core messaging tools (send_message, get_messages) |
-| MC3 | Lead | ✅ DONE | Workflow tools (get_state, trigger_agent, claim_task) |
-| MC4 | Worker B | ✅ DONE | Connect MCP server to existing message queue |
-| MC5 | Worker B | ✅ DONE | Agent identification via MCP handshake |
-| MC6 | Worker B | ✅ DONE | State machine integration |
-| MC7 | Worker A | ✅ DONE | MCP status indicator in UI |
-| MC8 | Worker A | ✅ DONE | Auto-configure MCP per agent on startup |
-| MC9 | Worker A | ✅ DONE | MCP connection health monitoring |
-| R1 | Reviewer | ✅ DONE | Verify all MCP tools work correctly |
-
-### Feature Details
-
-**MC1-MC3: MCP Server Core (Lead)**
-- Stdio transport MCP server using @modelcontextprotocol/sdk
-- Tools: send_message, get_messages, get_state, trigger_agent, claim_task, complete_task
-- JSON-RPC protocol with proper error handling
-
-**MC4-MC6: MCP Backend Integration (Worker B)**
-- Bridge MCP tools to existing watcher.js message queue
-- Agent auth via paneId passed in tool calls
-- State machine reads/writes via MCP
-
-**MC7-MC9: MCP UI & Setup (Worker A)**
-- Connection status per agent in header
-- Auto-run `claude mcp add` on app startup
-- Health checks and reconnection handling
-
-### Success Criteria
-
-- [ ] MCP server starts and accepts connections
-- [ ] Agents can send/receive messages via MCP tools
-- [ ] State machine accessible via MCP
-- [ ] UI shows MCP connection status
-- [ ] Auto-configuration works on fresh start
-
----
-
-## V10: Messaging System Improvements ✅ SHIPPED
-
-Commit: `6d95f20` - All 7 tasks complete.
-
-**Goal:** Make agent-to-agent messaging robust and production-ready based on team feedback.
-
-### Tasks
-
-| Task | Owner | Status | Description |
-|------|-------|--------|-------------|
-| MQ1 | Lead | ✅ DONE | Message queue backend - JSON array with append (merged with MQ4) |
-| MQ2 | Lead | ✅ DONE | Delivery confirmation IPC events (merged with MQ4) |
-| MQ3 | Worker A | ✅ DONE | Message history UI panel |
-| MQ4 | Worker B | ✅ DONE | Message queue file watcher integration |
-| MQ5 | Worker B | ✅ DONE | Gate bypass for direct messages |
-| MQ6 | Worker A | ✅ DONE | Group messaging UI (workers only, custom) |
-| R1 | Reviewer | ✅ DONE | Verify all messaging features |
-
-### Feature Details
-
-**MQ1+MQ2: Message Queue Backend (Lead)**
-- Replace single-message trigger files with JSON queue
-- Format: `[{from, to, time, msg, delivered}, ...]`
-- Append new messages, don't overwrite
-- Emit `message-delivered` IPC event when processed
-- Emit `message-received` IPC event for UI updates
-
-**MQ3+MQ6: Message UI (Worker A)**
-- New "Messages" tab in right panel
-- Show conversation history between agents
-- Filter by sender/recipient
-- Group message composer (workers only, all, custom)
-
-**MQ4+MQ5: Message Integration (Worker B)**
-- File watcher for message queue files
-- Process queue, mark as delivered
-- Bypass workflow gate for direct messages
-- Messages always allowed regardless of state
-
-### Success Criteria
-
-- [ ] Messages persist (no race condition overwrites)
-- [ ] Delivery confirmation works
-- [ ] Message history visible in UI
-- [ ] Direct messages bypass workflow gate
-- [ ] Group messaging works
-
----
-
-## V9: Documentation & Polish ✅ SHIPPED
-
-Commit: `ac4e13c` - All 7 tasks complete.
-
-**Goal:** Prepare for stable release with docs and refinements.
-
-### Tasks
-
-| Task | Owner | Status | Description |
-|------|-------|--------|-------------|
-| DC1 | Lead | ✅ DONE | README and getting started guide |
-| DC2 | Worker A | ✅ DONE | In-app help tooltips |
-| DC3 | Worker B | ✅ DONE | API documentation generator |
-| PL1 | Lead | ✅ DONE | Error message improvements |
-| PL2 | Worker A | ✅ DONE | UI consistency pass |
-| PL3 | Worker B | ✅ DONE | Performance audit |
-| R1 | Reviewer | ✅ DONE | Final release verification |
-
-### Feature Details
-
-**DC1-DC3: Documentation**
-- README with installation, usage, architecture
-- Tooltips on UI elements for discoverability
-- Auto-generate IPC handler docs
-
-**PL1-PL3: Polish**
-- Clear, actionable error messages
-- Consistent styling, spacing, colors
-- Profile and optimize slow paths
-
----
-
-## V8: Testing & Automation ✅ SHIPPED
-
-Commit: `4e8d7c3` - All 7 tasks complete:
-- TE1/TE2 ✅ Test execution daemon
-- TR1 Worker A ✅ Test results UI
-- TR2 Lead ✅ Test failure notifications
-- CI1 Worker B ✅ Pre-commit hooks
-- CI2 Worker A ✅ CI status indicator
-
-### Feature Details
-
-**TE1+TE2: Test Runner** - Execute tests automatically
-- Detect test framework (Jest, Mocha, pytest, etc.)
-- Run tests on file save or on demand
-- Capture and parse test output
-
-**TR1+TR2: Test Results** - Display test status
-- Test results panel with pass/fail counts
-- Failure details with stack traces
-- Notifications on test failures
-
-**CI1+CI2: CI Integration** - Pre-commit checks
-- Run tests before allowing commits
-- Block commits on test failure
-- Show CI status in header
-
----
-
-## V7: Quality & Observability ✅ SHIPPED
-
-Commit: `1df828b` - All 7 tasks complete:
-- OB1 Lead ✅ Activity log aggregation
-- OB2 Worker A ✅ Activity log UI panel
-- QV1 Worker B ✅ Output validation hooks
-- QV2 Lead ✅ Completion quality checks
-- RB1 Worker B ✅ Checkpoint rollback support
-- RB2 Worker A ✅ Rollback confirmation UI
-- R1 Reviewer ✅ Verified all features
-
-### Feature Details
-
-**OB1+OB2: Activity Log** - Unified view of all agent activity
-- Aggregate terminal output, file changes, state transitions
-- Filterable by agent, time, event type
-- Searchable for debugging
-
-**QV1+QV2: Quality Validation** - Verify completed work
-- Hooks to validate output (syntax check, tests)
-- Auto-detect incomplete work
-- Confidence scoring for completions
-
-**RB1+RB2: Rollback Support** - Undo failed changes
-- Checkpoint file state before changes
-- One-click rollback on failure
-- Diff view of pending rollback
-
----
-
-## V6: Smart Automation ✅ SHIPPED
-
-Commit: `98d3454` - All 8 tasks complete:
-- SR1 Lead ✅ Smart routing algorithm
-- SR2 Lead ✅ Routing IPC handlers
-- AH1 Lead ✅ Auto-handoff logic
-- AH2 Worker A ✅ Handoff notification UI
-- CR1 Worker B ✅ Conflict queue system
-- CR2 Worker A ✅ Conflict resolution UI
-- LM1 Worker B ✅ Learning data persistence
-- R1 Reviewer ✅ Verified all features
-
----
-
-## V5: Multi-Project & Performance ✅ SHIPPED
-
-Commit: `da593b1` - All tasks complete.
-
----
-
-## V4: Self-Healing & Autonomy ✅ SHIPPED
-
-Commit: `f4e9453` - All 8 tasks complete:
-- AR1 Worker B ✅ Stuck detection in daemon
-- AR2 Lead ✅ Auto-nudge IPC handler
-- AR3 Lead ✅ Auto-unstick timer
-- CB1 Worker A ✅ Startup state display
-- CB2 Worker B ✅ Agent claim/release protocol
-- AT1 Lead ✅ Completion detection patterns
-- AT2 Worker A ✅ Auto-trigger UI feedback
-- CP1 Worker B ✅ Session summary persistence
-
----
-
-## V3: Developer Experience ✅ SHIPPED
-
-**Goal:** Improve the development/testing workflow based on V2 feedback.
-
----
-
-## V3 Features (Proposed)
-
-### 1. Dry-Run Mode (HIGH PRIORITY)
-Simulate multi-agent flow without spawning real Claude instances.
-- Toggle in settings: "Dry Run Mode"
-- When enabled, terminals show simulated agent responses
-- Useful for: testing state transitions, demos, debugging orchestration
-- **Why:** 3 of 4 agents requested this in feedback
-
-### 2. Session History Tab (MEDIUM)
-View and replay past sessions.
-- New tab in right panel: "History"
-- Shows: timestamp, agents involved, files touched, duration
-- Click to view session details
-- **Why:** Already tracking `usageStats.history`, just need UI
-
-### 3. Projects Tab (MEDIUM)
-Quick-switch between projects.
-- New tab in right panel: "Projects"
-- Recent projects list
-- One-click to switch project folder
-- **Why:** Deferred from Phase 4, users asked for it
-
-### 4. Workflow Gate (HIGH - V3 REQUIRED)
-Enforce Lead → Reviewer → Workers flow.
-- Lead proposes plan → System blocks workers
-- Reviewer approves → System unblocks workers
-- Not optional. MANDATORY gate.
-- **Why:** Lead just skipped Reviewer and triggered workers. Product must prevent this.
-
-### 5. Context Handoff (LOW - FUTURE)
-Better persistence between agent handoffs.
-- Session state file agents can append to
-- Context summarization between handoffs
-- **Why:** Valid concern but complex, defer to later
-
----
-
-## Task Assignments
-
-| Task | Owner | Status | Description |
-|------|-------|--------|-------------|
-| P1 | Lead | ✅ DONE | Finalize V3 scope, break into tasks |
-| D1 | Worker A | ✅ DONE | Dry-run mode UI toggle in settings |
-| D2 | Worker B | ✅ DONE | Dry-run mode backend (mock terminal responses) |
-| WG1 | Lead | ✅ DONE | Workflow Gate - block workers until Reviewer approves |
-| H1 | Worker A | ✅ DONE | Session History tab UI |
-| H2 | Worker B | ✅ DONE | Session History data persistence |
-| J1 | Worker A | ✅ DONE | Projects tab UI |
-| J2 | Worker B | ✅ DONE | Projects tab backend (recent projects) |
-| R1 | Reviewer | ✅ DONE | Verify all V3 features |
-
----
-
-## Sprint Breakdown
-
-### Sprint 3.1: Dry-Run Mode
-- D1: Settings toggle, UI indicator
-- D2: Mock terminal responses, bypass Claude spawn
-
-### Sprint 3.2: History & Projects
-- H1 + H2: Session History tab
-- J1 + J2: Projects tab
-
-### Sprint 3.3: Polish
-- R1: Full verification
-- Bug fixes, UX tweaks
-
----
-
-## File Ownership
-
-| Owner | Files |
-|-------|-------|
-| Lead | main.js (state/IPC), SPRINT.md, shared_context.md |
-| Worker A | renderer.js, index.html, modules/ui-*.js |
-| Worker B | terminal-daemon.js, daemon-client.js, modules/watcher.js |
-| Reviewer | __tests__/, workspace/build/reviews/ |
-
----
-
-## Success Criteria
-
-- [ ] Dry-run mode works (toggle on, terminals simulate)
-- [ ] Session history tab shows past sessions
-- [ ] Projects tab shows recent projects, allows switching
-- [ ] All 86 existing tests still pass
-- [ ] Reviewer verifies all features
-
----
-
-## V2 Summary (Complete)
-
-- Sprint 2.1: 86 tests added
-- Sprint 2.2: Modularized (3036 lines → 9 files)
-- Sprint 2.3: Polish (logging, health, scrollback, flash, kill all, others)
-- Post-sprint: Fresh Start button, Nudge All button
-
----
-
-**Ready for team sync. Agents: read this and confirm your assignments.**
