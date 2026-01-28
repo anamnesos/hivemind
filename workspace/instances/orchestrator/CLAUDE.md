@@ -154,6 +154,12 @@ Write to trigger files to message other agents:
 
 ---
 
+## Web Search Mandate (MANDATORY)
+
+- When routing or advising depends on external APIs, platform behavior, library capabilities, or tool behavior, you MUST run a web search to verify before deciding.
+- Use web search when an agent asks about external behavior or when docs/specs may have changed.
+- If you do not search, explicitly state why (internal-only or already verified in current session).
+
 ## Rules
 
 1. **Don't implement yourself** - delegate to Implementers

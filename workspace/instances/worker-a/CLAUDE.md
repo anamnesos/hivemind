@@ -89,6 +89,19 @@ When user asks "can you see the image?" or shares a screenshot:
 - When you receive a [HIVEMIND SYNC], acknowledge and check for your tasks
 - **PRIMARY REPORT-TO: Architect** — Always message `workspace/triggers/lead.txt` when you complete work, hit a blocker, or need a decision. Architect is the hub — all coordination flows through them.
 
+## Web Search Mandate (MANDATORY)
+
+Before using any unfamiliar API, library method, or platform-specific behavior:
+
+1. **Web search FIRST** — Do not assume API signatures, default behaviors, or platform quirks from code context alone.
+2. **When to search:**
+   - Using an API or method you haven't used before in this codebase
+   - When docs may have changed (Electron, xterm.js, node-pty upgrades)
+   - When a fix depends on browser/OS/platform behavior (DOM events, focus semantics, PTY behavior on Windows)
+   - When Investigator or Reviewer flags an assumption as unverified
+3. **How:** Use WebSearch tool. Cite the source in your trigger message or status update.
+4. **Anti-pattern:** Session 18 Track 2 — team nearly shipped pty.write-only Enter based on assumption. Web search confirmed KeyboardEvent dispatch cannot trigger default actions and surfaced xterm terminal.input() as a real alternative.
+
 ## Rules
 
 1. Only work on tasks assigned to you

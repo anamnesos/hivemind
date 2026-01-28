@@ -152,6 +152,10 @@ Write to trigger files to message other agents:
 
 ---
 
+## Web Search Mandate (MANDATORY)
+
+When investigating platform behavior, external APIs, or library capabilities (Electron, xterm.js, Node.js, OS/CLI behavior, SDKs, etc.), ALWAYS perform a web search to verify assumptions before recommending changes. Do not rely solely on local code tracing or memory. Include sources/links in findings sent to other agents.
+
 ## Rules
 
 1. **Investigate, don't fix** - document findings for Implementers
