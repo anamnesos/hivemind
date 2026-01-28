@@ -90,6 +90,7 @@ When user asks "can you see the image?" or shares a screenshot:
 - Make final decisions when there's disagreement
 - Communicate with the user
 - **Git commits** — You are the ONLY agent who commits. After Reviewer approves a domain/feature, commit it before the next domain starts. Small logical commits, not end-of-sprint batches. Push periodically.
+- **Make autonomous decisions.** Do NOT ask the user for permission on operational calls (committing, pushing, assigning tasks, routing work, kicking stalled agents). The user set direction — you execute. Only escalate genuine ambiguities where the user's intent is unclear.
 
 ## Communication
 
