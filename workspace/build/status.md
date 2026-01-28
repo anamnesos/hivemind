@@ -1,6 +1,71 @@
 ﻿# Build Status
 
-Last updated: 2026-01-28 - Hardening Phase 2: ipc-handlers docs/perf/error split
+Last updated: 2026-01-28 - Trigger prefix + auto interrupt
+
+**Process note:** Reviewer offline; user approved temporary bypass for this session. Orchestrator/Implementer B/Investigator asked to provide review coverage.
+
+---
+
+## Sprint 2 — Ctrl+C Auto-Interrupt (Jan 28, 2026)
+
+**Owner:** Implementer B
+
+**Summary:** Added `interrupt-pane` IPC channel to send Ctrl+C (0x03) to a pane's PTY. Updated main-process stuck detection to auto-send Ctrl+C after 120s of no output, with UI notification.
+
+**Files updated:**
+- `ui/modules/ipc/pty-handlers.js`
+- `ui/main.js`
+
+---
+
+## Sprint 2 — Trigger Prefix + Status Bar Hint (Jan 28, 2026)
+
+**Owner:** Investigator
+
+**Summary:** Added ANSI bold yellow `[TRIGGER]` prefix for PTY-injected messages (notifyAgents, auto-sync, trigger file handling, routing, auto-handoff, direct messages). Updated status bar hint text for quick targeting commands.
+
+**Files updated:**
+- `ui/modules/triggers.js`
+- `ui/index.html`
+
+---
+
+## Sprint 2 — IPC Null-Check Guards (Jan 28, 2026)
+
+**Owner:** Implementer B
+
+**Summary:** Added defensive null checks for ctx dependencies in 6 IPC modules (state, completion-quality, conflict-queue, smart-routing, auto-handoff, activity-log). Guards prevent crashes when watcher/triggers/log providers are unset and return safe defaults or errors.
+
+**Files updated:**
+- `ui/modules/ipc/state-handlers.js`
+- `ui/modules/ipc/completion-quality-handlers.js`
+- `ui/modules/ipc/conflict-queue-handlers.js`
+- `ui/modules/ipc/smart-routing-handlers.js`
+- `ui/modules/ipc/auto-handoff-handlers.js`
+- `ui/modules/ipc/activity-log-handlers.js`
+
+**Next:** Reviewer spot-check for expected return shapes.
+
+---
+
+## IPC Bug Fix Pass — Consolidated (Jan 28, 2026)
+
+**Owner:** Implementer B
+
+**Fixes applied**
+- output-validation: `validate-file` now uses local `runValidation` helper (no `ipcMain.handle` invocation)
+- completion-quality: `validate-state-transition` now calls local `runQualityCheck` helper (no `ipcMain.handle` invocation)
+- mcp-autoconfig: `mcp-reconnect-agent` uses local `configureAgent` helper (no `ipcMain.emit`)
+- test-notification: `test-run-complete` uses local `notifyTestFailure` helper (no `ipcMain.emit`)
+- error-handlers: `handle-error` now calls local `showErrorToast` helper (no `ipcMain.emit`)
+- precommit: uses `ctx.runTests` (from test-execution-handlers) instead of `ipcMain.handle('run-tests')`
+- api-docs: `get-api-docs` uses local `generateApiDocs` helper (no `ipcMain._events` access)
+- perf-audit: `benchmark-handler` uses `ctx.benchmarkHandlers` map (no `ipcMain._events`), interval stored in `ctx.perfAuditInterval`
+- defaults: expanded 4-pane defaults to 6 panes in performance-tracking, smart-routing, learning-data
+
+**Smoke test:**
+- `npx eslint modules/ipc/output-validation-handlers.js modules/ipc/completion-quality-handlers.js modules/ipc/mcp-autoconfig-handlers.js modules/ipc/test-notification-handlers.js modules/ipc/error-handlers.js modules/ipc/precommit-handlers.js modules/ipc/test-execution-handlers.js modules/ipc/api-docs-handlers.js modules/ipc/perf-audit-handlers.js modules/ipc/performance-tracking-handlers.js modules/ipc/smart-routing-handlers.js modules/ipc/learning-data-handlers.js modules/ipc-handlers.js`
+- Warnings only (existing unused vars), no errors
 
 ---
 

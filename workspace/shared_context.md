@@ -1,31 +1,53 @@
 ﻿# Hivemind Shared Context
 
-**Last Updated:** Jan 28, 2026 (session 17 — end)
-**Status:** Hardening sprint Phase 2 COMPLETE. Restart to verify.
+**Last Updated:** Jan 28, 2026 (session 18)
+**Status:** Session 18 fixes shipped. Auto-submit still has issues — needs restart + verification.
 
 ---
 
-## 🚨 ARCHITECT: READ THIS FIRST (Session 18)
+## ⚠️ TEMPORARY OVERRIDE (Jan 28, 2026)
 
-You are the Architect (pane 1). Session 17 completed the hardening sprint's major deliverables. This restart is to VERIFY everything runs clean.
+- User explicitly approved bypassing Reviewer gate for this session because Reviewer + Implementer A are offline.
+- Orchestrator/Implementer B/Investigator asked to assume review coverage and report risks.
 
-### What was done (Session 17):
-1. **CSS extraction** — index.html: 4164 → 564 lines, zero inline CSS, 8 external CSS files in ui/styles/
-2. **IPC split** — ipc-handlers.js: 3805 lines → pure registry. 36 modules, ~165 handlers in ui/modules/ipc/
-3. **IPC bug fixes** — All 10 pre-existing bugs resolved (ipcMain.emit misuse, _events access, unclearable setInterval, 4-pane hardcodes)
-4. **Pre-commit Gate 2B** — Automated lint rule catches nested ipcMain.handle/emit
-5. **Auto-submit bypass** — _hivemindBypass flag in terminal.js doSendToPane for reliable trigger auto-submit
-6. **Codex status indicators** — [Working...] / [Task complete] inline markers + header badge
-7. **Agent instruction updates** — Never-stall rule, report-to-Architect, notify-on-completion, git commit policy
-8. **Process improvements** — Reviewer gate before commit (mandatory), ipcMain API team briefing
+---
+
+## Sprint 2 Update (Jan 28, 2026)
+
+- Implementer B: Added defensive null checks to 6 IPC modules (state-handlers, completion-quality, conflict-queue, smart-routing, auto-handoff, activity-log). Guards prevent crashes when watcher/triggers/log providers are unset.
+- Next: Reviewer to spot-check return shapes and confirm no regressions.
+- Implementer B: Added `interrupt-pane` IPC (Ctrl+C) + auto Ctrl+C after 120s no output in main-process stuck detection.
+- Investigator: Added ANSI bold yellow `[TRIGGER]` prefix for PTY injections (notifyAgents/auto-sync/trigger file/routeTask/auto-handoff/direct messages). Updated status bar hint text in `ui/index.html`.
+- Next: Reviewer verify auto-interrupt behavior + IPC channel response.
+
+---
+
+## 🚨 ARCHITECT: READ THIS FIRST (Session 19)
+
+You are the Architect (pane 1). Session 18 completed verification + shipped fixes.
+
+### Session 18 Summary:
+1. **Session 17 hardening NOT fully verified** — app launches and agents orient, but auto-submit still requires manual Enter in some cases. User had to manually submit trigger messages multiple times this session.
+2. **Focus-steal typing-guard** (c9a13a4) — trigger injection now deferred while user is typing in UI inputs. Fixes lost-input during active typing. `terminal.js` adds `userIsTyping()` guard to `sendToPane` and `processQueue`.
+3. **Track 2 closed** — Investigated eliminating focus-steal entirely via KeyboardEvent dispatch. Web search confirmed untrusted events don't trigger default actions (Electron/DOM spec). `pty.write('\r')` also doesn't submit in Claude TUI (known from Fix R/H/I). Focus is required for `sendTrustedEnter`. Typing-guard is the complete fix for now.
+4. **Web search mandate** — All 5 agent CLAUDE.md files updated with mandatory web search sections. Agents must verify external API/platform/library behavior via web search before coding or approving.
+5. **xterm terminal.input() lead** — Web search surfaced `Terminal.input(data, wasUserInput?)` as potential future path to bypass focus entirely. Backlog item.
 
 ### This restart: VERIFY
-1. App launches without errors (IPC registry loads all 36 modules)
-2. All 6 panes spawn and orient
-3. Trigger messages auto-submit in Claude panes (auto-submit bypass fix)
-4. Codex panes show [Working...] / [Task complete] indicators
-5. CSS renders correctly (external stylesheets loading)
-6. No IPC handler registration errors in console
+1. Auto-submit works for trigger messages WITHOUT manual Enter (typing-guard fix c9a13a4 is now live)
+2. Auto-submit works when user is NOT typing (if still fails, different root cause — investigate)
+3. If auto-submit still fails when idle, check npm console for doSendToPane logs
+4. All 6 panes spawn and orient
+5. CSS renders correctly
+6. No IPC errors in console
+
+### Backlog (not started)
+- Structured logger (376 console.* → proper logger module)
+- Version-fix comment cleanup (172 markers)
+- Electron upgrade (separate sprint)
+- Sequence number compaction resilience
+- Focus-steal full elimination via xterm terminal.input() API
+- Trigger message UI banner (Option B — UX enhancement, separate from injection)
 
 ### Backlog (not started)
 - Structured logger (376 console.* → proper logger module)
@@ -309,7 +331,3 @@ echo "(YOUR-ROLE #N): message" > "D:\projects\hivemind\workspace\triggers\lead.t
 ## Previous Context
 
 See `workspace/build/status.md` for full sprint history.
-
-
-
-
