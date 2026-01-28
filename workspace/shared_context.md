@@ -1,7 +1,37 @@
 ﻿# Hivemind Shared Context
 
-**Last Updated:** Jan 28, 2026 (session 17)
-**Status:** Hardening sprint in progress — Phase 2: Execution (ipc-handlers docs/perf/error split).
+**Last Updated:** Jan 28, 2026 (session 17 — end)
+**Status:** Hardening sprint Phase 2 COMPLETE. Restart to verify.
+
+---
+
+## 🚨 ARCHITECT: READ THIS FIRST (Session 18)
+
+You are the Architect (pane 1). Session 17 completed the hardening sprint's major deliverables. This restart is to VERIFY everything runs clean.
+
+### What was done (Session 17):
+1. **CSS extraction** — index.html: 4164 → 564 lines, zero inline CSS, 8 external CSS files in ui/styles/
+2. **IPC split** — ipc-handlers.js: 3805 lines → pure registry. 36 modules, ~165 handlers in ui/modules/ipc/
+3. **IPC bug fixes** — All 10 pre-existing bugs resolved (ipcMain.emit misuse, _events access, unclearable setInterval, 4-pane hardcodes)
+4. **Pre-commit Gate 2B** — Automated lint rule catches nested ipcMain.handle/emit
+5. **Auto-submit bypass** — _hivemindBypass flag in terminal.js doSendToPane for reliable trigger auto-submit
+6. **Codex status indicators** — [Working...] / [Task complete] inline markers + header badge
+7. **Agent instruction updates** — Never-stall rule, report-to-Architect, notify-on-completion, git commit policy
+8. **Process improvements** — Reviewer gate before commit (mandatory), ipcMain API team briefing
+
+### This restart: VERIFY
+1. App launches without errors (IPC registry loads all 36 modules)
+2. All 6 panes spawn and orient
+3. Trigger messages auto-submit in Claude panes (auto-submit bypass fix)
+4. Codex panes show [Working...] / [Task complete] indicators
+5. CSS renders correctly (external stylesheets loading)
+6. No IPC handler registration errors in console
+
+### Backlog (not started)
+- Structured logger (376 console.* → proper logger module)
+- Version-fix comment cleanup (172 markers)
+- Electron upgrade (separate sprint)
+- Sequence number compaction resilience (Reviewer lost messages after compaction)
 
 ---
 
@@ -11,14 +41,8 @@
 **Electron upgrade:** Deferred to separate sprint.
 
 ### Phase 1 — Investigation (DONE)
-- **Investigator:** Audit ipc-handlers.js + index.html, produce split plans, categorize console.logs and version-fix comments
-- **Reviewer:** Approved plan with granularity adjustments (split order enforced)
-
-### Phase 2 — Execution (IN PROGRESS)
-- **Implementer A:** Execute index.html split per approved plan
-- **Implementer B:** ipc-handlers split activity-log DONE; checkpoint-handlers DONE; completion-quality DONE; output-validation DONE; smart-routing + auto-handoff + conflict-queue + learning-data DONE; state-handlers DONE; docs/perf/error DONE (api-docs + perf-audit + error-handlers); messaging + test/CI + MCP + SDK + ipc-state already done
-- **Reviewer:** Review activity-log + checkpoint-handlers + completion-quality + output-validation + state-handlers + routing/coordination modules (smart-routing, auto-handoff, conflict-queue, learning-data)
-- Structured logger TBD after splits land
+### Phase 2 — Execution (DONE)
+### Phase 3 — Bug fix pass (DONE)
 
 ### Verified This Session
 - Fix Z (trigger encoding): Confirmed offline + live
@@ -37,6 +61,7 @@
 - Hardening Phase 2 Checkpoint: checkpoint-handlers extracted
 - Hardening Phase 2 Activity Log: activity-log-handlers extracted
 - Handoff: Reviewer verify activity-log + checkpoint + completion-quality + output-validation + state-handlers + routing/coord modules (`ui/modules/ipc/*-handlers.js` in state/routing/quality group); eslint warnings only
+- IPC bug fix pass: output-validation/completion-quality invoke fixes, emit fixes (mcp-autoconfig/test-notification/error), precommit run-tests fix, api-docs/perf-audit cleanup, 6-pane defaults
 
 ---
 
