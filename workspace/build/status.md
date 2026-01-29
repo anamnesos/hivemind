@@ -1,6 +1,30 @@
 ﻿# Build Status
 
-Last updated: 2026-01-29 - Error Handling Fixes Batch B (Implementer B)
+Last updated: 2026-01-29 - Unit Tests: watcher/logger (Implementer B)
+
+---
+
+## Unit Tests - Main Process Modules (Jan 29, 2026)
+
+**Owner:** Implementer B
+
+**Summary:** Added Jest coverage for `modules/watcher.js` and `modules/logger.js`, plus test scaffolding.
+
+**Files updated:**
+- `ui/__tests__/watcher.test.js` - state transitions, conflict queue, message queue, auto-sync, trigger routing
+- `ui/__tests__/logger.test.js` - log levels, formatting, scope, file output
+- `ui/__tests__/setup.js` - global logger mock for non-logger tests
+- `ui/jest.config.js` - expanded coverage collection + thresholds
+
+**Coverage (npm run test:coverage):**
+- Statements: **63.9%**
+- Branches: **51.58%**
+- Functions: **71.42%**
+- Lines: **64.45%**
+
+**Notes:** Jest warns about open handles after tests; all suites pass.
+
+**Status:** COMPLETE (watcher/logger). Remaining targets: `mcp-server.js`, `codex-exec.js`, `modules/ipc/*.js`.
 
 ---
 

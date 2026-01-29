@@ -1,7 +1,22 @@
 ﻿# Hivemind Shared Context
 
-**Last Updated:** Jan 29, 2026 (Session 28 - COMPLETE)
-**Status:** Error handling hardening committed and pushed
+**Last Updated:** Jan 29, 2026 (Session 29 - Unit Tests in progress)
+**Status:** Watcher/logger tests added; coverage now 63.9% statements / 51.58% branches. Remaining: mcp-server, codex-exec, ipc handlers.
+
+---
+
+## 🟡 Session 29 - Unit Tests (In Progress)
+
+### Implementer B Progress
+- Added Jest tests for `modules/watcher.js` and `modules/logger.js`
+- Added Jest setup file with global logger mock
+- Updated Jest config to expand coverage collection + thresholds
+- Coverage (Jan 29): Statements **63.9%**, Branches **51.58%**, Functions **71.42%**, Lines **64.45%**
+- Jest warning: open handles after test run (tests pass)
+
+### Next Steps
+- **Implementer B:** Add tests for `mcp-server.js`, `codex-exec.js`, and `modules/ipc/*.js`
+- **Reviewer:** Spot-check new unit test coverage and any open-handle warnings
 
 ---
 
