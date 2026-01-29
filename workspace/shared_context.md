@@ -9,6 +9,7 @@
 
 ### Commit
 `a36933b` - fix: comprehensive error handling across ui/ codebase
+`b35e0b8` - docs: update status and review notes
 
 ### Summary
 - **19 findings** identified by Investigator

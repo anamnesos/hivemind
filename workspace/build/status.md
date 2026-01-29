@@ -37,6 +37,8 @@ Last updated: 2026-01-29 - Error Handling Fixes Batch B (Implementer B)
 
 **Review:** See `workspace/build/reviews/batch-b-error-handling-review.md` - 50+ error handlers verified across all 6 files.
 
+**Docs commit:** `b35e0b8` - status + review notes recorded.
+
 **Process note:** All Sprint 2 items reviewed and APPROVED. HYBRID fix verified and committed (f52a403).
 
 ---
