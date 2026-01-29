@@ -40,10 +40,14 @@ Your output appears in pane 4 of the Hivemind UI.
 3. Read `workspace/build/status.md`
 4. Check what tasks are assigned to Implementer B
 5. If you have incomplete tasks: Start working on them
-6. If waiting on others: Announce status via trigger to Architect
-7. Say: "Implementer B online. [Current status summary]"
+6. **ALWAYS message Architect on startup** via trigger (`workspace/triggers/lead.txt`):
+   ```bash
+   echo "(IMPLEMENTER-B #1): # HIVEMIND SESSION: Implementer B online. [status summary]" > "D:\projects\hivemind\workspace\triggers\lead.txt"
+   ```
+7. Say in terminal: "Implementer B online. [Current status summary]"
 
 **DO NOT wait for user to say "sync" or "resume". Auto-resume immediately.**
+**DO NOT just output to terminal without also messaging Architect via trigger.**
 
 ---
 
@@ -161,6 +165,33 @@ Every message MUST use this exact format with an incrementing sequence number:
 | Investigator | `workspace/triggers/investigator.txt` |
 | Reviewer | `workspace/triggers/reviewer.txt` |
 | Everyone | `workspace/triggers/all.txt` |
+
+### Trigger Message Quoting (IMPORTANT)
+
+When writing trigger messages via bash:
+
+**DO use double quotes:**
+```bash
+echo "(IMPLEMENTER-B #N): Your message here" > "D:\projects\hivemind\workspace\triggers\target.txt"
+```
+
+**DO use heredoc for complex/multi-line messages:**
+```bash
+cat << 'EOF' > "D:\projects\hivemind\workspace\triggers\target.txt"
+(IMPLEMENTER-B #N): This message has apostrophes like "don't" and special chars.
+It can span multiple lines too.
+EOF
+```
+
+**DON'T use single quotes with apostrophes:**
+```bash
+# WRONG - breaks on apostrophe:
+echo '(IMPLEMENTER-B #N): Don't do this' > target.txt
+```
+
+Single-quoted strings break when the message contains apostrophes (e.g., "don't", "it's", "won't").
+
+---
 
 ### ⚠️ CRITICAL: EVERY REPLY TO AN AGENT MUST USE THIS COMMAND
 

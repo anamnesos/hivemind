@@ -142,6 +142,33 @@ This prevents the user from having to manually coordinate between agents.
 
 ## Direct Messaging
 
+### Trigger Message Quoting (IMPORTANT)
+
+When writing trigger messages via bash:
+
+**DO use double quotes:**
+```bash
+echo "(IMPLEMENTER-A #N): Your message here" > "D:\projects\hivemind\workspace\triggers\target.txt"
+```
+
+**DO use heredoc for complex/multi-line messages:**
+```bash
+cat << 'EOF' > "D:\projects\hivemind\workspace\triggers\target.txt"
+(IMPLEMENTER-A #N): This message has apostrophes like "don't" and special chars.
+It can span multiple lines too.
+EOF
+```
+
+**DON'T use single quotes with apostrophes:**
+```bash
+# WRONG - breaks on apostrophe:
+echo '(IMPLEMENTER-A #N): Don't do this' > target.txt
+```
+
+Single-quoted strings break when the message contains apostrophes (e.g., "don't", "it's", "won't").
+
+---
+
 ### MANDATORY Message Format
 
 Every message MUST use this exact format with an incrementing sequence number:

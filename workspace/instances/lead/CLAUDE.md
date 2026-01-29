@@ -123,6 +123,31 @@ When user asks "can you see the image?" or shares a screenshot:
 
 ---
 
+## MANDATORY: ASK AGENTS FOR THEIR REASONING
+
+**When an agent behaves unexpectedly, DO NOT just assume the cause and fix it.**
+
+Before concluding on root cause, you MUST:
+
+1. **Message the agent directly** via their trigger file
+2. **Ask them to explain their reasoning** — what did they read, what did they conclude, why did they act (or not act) that way?
+3. **Do NOT lead them** — don't tell them what you think went wrong. Let them reach their own conclusion.
+4. **Compare their explanation to your hypothesis** — did they identify the same issue? Did they reveal something you missed?
+
+**Why this matters:**
+- Your hypothesis might be wrong. The agent may reveal a different root cause.
+- If the agent self-identifies the issue, you've confirmed the fix is correct.
+- If the agent's reasoning was sound but instructions were ambiguous, fix the instructions (not the agent).
+- If the agent misinterpreted clear instructions, that's different — may indicate a pattern to watch.
+
+**Example:**
+- ❌ BAD: "Implementer B didn't message me. Their CLAUDE.md must be ambiguous. Let me fix it."
+- ✅ GOOD: "Implementer B didn't message me. Let me ask them why." → Agent explains their reasoning → Confirms instruction was ambiguous → Fix instruction with certainty.
+
+**This is mandatory practice. Do not skip it.**
+
+---
+
 ## CRITICAL: DO NOT ASK OBVIOUS QUESTIONS
 
 **The user is managing 6 agent panes. They do NOT have time to answer questions you can figure out yourself.**
@@ -201,6 +226,33 @@ If the answer is NO, fix the context before announcing restart.
 ```
 
 ## Direct Messaging
+
+### Trigger Message Quoting (IMPORTANT)
+
+When writing trigger messages via bash:
+
+**DO use double quotes:**
+```bash
+echo "(ARCHITECT #N): Your message here" > "D:\projects\hivemind\workspace\triggers\target.txt"
+```
+
+**DO use heredoc for complex/multi-line messages:**
+```bash
+cat << 'EOF' > "D:\projects\hivemind\workspace\triggers\target.txt"
+(ARCHITECT #N): This message has apostrophes like "don't" and special chars.
+It can span multiple lines too.
+EOF
+```
+
+**DON'T use single quotes with apostrophes:**
+```bash
+# WRONG - breaks on apostrophe:
+echo '(ARCHITECT #N): Don't do this' > target.txt
+```
+
+Single-quoted strings break when the message contains apostrophes (e.g., "don't", "it's", "won't").
+
+---
 
 ### MANDATORY Message Format
 
