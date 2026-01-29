@@ -1,33 +1,175 @@
 ﻿# Hivemind Shared Context
 
-**Last Updated:** Jan 28, 2026 (session 18)
-**Status:** Session 18 fixes shipped. Auto-submit still has issues — needs restart + verification.
+**Last Updated:** Jan 29, 2026 (Session 28 - COMPLETE)
+**Status:** Error handling hardening committed and pushed
 
 ---
 
-## ⚠️ TEMPORARY OVERRIDE (Jan 28, 2026)
+## ✅ Session 28 - Complete
 
-- User explicitly approved bypassing Reviewer gate for this session because Reviewer + Implementer A are offline.
-- Orchestrator/Implementer B/Investigator asked to assume review coverage and report risks.
+### Commit
+`a36933b` - fix: comprehensive error handling across ui/ codebase
+
+### Summary
+- **19 findings** identified by Investigator
+- **37 handlers** added across **9 files**
+- **475 insertions**, 79 deletions
+- All pre-commit checks passed
+
+### Work Completed
+| Agent | Files | Handlers |
+|-------|-------|----------|
+| Implementer A | renderer.js, terminal.js, daemon-handlers.js | 26 |
+| Implementer B | main.js, watcher.js, mcp-server.js, terminal-daemon.js, ipc handlers | 11 |
+
+### Files Modified
+- ui/renderer.js - SDK IPC calls, restart, sync
+- ui/modules/terminal.js - PTY writes, clipboard, spawn
+- ui/modules/daemon-handlers.js - SDK interrupt calls
+- ui/main.js - did-finish-load initialization
+- ui/modules/watcher.js - file reads, mkdirSync, chokidar error listeners
+- ui/mcp-server.js - message queue, state, trigger operations
+- ui/terminal-daemon.js - PID file write
+- ui/modules/ipc/checkpoint-handlers.js - rollback directory
+- ui/modules/ipc/test-execution-handlers.js - package.json parsing
+
+---
+
+## ✅ Session 27 - Complete
+
+### Fixes Verified This Session
+| Fix | Status | Verified By |
+|-----|--------|-------------|
+| Stricter idle check for force-inject | ✅ RUNTIME VERIFIED | Reviewer (via Orchestrator) |
+| verifyAndRetryEnter rewrite | ✅ RUNTIME VERIFIED | Reviewer (via Orchestrator) |
+| Delivery-ack sequencing | ✅ RUNTIME VERIFIED | Reviewer - no SKIPPED duplicates |
+| Logger file output (app.log) | ✅ RUNTIME VERIFIED | Reviewer - appends at runtime |
+| CLAUDE.md quoting guidance | ✅ COMPLETE | Implementer A |
+| Version-fix comment cleanup | ✅ COMPLETE | Implementer B |
+
+### Bug Found & Fixed (Session 27)
+- **Problem:** Messages stuck in textarea despite "Enter succeeded" logs
+- **Root Cause (Investigator):** verifyAndRetryEnter checked textarea.value which is always empty after PTY write (false positive)
+- **Additional Root Cause:** Original force-inject used `|| waitedTooLong` - bypassed idle check after 10s
+- **Fix (Implementer A):**
+  1. Force-inject now requires 500ms idle (`&& isIdleForForceInject` instead of `|| waitedTooLong`)
+  2. 60s emergency fallback (prevents infinite wait)
+  3. verifyAndRetryEnter now checks output activity instead of textarea.value
+
+### Verification Results (Jan 29, 2026)
+- **Idle check + verifyAndRetryEnter**: No stuck messages, no manual push needed
+- **Delivery-ack sequencing**: Messages record after Enter success, no SKIPPED duplicates
+- **app.log**: Appends during runtime as expected
+- **Agent communication**: 5/6 agents checked in via triggers, all delivered automatically
+
+### Backlog (Low Priority)
+1. SDK send failure UI state (enhancement)
+2. Remaining version-fix markers in other files
+
+---
+
+## ✅ Session 25 - Complete (Previous)
+
+### Session 24 Fixes Verified
+| Fix | Status | Verified By |
+|-----|--------|-------------|
+| Delivery-ack tracking | ✅ APPROVED | Reviewer - code audit |
+| Auto-submit adaptive delay | ✅ VERIFIED | Burst test - 10/10 msgs on Claude panes 3+6, ~265ms spacing, zero manual push |
+| PTY serialization | ✅ VERIFIED | Burst test - proper queue handling, no collisions |
+| Typing-guard | ✅ VERIFIED | Investigator - console logs show queueing + 10s force-inject |
+| Codex exec throughput | ✅ VERIFIED | Investigator - 8 ticks @3s, no drops |
+| Codex exec events | ✅ WORKING | No warning spam observed |
+
+### Session 25 Commits
+1. `fae3a0b` - fix: reset sequence tracking on agent session restart (Implementer B)
+
+---
+
+## ✅ Session 24 - Complete (Previous)
+
+### Commits
+1. `0414e0a` - fix: handle item.started/completed events in Codex exec parser (Implementer A)
+2. `80140b8` - fix: move recordMessageSeen after delivery confirmation (Implementer A)
+3. `14e4337` - fix: adaptive Enter delay and focus retry for auto-submit reliability (Implementer A)
+4. `25d9d7b` - feat: delivery-ack tracking for PTY trigger sequencing (Implementer B)
+
+---
+
+## Session 23 Summary (Previous)
+
+### Message Sequencing Bug Diagnosed
+
+**Problem:** Agent messages blocked as "SKIPPED duplicate" even though they never reached the target.
+
+**Root Cause:** `triggers.js` calls `recordMessageSeen()` BEFORE `sendStaggered()` completes. If injection fails (focus issue, terminal busy, etc.), the message is still marked as "seen" and retries are blocked.
+
+**Workaround Applied:** Reset `workspace/message-state.json` to clear all lastSeen values.
+
+**Proper Fix Needed:** Move `recordMessageSeen()` to AFTER confirmed delivery (logged in errors.md).
+
+**Update (Implementer B, Jan 28, 2026):** Implemented delivery-ack tracking for PTY triggers. `handleTriggerFile()` now creates a deliveryId and records sequences only after renderer sends `trigger-delivery-ack` when `sendToPane` completes. Added pending delivery map + timeout, sendToPane onComplete, daemon-handlers ack, and main IPC forwarder. **Requires restart + Reviewer verification.**
+
+---
+
+## ✅ Earlier Session 23 Status
+
+**HYBRID FIX VERIFIED AND COMMITTED** - Commit `f52a403`
+
+User confirmed all agents started correctly without manual intervention. Claude panes (1, 3, 6) auto-submit working via hybrid PTY+sendTrustedEnter approach.
+
+### What's in the commit:
+- Hybrid injection: `pty.write(text)` + `sendTrustedEnter()` for Claude panes
+- xterm.js upgrade 5.3.0 → 6.0.0 (@xterm/xterm scoped packages)
+- Global injection mutex to prevent cross-pane races
+- Version-fix comment cleanup in terminal.js
+- Logger conversion (console.* → structured logger)
+
+### Remaining Sprint 2 work to commit:
+- IPC null checks (6 modules)
+- Logger conversions (daemon-client, terminal-daemon, mcp-server)
+- Version-fix cleanup (remaining files)
+
+### Known open issues (LOW priority):
+- Focus-restore bug: Cross-pane focus not restored if user was in different terminal (blockers.md)
+- lead.txt duplicate drop: Sequence reset on agent restart without app restart (blockers.md)
 
 ---
 
 ## Sprint 2 Update (Jan 28, 2026)
 
 - Implementer B: Added defensive null checks to 6 IPC modules (state-handlers, completion-quality, conflict-queue, smart-routing, auto-handoff, activity-log). Guards prevent crashes when watcher/triggers/log providers are unset.
+- Implementer B: Runtime stress test (worker panes) **user-confirmed** auto-submit + spacing (Jan 28, 2026 19:23–19:26Z). Typing-guard + Codex exec throughput still pending.
+- Implementer B: Added delivery-ack tracking for trigger sequencing (PTY). recordMessageSeen now occurs only after renderer `trigger-delivery-ack`; added deliveryId tracking + timeout, sendToPane onComplete, daemon-handlers ack, and main IPC forwarder. **Pending Reviewer verification + restart.**
 - Next: Reviewer to spot-check return shapes and confirm no regressions.
+
+### Implementer B Handoff (Jan 28, 2026)
+
+- Built/verified: Worker-pane runtime stress test; user confirmed auto-submit + spacing.
+- Built: Trigger delivery-ack fix for message sequencing (PTY path).
+- Files updated: `workspace/build/status.md`, `workspace/shared_context.md`.
+- Files updated (delivery-ack): `ui/modules/triggers.js`, `ui/modules/daemon-handlers.js`, `ui/modules/terminal.js`, `ui/main.js`.
+- Next agent: **Architect** — close Priority 1 verification and proceed; **Reviewer/Investigator** — validate typing-guard + Codex exec throughput under load.
+- Next agent (delivery-ack): **Reviewer** — verify trigger sequence recording only occurs after renderer ack; confirm no more "SKIPPED duplicate" when injection fails; restart required.
+- Gotchas: No log-only proof of spacing; confirmation relied on user observation (Jan 28, 2026 19:23–19:26Z).
 - Implementer B: Added `interrupt-pane` IPC (Ctrl+C) + auto Ctrl+C after 120s no output in main-process stuck detection.
+- Implementer B (self-review): interrupt-pane return shape consistent; auto Ctrl+C uses daemonClient lastActivity (output). Known limitation: codex-exec terminals ignore PTY writes so Ctrl+C is a no-op there; stuck notice may repeat every 30s while idle.
+- Implementer B: Converted `ui/daemon-client.js` console.* calls to structured logger (modules/logger) following renderer.js pattern.
+- Implementer B: Converted remaining console.* in `ui/terminal-daemon.js` (stdout/stderr writes) and `ui/mcp-server.js` (modules/logger) for structured logging.
+- Implementer B: Added GLOBAL PTY injection serialization in `ui/modules/terminal.js` (global mutex + queued sendToPane with completion callback) to avoid cross-pane focus/Enter races.
+- Implementer B: Added trigger delivery ack flow to prevent premature sequence recording (files: `ui/modules/triggers.js`, `ui/modules/daemon-handlers.js`, `ui/modules/terminal.js`, `ui/main.js`).
+- Next: Investigator to verify trigger injection ordering under rapid multi-message conditions.
 - Investigator: Added ANSI bold yellow `[TRIGGER]` prefix for PTY injections (notifyAgents/auto-sync/trigger file/routeTask/auto-handoff/direct messages). Updated status bar hint text in `ui/index.html`.
 - Architect: Fixed Codex exec running-state detection to be case-insensitive so trigger delivery no longer skips Codex panes showing "Codex exec mode ready".
-- Next: Reviewer verify auto-interrupt behavior + IPC channel response.
+- Reviewer: Approved auto-interrupt behavior + IPC channel response.
+- Reviewer: Approved daemon-client logger conversion (no behavior change expected).
+- Reviewer: Approved sendToPane xterm 6.0.0 terminal.input refactor (restart verification pending).
+- Next: Architect to verify terminal.input fix on restart (arrival spacing, no batching).
 
 ---
 
-## 🚨 ARCHITECT: READ THIS FIRST (Session 19)
+## Historical Context (Sessions 18-19)
 
-You are the Architect (pane 1). Session 18 completed verification + shipped fixes.
-
-### Session 18 Summary:
+### Session 18-19 Summary (for reference):
 1. **Session 17 hardening NOT fully verified** — app launches and agents orient, but auto-submit still requires manual Enter in some cases. User had to manually submit trigger messages multiple times this session.
 2. **Focus-steal typing-guard** (c9a13a4) — trigger injection now deferred while user is typing in UI inputs. Fixes lost-input during active typing. `terminal.js` adds `userIsTyping()` guard to `sendToPane` and `processQueue`.
 3. **Track 2 closed** — Investigated eliminating focus-steal entirely via KeyboardEvent dispatch. Web search confirmed untrusted events don't trigger default actions (Electron/DOM spec). `pty.write('\r')` also doesn't submit in Claude TUI (known from Fix R/H/I). Focus is required for `sendTrustedEnter`. Typing-guard is the complete fix for now.
@@ -42,19 +184,16 @@ You are the Architect (pane 1). Session 18 completed verification + shipped fixe
 5. CSS renders correctly
 6. No IPC errors in console
 
-### Backlog (not started)
-- Structured logger (376 console.* → proper logger module)
+### Backlog
+**DONE:**
+- ✅ Structured logger (122 console.* → modules/logger) - Session 19, commit 6e438ce
+
+**Not started:**
 - Version-fix comment cleanup (172 markers)
 - Electron upgrade (separate sprint)
 - Sequence number compaction resilience
 - Focus-steal full elimination via xterm terminal.input() API
 - Trigger message UI banner (Option B — UX enhancement, separate from injection)
-
-### Backlog (not started)
-- Structured logger (376 console.* → proper logger module)
-- Version-fix comment cleanup (172 markers)
-- Electron upgrade (separate sprint)
-- Sequence number compaction resilience (Reviewer lost messages after compaction)
 
 ---
 
@@ -359,3 +498,5 @@ See `workspace/build/status.md` for full sprint history.
 - Implementer B: Added IPC `interrupt-pane` (Ctrl+C) in `ui/modules/ipc/pty-handlers.js` and auto Ctrl+C after 120s no output in `ui/main.js` stuck detection. Default stuckThreshold now 120000; clears lastInterruptAt on output.
 - Implementer B: Version-fix scan counts (pattern `^//(V#|BUG|FIX)` in ui/): terminal-daemon.js 32, modules/terminal.js 25, modules/triggers.js 23, main.js 14, renderer.js 12, modules/watcher.js 9, modules/sdk-bridge.js 7, modules/sdk-renderer.js 3. Began cleanup by removing version/fix prefixes in `ui/modules/daemon-handlers.js`, `ui/daemon-client.js`, `ui/modules/settings.js`.
 - Implementer B (coverage assumption): Implementer A to pick up console.* remnants in smart-routing/activity-log during logger rollout; Reviewer to verify auto-interrupt + IPC channel response.
+
+**Update (Jan 28, 2026):** Reviewer approved delivery-ack enhancement (see `workspace/build/reviews/delivery-ack-enhancement-review.md`). Fix ready for restart verification only.

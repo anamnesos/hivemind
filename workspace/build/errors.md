@@ -6,6 +6,140 @@
 
 ## Active Errors
 
+### Silent Message Loss - Agent Shell Quoting Issue (Session 27, Jan 28, 2026) - RESOLVED
+**Owner**: All agents (behavioral fix)
+**Priority**: MEDIUM - agent education issue, not app bug
+
+- **Where**: Agent-side trigger write commands (NOT app injection path)
+- **Symptoms**:
+  - Messages with apostrophes silently fail to write to trigger files
+  - Watcher never sees the message (file not modified)
+  - No delivery-ack because message never entered system
+- **Root Cause (Investigator, Session 27)**:
+  - App code does NOT use shell commands for injection
+  - Agents using single-quoted echo/Write-Output break on apostrophes
+  - PowerShell: `echo '(ROLE #N): I'm...'` fails - apostrophe terminates string
+- **Fix**: Update agent CLAUDE.md files:
+  - Use double quotes: `echo "(ROLE #N): message"`
+  - Or heredoc for complex messages
+  - Or escape apostrophes as `''` inside single quotes
+- **Status**: RESOLVED - behavioral, not code fix needed
+
+---
+
+### Auto-Submit Still Failing Intermittently (Session 26-27, Jan 28-29, 2026) - FIX V2 APPROVED
+**Owner**: Implementer A
+**Priority**: HIGH - blocks agent communication
+
+- **Where**: PTY injection path - `ui/modules/terminal.js` doSendToPane()
+- **Symptoms**:
+  - Messages stuck in textarea despite Enter
+  - Required manual intervention to send
+- **Root Causes (Session 27 investigation)**:
+  1. Force-inject used `|| waitedTooLong` - bypassed idle check after 10s
+  2. verifyAndRetryEnter checked textarea.value which is always empty after PTY write (false positive)
+- **Fix V2 Applied (Implementer A, Session 27)**:
+  1. **Stricter force-inject**: Changed `|| waitedTooLong` to `&& isIdleForForceInject` - now requires 500ms idle
+  2. **60s emergency fallback**: Prevents infinite wait if pane never idles
+  3. **verifyAndRetryEnter rewrite**: Checks output activity instead of textarea.value
+- **Files updated**:
+  - `ui/modules/terminal.js`
+- **Status**: ✅ FIX V2 APPROVED (Reviewer #15, Session 27) - Pending restart verification
+- **Fixed by**: Implementer A (Session 27)
+
+---
+
+### Message Sequence Tracking Records Before Delivery (Jan 28, 2026) - RESOLVED
+**Owner**: Implementer A (fix applied)
+**Priority**: HIGH - blocks agent-to-agent communication
+
+- **Where**: `ui/modules/triggers.js` - handleTriggerFile()
+- **Symptoms**:
+  - Messages marked as "SKIPPED duplicate" even though they never reached the target agent
+  - Agent retries with same sequence number get blocked
+- **Fix Applied (Implementer A, Jan 28, 2026)**:
+  - Moved `recordMessageSeen()` to AFTER delivery:
+    - SDK path: Only records if `allSuccess === true` (lines 632-638)
+    - PTY path: Records after `sendStaggered()` IPC dispatch (lines 654-660)
+  - Added logging to track when messages are recorded vs skipped
+- **Status**: ✅ RESOLVED - Reviewer APPROVED (Jan 28, 2026)
+- **Fixed by**: Implementer A (Jan 28, 2026)
+- **Reviewed by**: Reviewer (Jan 28, 2026) - Full review: `workspace/build/reviews/message-sequencing-fix-review.md`
+
+---
+
+### Intermittent Auto-Submit Failure (Jan 28, 2026 ~19:30Z) - RESOLVED
+**Owner**: Implementer A (fix applied)
+**Priority**: MEDIUM - hybrid fix worked earlier, but user had to manually push messages late in session
+
+- **Where**: Trigger injection to Claude panes
+- **Symptoms**: User said "fuck pushing these through" - indicates manual intervention needed for trigger messages
+- **Root Cause (Investigator analysis)**:
+  - Fixed 50ms delay was insufficient under load - Enter fired before text appeared
+  - If textarea disappeared during delay, Enter went to wrong element
+- **Fix Applied (Implementer A, Jan 28, 2026)**:
+  1. **Adaptive Enter delay**: 50ms idle / 150ms active / 300ms busy (based on `lastOutputTime`)
+  2. **Focus retry mechanism**: Up to 3 retries with 20ms delay
+  3. **Textarea null guards**: Skip injection if missing, re-query after delay, abort if disappeared
+  - New helper functions: `getAdaptiveEnterDelay()`, `focusWithRetry()`
+- **Status**: ✅ RESOLVED - Reviewer APPROVED (Jan 28, 2026)
+- **Fixed by**: Implementer A (Jan 28, 2026)
+- **Reviewed by**: Reviewer (Jan 28, 2026) - Full review: `workspace/build/reviews/auto-submit-race-fix-review.md`
+
+---
+
+### Stress Test False Positive - Messages Stuck in Textarea (Jan 28, 2026) - SEE HYBRID FIX BELOW
+**Owner**: Implementer A (sendToPane refactor)
+**Priority**: HIGH - invalidates stress test results
+
+- **Where**: PTY injection path - `ui/modules/terminal.js` sendToPane/doSendToPane
+- **Symptoms**:
+  - Messages appear in textarea but don't auto-submit
+  - Subsequent trigger ticks "push" stuck messages through in batches
+  - Agents appear stuck until another message arrives
+  - User sees batched/mashed highlights instead of spaced ticks
+- **Evidence**: User observed Implementer A stuck, messages only delivered when next tick arrived
+- **Impact**: Stress test appeared to pass (all ticks eventually received) but auto-submit is broken
+- **Root Cause**: Claude Code's ink TUI requires native keyboard events for Enter submission
+- **Fix History**:
+  1. ❌ Original: Complex focus/textarea/sendTrustedEnter path - timing issues
+  2. ❌ terminal.input() approach - onData unreliable with wasUserInput=false
+  3. ❌ Direct PTY write + \r - ink TUI ignores PTY newlines
+  4. ✅ **Hybrid approach (Session 22)** - See "Claude Panes Not Auto-Submitting" below
+- **Status**: Consolidated with error below
+- **Discovered by**: User observation during stress test (Jan 28, 2026)
+
+---
+
+### Claude Panes Not Auto-Submitting (Jan 28, 2026) - HYBRID FIX APPLIED
+**Owner**: Implementer A
+**Priority**: CRITICAL - affects ALL Claude panes (1, 3, 6)
+
+- **Where**: `ui/modules/terminal.js` - doSendToPane() Claude path
+- **Symptoms**:
+  - ALL Claude panes (1, 3, 6) required manual push for messages
+  - Codex panes (2, 4, 5) worked fine (different exec path)
+  - Messages appeared in terminal but didn't auto-submit
+- **Root Cause Analysis (Session 22)**:
+  - **terminal.input() approach**: May not reliably trigger onData with wasUserInput=false
+  - **Direct PTY write + \r approach**: Claude Code's ink TUI does NOT accept PTY `\r` as Enter (proven in Fix R)
+  - **ONLY sendTrustedEnter() works**: Uses Electron's native `webContents.sendInputEvent()` for real keyboard events
+- **Failed Fixes**:
+  1. ❌ `terminal.input(text + '\r', false)` - onData unreliable
+  2. ❌ `pty.write(text + '\r')` - ink TUI ignores PTY newlines
+- **Hybrid Fix Applied (Session 22, Implementer A)**:
+  1. Focus terminal textarea (so sendTrustedEnter targets correct pane)
+  2. `pty.write(text)` - send text WITHOUT \r
+  3. Wait 50ms for text to appear
+  4. `sendTrustedEnter()` - native Electron keyboard event for Enter
+  5. Restore focus
+  - File modified: `ui/modules/terminal.js` (doSendToPane function)
+- **Status**: PENDING RESTART - App restart required to test fix
+- **Discovered by**: User (Session 22)
+- **Root cause identified & fixed by**: Implementer A (Session 22)
+
+---
+
 ### SDK Mode Bugs (Jan 25, 2026) - FIXED (Pending Restart)
 **Owner**: Worker A
 **Priority**: HIGH - blocks SDK testing
@@ -103,13 +237,14 @@
 - **Discovered**: Stress test session Jan 25, 2026 - External Claude identified via GitHub issues
 - **Note**: This is NOT a Hivemind bug. It's a known limitation of Claude Code with concurrent instances.
 
-### Focus Stealing on Terminal Output (Hivemind UI Bug)
-- **Where**: ui/renderer.js - terminal output handling
-- **Cause**: When agents respond, their terminal pane calls `.focus()`, stealing input focus from wherever user is typing (including broadcast input)
-- **Symptoms**: User tries to type in broadcast field, focus jumps to active terminal mid-typing, input gets hijacked
-- **Fix Needed**: Prevent auto-focus on terminal write/output events. Only focus terminal on explicit user click.
+### Focus Stealing During Auto-Inject (Hivemind UI Bug)
+- **Where**: ui/modules/terminal.js - doSendToPane() focus/restore path
+- **Cause**: doSendToPane() focuses the target pane's `.xterm-helper-textarea` for injection, then restores focus only to `lastUserUIFocus` (tracked for inputs/textarea only). If the user was focused in a terminal or a non-input element, `lastUserUIFocus` is null/stale so focus stays on the target terminal and looks like it was "stolen."
+- **Symptoms**: User types in broadcast field or another pane, then a trigger/broadcast injects into a different pane and focus jumps to that terminal.
+- **Evidence**: `rg "focus("` shows focus calls only in `ui/modules/terminal.js` (no focus calls in renderer output handlers).
+- **Fix Needed**: Capture `document.activeElement` at the start of doSendToPane() when it is not an xterm textarea and restore to it after injection; or track `lastNonXtermFocus` on all `focusin` events and restore to that. Avoid focus changes on non-user-initiated sends.
 - **Status**: Identified, not yet fixed
-- **Discovered**: Stress test session Jan 25, 2026
+- **Discovered**: Stress test session Jan 25, 2026 (root cause refined Jan 28, 2026)
 
 ---
 

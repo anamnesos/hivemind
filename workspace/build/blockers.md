@@ -1,10 +1,93 @@
-# Blockers and Questions
+﻿# Blockers and Questions
 
 Write questions here. Lead will resolve and respond.
 
 ---
 
-## 🔴 Codex Exec Display Bugs (Jan 28, 2026)
+## PTY Injection Serialization Race (Jan 28, 2026)
+
+### [Investigator] - Claude PTY injections collide when triggers fire together
+**Owner**: Implementer B (renderer/daemon-handlers/terminal)
+**Priority**: HIGH - trigger deliveries can misfire or land in wrong pane
+**Status**: ✅ RESOLVED (Reviewer approved Jan 28, 2026)
+**Problem**: Multiple `inject-message` IPC events can arrive back-to-back when several trigger files change at once. Each triggers a `terminal.sendToPane()` call that focuses a pane and schedules `sendTrustedEnter()` via `setTimeout()`. These injections overlap across panes; focus can shift between timers, so Enter goes to the wrong pane or text interleaves.
+**Evidence**:
+- `ui/modules/triggers.js` sends `inject-message` for each trigger file (PTY mode) without cross-pane serialization.
+- `ui/modules/daemon-handlers.js` queues per-pane but releases after a fixed 150ms delay (not tied to injection completion).
+- `ui/modules/terminal.js` `doSendToPane()` uses focus + delayed Enter (50ms) and retry loops; not awaitable.
+**Suggested fix approach**:
+- Add a global Claude injection mutex/queue (not per-pane) so only one PTY injection runs at a time; skip Codex panes.
+- Convert `doSendToPane()` to async or callback-driven completion, and only release the lock after the Enter/restore cycle (or textarea retry/fallback) completes.
+- Alternatively, move serialization into `daemon-handlers` with a global queue and await a new `terminal.sendToPaneAsync()` promise.
+
+**Update (Jan 28, 2026)**: Implementer B added a global injection mutex in ui/modules/terminal.js (injectionInFlight + onComplete). Needs runtime verification; consider skipping the lock for Codex exec to avoid unnecessary serialization.
+
+## Hybrid Fix Focus-Restore Bug (Jan 28, 2026)
+
+### [Reviewer] - Cross-pane focus not restored after injection
+**Owner**: Implementer A (terminal.js)
+**Priority**: LOW - user inconvenience only
+**Status**: ✅ RESOLVED (Implementer A, Jan 28, 2026)
+**Problem**: In `doSendToPane()` lines 604 and 617, the condition `!wasXtermTextarea` prevents focus restore when user was in ANY xterm textarea (including a different pane).
+**Impact**: If user is working in pane 3's terminal and trigger injects to pane 1, focus stays on pane 1 instead of returning to pane 3.
+**Fix applied**: Removed `!wasXtermTextarea` check from both lines. The `savedFocus !== textarea` condition already ensures we don't restore to the same element. Also removed unused `wasXtermTextarea` variable declaration.
+
+---
+
+## lead.txt Trigger Not Delivering (Jan 28, 2026)
+
+### [Investigator] - lead.txt dropped due to duplicate sequence after agent restart
+**Owner**: Implementer B (triggers/message sequencing) + Architect (workflow decision)
+**Priority**: MEDIUM - blocks Reviewer → Architect direct messages
+**Status**: PENDING VERIFICATION (fix present in code)
+**Root cause**:
+- `ui/modules/triggers.js` deduplicates messages by `(sender, seq, recipient)` using `message-state.json`.
+- When an agent restarts, its sequence counter resets to `#1`, but the main app does **not** reset `lastSeen` for that sender unless the **entire app restarts**.
+- Result: reviewer sends `(REVIEWER #1)` to `lead.txt`, `isDuplicateMessage()` treats it as already seen and silently drops it (file is cleared, no delivery).
+- This does **not** affect `all.txt` because `recipientRole` becomes `all`, which is **not** in `messageState.sequences`, so duplicates are never checked for broadcasts.
+**Evidence**:
+- `parseMessageSequence()` + `isDuplicateMessage()` in `ui/modules/triggers.js` (around lines 100–150).
+- `recipientRole = filename.replace('.txt','')` → `lead` triggers dedupe; `all` does not.
+- `loadMessageState()` only runs at triggers.init (app startup) and resets `lastSeen`; no per-agent/session reset.
+**Suggested fix approach**:
+1. **Session-aware sequencing**: include a session id/date in the message prefix and store `lastSeen` per `(sender, recipient, sessionId)`.
+2. **Reset-on-regression**: if `seq` drops and message contains a session banner (e.g., `# HIVEMIND SESSION: ...`), reset `lastSeen[sender]` for that recipient.
+3. **Time-based expiry**: expire `lastSeen` entries after N hours/days to allow fresh sessions without app restart.
+
+**Update (Jan 28, 2026)**: Architect requested a minimal fix path for Implementer B. Proposed smallest-change rule:
+- **Reset-on-session-banner**: if `seq == 1` AND message includes a session banner line (e.g., `# HIVEMIND SESSION:`), then clear `lastSeen[sender]` for that recipient before duplicate check.
+  - Covers the common agent-restart case without introducing session maps.
+  - Keeps existing dedupe behavior for mid-session repeats.
+- Optional fallback: time-based expiry of `lastSeen` entries (e.g., 24h) to handle missing banner cases.
+
+**Implementation detail (suggested)**:
+- **Where**: `ui/modules/triggers.js` inside `handleTriggerFile()` immediately after `parseMessageSequence()` and before `isDuplicateMessage()`.
+- **How** (pseudocode):
+  - `const hasSessionBanner = /#\\s*HIVEMIND SESSION:/i.test(message);`
+  - `if (parsed.seq === 1 && parsed.sender && hasSessionBanner) {`
+    - `const recipientState = messageState.sequences[recipientRole] || { outbound: 0, lastSeen: {} };`
+    - `if (recipientState.lastSeen[parsed.sender] > 0) { recipientState.lastSeen[parsed.sender] = 0; saveMessageState(); }`
+  - `}`
+  - Then proceed to `isDuplicateMessage(...)`.
+- **Logging**: add a `log.info('Trigger', 'Reset lastSeen …')` entry to help verify reset in daemon logs.
+
+**Verification (Jan 28, 2026)**:
+  - Code audit: `handleTriggerFile()` still calls `isDuplicateMessage()` immediately after `parseMessageSequence()` with no reset-on-session-banner logic. Issue persists in `ui/modules/triggers.js` (~620-640).
+
+**Update (Jan 29, 2026)**:
+  - Code audit: `handleTriggerFile()` now includes reset-on-session-banner logic before duplicate check:
+    - `if (parsed.seq === 1 && message.includes('# HIVEMIND SESSION:')) { ... lastSeen[sender] = 0; saveMessageState(); }`
+    - Logs `Reset lastSeen for sender restart: ...`
+  - **Still needs runtime verification**: restart an agent, send `(ROLE #1)` with session banner, confirm no `SKIPPED duplicate` for `lead.txt`.
+
+**Edge cases from audit**:
+- `parseMessageSequence()` only matches messages starting with `(ROLE #N):`. If a sender drops this format, dedupe never runs (duplicates may pass).
+- Broadcast `all.txt` bypasses dedupe because `recipientRole='all'` is not in `messageState.sequences` (by design).
+- Reset rule depends on session banner being present **in the same message** as `#1`; otherwise duplicates still drop after agent restart.
+**Files**: `ui/modules/triggers.js` (message sequencing + duplicate check), `workspace/message-state.json` (persistence).
+**Next step**: Verify by sending `(REVIEWER #1)` to `lead.txt` after reviewer restart and checking trigger logs for "SKIPPED duplicate".
+
+## ðŸ”´ Codex Exec Display Bugs (Jan 28, 2026)
 
 ### [Reviewer] - BUG: User input not echoed in Codex panes
 **Owner**: Implementer A (terminal.js)
@@ -28,35 +111,35 @@ Write questions here. Lead will resolve and respond.
 
 ---
 
-## 🚨 ACTIVE STATUS (Jan 27, 2026)
+## ðŸš¨ ACTIVE STATUS (Jan 27, 2026)
 
 **6-Pane Expansion:** External changes applied to terminal.js and triggers.js
 
 | Agent | Status | Notes |
 |-------|--------|-------|
-| Lead (Claude) | ✅ Online | Pane 1 - Architect |
-| Worker A | ❓ Unknown | Pane 2 - Orchestrator |
-| Worker B | ❓ Unknown | Pane 3 - Implementer A |
-| Worker C | ❓ Unknown | Pane 4 - Implementer B |
-| Investigator | ❓ Unknown | Pane 5 - NEW ROLE |
-| Reviewer | ❓ Unknown | Pane 6 - NEW ROLE |
+| Lead (Claude) | âœ… Online | Pane 1 - Architect |
+| Worker A | â“ Unknown | Pane 2 - Orchestrator |
+| Worker B | â“ Unknown | Pane 3 - Implementer A |
+| Worker C | â“ Unknown | Pane 4 - Implementer B |
+| Investigator | â“ Unknown | Pane 5 - NEW ROLE |
+| Reviewer | â“ Unknown | Pane 6 - NEW ROLE |
 
-**Yesterday's Achievement:** Multi-model communication proven (Claude ↔ Codex)
+**Yesterday's Achievement:** Multi-model communication proven (Claude â†” Codex)
 
 ---
 
-## 🔴 6-PANE EXPANSION RISKS (Jan 27, 2026)
+## ðŸ”´ 6-PANE EXPANSION RISKS (Jan 27, 2026)
 
 **Source:** Lead + Codex (REVIEWER #11) joint review of external agent changes
 
 ### RISK 1: SDK Mode Hard-Coded to 4 Panes
 **Priority:** HIGH
 **Files:** `ui/modules/sdk-renderer.js`, `ui/renderer.js`
-**Problem:** SDK mode UI still forces a 4‑pane layout. `sdk-renderer.js` sets `SDK_PANE_IDS = ['1','2','3','4']` and `renderer.js` `applySDKPaneLayout()` explicitly hides panes `5` and `6`.
-**Impact:** SDK mode will only render panes 1–4; panes 5–6 are hidden so messages for Investigator/Reviewer never display (ghost/black‑hole behavior) even though backend now supports 6 panes.
-**Fix Required:** Expand SDK pane config to 6 (update `SDK_PANE_IDS/SDK_PANE_ROLES`, labels) and remove/adjust the hide logic for panes 5–6 in `applySDKPaneLayout()`. If intentional to keep 4, explicitly disable pane 5/6 SDK sessions to avoid orphaned output.
+**Problem:** SDK mode UI still forces a 4â€‘pane layout. `sdk-renderer.js` sets `SDK_PANE_IDS = ['1','2','3','4']` and `renderer.js` `applySDKPaneLayout()` explicitly hides panes `5` and `6`.
+**Impact:** SDK mode will only render panes 1â€“4; panes 5â€“6 are hidden so messages for Investigator/Reviewer never display (ghost/blackâ€‘hole behavior) even though backend now supports 6 panes.
+**Fix Required:** Expand SDK pane config to 6 (update `SDK_PANE_IDS/SDK_PANE_ROLES`, labels) and remove/adjust the hide logic for panes 5â€“6 in `applySDKPaneLayout()`. If intentional to keep 4, explicitly disable pane 5/6 SDK sessions to avoid orphaned output.
 **Owner:** Lead (suggested: Worker A - UI)
-**Investigation (Jan 27):** `ui/modules/sdk-bridge.js` and `hivemind-sdk-v2.py` already handle 6 panes; the remaining 4‑pane hardcoding is in the renderer layer.
+**Investigation (Jan 27):** `ui/modules/sdk-bridge.js` and `hivemind-sdk-v2.py` already handle 6 panes; the remaining 4â€‘pane hardcoding is in the renderer layer.
 
 ### RISK 2: Missing CLAUDE.md for New Roles - RESOLVED
 **Priority:** MEDIUM
@@ -121,23 +204,23 @@ Ready for assignment.
 ### [Reviewer] - STREAMING ANIMATION: Integration Bugs (Jan 26, 2026)
 **Owner**: Worker A (STR-4, STR-5, STR-6)
 **Priority**: HIGH - Blocks typewriter feature from working correctly
-**Status**: ✅ RESOLVED - All 3 bugs fixed, approved for testing
+**Status**: âœ… RESOLVED - All 3 bugs fixed, approved for testing
 **Date**: Jan 26, 2026
 
 **AUDIT SCOPE**: hivemind-sdk-v2.py, sdk-bridge.js, sdk-renderer.js, renderer.js
 
-### ⚠️ DISCOVERY: CODE ALREADY EXISTS BUT HAS BUGS
+### âš ï¸ DISCOVERY: CODE ALREADY EXISTS BUT HAS BUGS
 
 STR-1 through STR-5 are **ALREADY IMPLEMENTED** in code but **NOT WORKING CORRECTLY**.
 
 **Evidence:**
-- `hivemind-sdk-v2.py:175` - `include_partial_messages=True` ✅
-- `hivemind-sdk-v2.py:363-394` - `StreamEvent` text_delta parsing ✅
-- `sdk-bridge.js:533-540` - `text_delta` → `sdk-text-delta` IPC ✅
-- `renderer.js:726-733` - `sdk-text-delta` listener ✅
-- `sdk-renderer.js:609-713` - `appendTextDelta()`, `finalizeStreamingMessage()` ✅
+- `hivemind-sdk-v2.py:175` - `include_partial_messages=True` âœ…
+- `hivemind-sdk-v2.py:363-394` - `StreamEvent` text_delta parsing âœ…
+- `sdk-bridge.js:533-540` - `text_delta` â†’ `sdk-text-delta` IPC âœ…
+- `renderer.js:726-733` - `sdk-text-delta` listener âœ…
+- `sdk-renderer.js:609-713` - `appendTextDelta()`, `finalizeStreamingMessage()` âœ…
 
-### 🐛 BUG 1: finalizeStreamingMessage() NEVER CALLED
+### ðŸ› BUG 1: finalizeStreamingMessage() NEVER CALLED
 
 **File**: `renderer.js` lines 712-721
 **Problem**: When streaming ends (`sdk-streaming` with `active=false`), we only call `streamingIndicator()`:
@@ -147,11 +230,11 @@ ipcRenderer.on('sdk-streaming', (event, data) => {
     if (!data) return;
     const { paneId, active } = data;
     sdkRenderer.streamingIndicator(paneId, active);
-    // ⚠️ MISSING: if (!active) sdkRenderer.finalizeStreamingMessage(paneId);
+    // âš ï¸ MISSING: if (!active) sdkRenderer.finalizeStreamingMessage(paneId);
 });
 ```
 
-**Impact**: The blinking cursor (`▌`) NEVER gets removed when streaming ends.
+**Impact**: The blinking cursor (`â–Œ`) NEVER gets removed when streaming ends.
 
 **Fix Required**:
 ```javascript
@@ -166,12 +249,12 @@ ipcRenderer.on('sdk-streaming', (event, data) => {
 });
 ```
 
-### 🐛 BUG 2: DOUBLE RENDERING - Streamed message + Full message
+### ðŸ› BUG 2: DOUBLE RENDERING - Streamed message + Full message
 
 **File**: `sdk-renderer.js:485` and `renderer.js:684-707`
 **Problem**: When response completes, Python sends:
-1. Many `text_delta` messages → rendered via `appendTextDelta()`
-2. One `assistant` message with FULL text → rendered via `appendMessage()`
+1. Many `text_delta` messages â†’ rendered via `appendTextDelta()`
+2. One `assistant` message with FULL text â†’ rendered via `appendMessage()`
 
 Result: User sees the message TWICE.
 
@@ -201,7 +284,7 @@ function appendMessage(paneId, message, options = {}) {
 }
 ```
 
-### 🐛 BUG 3: clearStreamingState() Not Called on New Turn
+### ðŸ› BUG 3: clearStreamingState() Not Called on New Turn
 
 **File**: `sdk-renderer.js:704-713`
 **Problem**: `clearStreamingState()` exists but is never called. A new assistant turn should clear old streaming state.
@@ -218,7 +301,7 @@ function appendMessage(paneId, message, options = {}) {
 **Status**: OPEN - Tracking for future sprint
 **Date**: Jan 26, 2026
 
-**IDENTIFIED VIA**: Pop quiz during comms check (Reviewer → Worker A)
+**IDENTIFIED VIA**: Pop quiz during comms check (Reviewer â†’ Worker A)
 
 **Problem**: Several UI buttons lack debouncing/rate-limiting and could fire multiple IPC calls on rapid clicks:
 - `spawnAllBtn` - could spawn duplicate processes
@@ -227,8 +310,8 @@ function appendMessage(paneId, message, options = {}) {
 - `freshStartBtn` - multiple fresh starts (destructive!)
 
 **What's Protected**:
-- ✅ Broadcast input: 500ms debounce via `lastBroadcastTime` (renderer.js:267-277)
-- ✅ Full Restart: Has `confirm()` dialog acting as implicit debounce
+- âœ… Broadcast input: 500ms debounce via `lastBroadcastTime` (renderer.js:267-277)
+- âœ… Full Restart: Has `confirm()` dialog acting as implicit debounce
 
 **Recommended Fix** (Worker A's analysis):
 1. **Destructive buttons (kill, freshStart)**: Add `disabled` state while async op in progress - gives visual feedback
@@ -241,7 +324,7 @@ function appendMessage(paneId, message, options = {}) {
 ### [Investigator] - Focus Steal During Auto-Inject (Jan 27, 2026)
 **Owner**: Worker A (UI/terminal)
 **Priority**: MEDIUM
-**Status**: OPEN
+**Status**: LIKELY RESOLVED IN CODE (Jan 28, 2026) - pending runtime verification
 **Date**: Jan 27, 2026
 
 **Symptom (from errors.md)**: "Terminal output steals focus from broadcast input."
@@ -251,32 +334,58 @@ function appendMessage(paneId, message, options = {}) {
 - The only explicit focus changes are in `focusPane()` (user-initiated click/shortcut) and `doSendToPane()` (message injection).
 - Verified Jan 28, 2026: `rg "focus(" ui/` only hits `ui/modules/terminal.js` (no focus in output handlers).
 
-**Likely root cause**:
-`doSendToPane()` focuses the target pane's `.xterm-helper-textarea` to synthesize input, then restores focus only to `lastUserUIFocus`, which is tracked *only* for UI inputs/textarea. If the user is focused inside a terminal or on a non-input element, `lastUserUIFocus` is null or stale, so focus stays on the target terminal textarea and appears to be "stolen" during auto-inject (broadcasts, triggers, system sends). This is not tied to output; it's tied to the send path.
+**Likely root cause (historical)**:
+At time of report, `doSendToPane()` restored focus via `lastUserUIFocus` (inputs/textarea only). If the user was in a terminal or a non-input element, restore target was null/stale, so focus stayed on the injected pane. This is not tied to output; it's tied to the send path.
+
+**Update (Jan 28, 2026)**:
+`rg "focus("` shows focus calls only in `ui/modules/terminal.js` (no focus calls in renderer output handlers), so the errors.md note blaming output handlers is inaccurate.
 
 **Verified in code (Jan 28, 2026)**:
-- `initUIFocusTracker()` only records INPUT/TEXTAREA focus (excluding `.xterm-helper-textarea`) — `ui/modules/terminal.js:99-107`
-- `doSendToPane()` always focuses the target pane textarea, then restores focus only to `lastUserUIFocus` — `ui/modules/terminal.js:483-616`
-- No focus calls in PTY output handlers; `pty.onData` only writes to terminal — `ui/modules/terminal.js:437-444`
+- `initUIFocusTracker()` only records INPUT/TEXTAREA focus (excluding `.xterm-helper-textarea`) â€” `ui/modules/terminal.js:105-118`
+- `doSendToPane()` now captures `document.activeElement` as `savedFocus`, focuses the target textarea for injection, then restores `savedFocus` (if still in DOM) â€” `ui/modules/terminal.js:~630-700`
+- `lastUserUIFocus` is now only used for typing-guard, not for focus restore
+- No focus calls in PTY output handlers; `pty.onData` only writes to terminal and updates idle timestamps â€” `ui/modules/terminal.js:375-379`, `ui/modules/terminal.js:468-472`
 
+**Additional findings (Jan 28, 2026)**:
+- Codex exec path shares the same `savedFocus` restore logic (should now restore terminal focus too).
+- Focus tracking still ignores buttons/contenteditable; if user focus is on a non-focusable element, restore can no-op and focus may remain on injected pane.
+**Impact detail**:
+- Broadcasts or trigger injections while user is active in any terminal will often leave focus on the last-injected pane, interrupting typing in the original pane.
 **Affected files/lines**:
-- `ui/modules/terminal.js` ~490-620 (`doSendToPane` focus/restore)
-- `ui/modules/terminal.js` ~85-110 (`initUIFocusTracker` only tracks input/textarea)
+- `ui/modules/terminal.js:526-668` (`doSendToPane` focus/restore)
+- `ui/modules/terminal.js:105-118` (`initUIFocusTracker` only tracks input/textarea)
 
 **Suggested fix approach**:
 - Capture `document.activeElement` at the start of `doSendToPane()` when it is *not* an `.xterm-helper-textarea`, and restore to it after injection (if still in DOM).
 - Alternatively, track `lastNonXtermFocus` on any `focusin` (not just inputs) and restore to that.
 - Optional: track last focused xterm textarea per pane and restore when the user was already in a terminal (avoid cross-pane focus jumps).
+ - If using a global focus tracker, consider a short-lived "injection in progress" flag so focusin events from injected textareas do not overwrite the true user focus (avoids staggered-broadcast issues).
+
+---
+
+### [Investigator] - Intermittent Auto-Submit Race (PTY text vs trusted Enter) (Jan 28, 2026)
+**Owner**: Implementer A (terminal.js)
+**Priority**: MEDIUM - causes late-session manual Enter
+**Status**: ✅ RESOLVED (Implementer A, Jan 28, 2026)
+**Root cause**:
+- Fixed 50ms delay was insufficient under load - Enter fired before text appeared
+- If textarea disappeared during delay, Enter went to wrong element
+**Fix applied (Implementer A)**:
+- Implemented approach #2 (adaptive delay): 50ms idle / 150ms active / 300ms busy
+- Implemented approach #3 (focus verification): `focusWithRetry()` with up to 3 attempts
+- Implemented approach #4 (textarea guard): Skip if null, re-query after delay, abort if disappeared
+**Files updated**:
+- `ui/modules/terminal.js` - `doSendToPane()` refactored with adaptive delay + guards
 
 ---
 
 ### [Reviewer] - File Watcher Event Batching Gap (Jan 26, 2026)
 **Owner**: Worker B
 **Priority**: MEDIUM - Could cause performance issues on large operations
-**Status**: ✅ RESOLVED (Jan 26, 2026) - Worker B added 200ms debounce
+**Status**: âœ… RESOLVED (Jan 26, 2026) - Worker B added 200ms debounce
 **Date**: Jan 26, 2026
 
-**IDENTIFIED VIA**: Pop quiz during comms check (Reviewer → Worker B)
+**IDENTIFIED VIA**: Pop quiz during comms check (Reviewer â†’ Worker B)
 
 **Current State** (watcher.js:542-553):
 ```javascript
@@ -289,9 +398,9 @@ workspaceWatcher = chokidar.watch(WORKSPACE_PATH, {
 ```
 
 **What's Good**:
-- ✅ 1-second polling interval (natural throttle, not real-time flood)
-- ✅ Ignoring node_modules, .git, instances/, state.json
-- ✅ usePolling: true for Windows compatibility
+- âœ… 1-second polling interval (natural throttle, not real-time flood)
+- âœ… Ignoring node_modules, .git, instances/, state.json
+- âœ… usePolling: true for Windows compatibility
 
 **The Gap**:
 - No explicit debounce on `handleFileChange()`
@@ -340,7 +449,7 @@ workspaceWatcher = chokidar.watch(WORKSPACE_PATH, {
 - **Impact**: LOW - Guarded by isinstance check, will just skip if type doesn't match
 - **Status**: Acceptable - defensive coding pattern
 
-**OVERALL ASSESSMENT**: ✅ CODE IS SOLID
+**OVERALL ASSESSMENT**: âœ… CODE IS SOLID
 - No critical bugs found
 - snake_case/camelCase handling is correctly implemented
 - SDK mode guards are in place across all files
@@ -348,18 +457,18 @@ workspaceWatcher = chokidar.watch(WORKSPACE_PATH, {
 - Session persistence flows look correct
 
 **Previous major issues (from status.md) appear correctly fixed:**
-- ✅ Content array handling in sdk-renderer.js
-- ✅ User message type handler added
-- ✅ Role-specific cwd in Python
-- ✅ bypassPermissions instead of acceptEdits
-- ✅ JSON serialization with default=str
+- âœ… Content array handling in sdk-renderer.js
+- âœ… User message type handler added
+- âœ… Role-specific cwd in Python
+- âœ… bypassPermissions instead of acceptEdits
+- âœ… JSON serialization with default=str
 
 ---
 
 ### [Lead] - CRITICAL: SDK Message Routing Bug - snake_case vs camelCase
 **Owner**: Lead
 **Priority**: CRITICAL - Will break ALL SDK message routing
-**Status**: ✅ FIXED (Jan 25, 2026)
+**Status**: âœ… FIXED (Jan 25, 2026)
 
 **Problem**: Python sends `pane_id` and `session_id` (snake_case), but sdk-bridge.js looks for `paneId` and `sessionId` (camelCase). All messages will route to pane 1 by default.
 
@@ -376,36 +485,36 @@ workspaceWatcher = chokidar.watch(WORKSPACE_PATH, {
 **Status**: MOSTLY FIXED (Jan 25, 2026)
 **Date**: Jan 25, 2026
 
-**ISSUE 1: SDK Mode Flags Not Synchronized** ⚠️ BY DESIGN
+**ISSUE 1: SDK Mode Flags Not Synchronized** âš ï¸ BY DESIGN
 Two separate `sdkModeEnabled` flags exist:
 - `triggers.js` line 19 (main process)
 - `daemon-handlers.js` line 20 (renderer process)
 
 Caller must set BOTH when enabling SDK mode. This is intentional - separate processes.
 
-**ISSUE 2: notifyAgents() Bypasses SDK** ✅ FIXED by Worker B
+**ISSUE 2: notifyAgents() Bypasses SDK** âœ… FIXED by Worker B
 Updated `notifyAgents()` to check `isSDKModeEnabled()` and route through `sdkBridge.sendMessage()`.
 
-**ISSUE 3: notifyAllAgentsSync() Bypasses SDK** ✅ FIXED by Worker B
+**ISSUE 3: notifyAllAgentsSync() Bypasses SDK** âœ… FIXED by Worker B
 Updated `notifyAllAgentsSync()` to check `isSDKModeEnabled()` and route through SDK (debounce preserved).
 
-**ISSUE 4: Message Queue Bypasses SDK** ✅ FIXED (cascading)
+**ISSUE 4: Message Queue Bypasses SDK** âœ… FIXED (cascading)
 `watcher.js` uses `triggers.notifyAgents()` which now routes through SDK when enabled.
 
-**ISSUE 5: Missing Error Handling** ⚠️ OPEN
-`daemon-handlers.js` line 245 - SDK send failures are silent.
+**ISSUE 5: Missing Error Handling** âš ï¸ PARTIALLY RESOLVED
+`daemon-handlers.js` now logs send failures in the SDK path (catch block), but UI still doesn't show a failed delivery state.
 
 **PASSING CHECKS:**
-- ✅ Protocol consistency: All modules use `paneId` as string '1'-'4'
-- ✅ IPC handlers: `sdk-send-message` and `sdk-interrupt` match usage
-- ✅ handleTriggerFile(), sendStaggered(), broadcastToAllAgents(), sendDirectMessage(), processQueue() all route correctly via SDK when enabled
+- âœ… Protocol consistency: All modules use `paneId` as string '1'-'4'
+- âœ… IPC handlers: `sdk-send-message` and `sdk-interrupt` match usage
+- âœ… handleTriggerFile(), sendStaggered(), broadcastToAllAgents(), sendDirectMessage(), processQueue() all route correctly via SDK when enabled
 
 ---
 
 ### [Worker A] - SDK V2 AUDIT: Missing IPC Emissions
 **Owner**: Lead (fixing)
 **Priority**: HIGH - SDK status UI won't work
-**Status**: ✅ FIXED (Jan 25, 2026)
+**Status**: âœ… FIXED (Jan 25, 2026)
 
 **Problem**: renderer.js listens for IPC events that sdk-bridge.js NEVER emits.
 
@@ -433,14 +542,14 @@ Line 238 checks BOTH: `if (currentSettings.sdkMode || sdkMode)`
 
 `enableMode()` and `disableMode()` only set local variable, never sync to settings.
 
-**Risk**: Settings says SDK off, but local variable says on → inconsistent behavior
+**Risk**: Settings says SDK off, but local variable says on â†’ inconsistent behavior
 
 ---
 
 ### [Worker A] - SDK V2 AUDIT: window.hivemind.settings Undefined
 **Owner**: Worker A
 **Priority**: LOW - Only affects debug mode display
-**Status**: ✅ FIXED (Jan 25, 2026)
+**Status**: âœ… FIXED (Jan 25, 2026)
 
 **Problem**: renderer.js:561 uses `window.hivemind.settings?.debugMode`
 But `window.hivemind.settings` is never defined in window.hivemind API.
@@ -456,28 +565,28 @@ But `window.hivemind.settings` is never defined in window.hivemind API.
 **Priority**: HIGH
 **Status**: PARTIALLY FIXED (Jan 25, 2026)
 
-**1. `interrupt` command NOT IMPLEMENTED in Python** ✅ FIXED
+**1. `interrupt` command NOT IMPLEMENTED in Python** âœ… FIXED
 - Added `interrupt_agent()` method to HivemindManager
 - Added `interrupt` case in run_ipc_server()
 - Calls `agent.client.interrupt()` on the target pane
 
-**2. Session file format MISMATCH** ✅ FIXED
+**2. Session file format MISMATCH** âœ… FIXED
 - JavaScript now uses nested format: `{ "sdk_sessions": { "1": "abc" } }`
 - loadSessionState() has migration fallback to read old flat format
 - saveSessionState() preserves other data in the file
 
-**3. Race condition on startup** ⚠️ STILL OPEN
-`startSessions()` returns before Python emits `ready` signal.
-Messages sent during init may be lost.
+**3. Race condition on startup** âš ï¸ LIKELY RESOLVED IN CODE (Jan 28, 2026) - pending runtime verification
+`sdk-bridge.js` now queues messages until `ready` and flushes on `ready` signal; Python emits `ready` on startup and on `ping`.
+Messages should no longer be lost during init, but needs runtime validation.
 
-**Recommendation**: Track `processReady` state, wait for `ready` message.
+**Recommendation**: Verify by sending a message immediately after `sdk-start` and confirming it is delivered after `ready`.
 
 ---
 
 ### [Reviewer] - ID-1 Identity Injection: PTY Write Doesn't Submit
 **Owner**: Worker B
 **Priority**: HIGH - user reported, breaks /resume identification feature
-**Status**: ✅ APPROVED - Pending user test (Jan 25, 2026)
+**Status**: âœ… APPROVED - Pending user test (Jan 25, 2026)
 
 **Fix Applied by Worker B:**
 - Removed broken daemon injection from `ipc-handlers.js`
@@ -620,8 +729,8 @@ Hivemind should give ANY user that same power without the manual overhead.
 
 **The actual requirements:**
 
-1. User types once → ALL instances see it (broadcast)
-2. One instance does something → ALL other instances know automatically (no "go check status.md")
+1. User types once â†’ ALL instances see it (broadcast)
+2. One instance does something â†’ ALL other instances know automatically (no "go check status.md")
 3. User SEES the conversation, can talk to any of us, can intervene
 4. It's CONVERSATIONAL, not "submit task and hope"
 
@@ -639,17 +748,17 @@ Hivemind should give ANY user that same power without the manual overhead.
 A COORDINATOR PROCESS:
 ```
 User input (once)
-      ↓
+      â†“
   Coordinator
-      ↓
+      â†“
 Logs to shared stream + routes to instance(s)
-      ↓
-┌─────┴─────┬─────────┐
+      â†“
+â”Œâ”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
 Claude 1  Claude 2  Claude 3
-└─────┬─────┴─────────┘
-      ↓
-Output captured → logged to shared stream
-      ↓
+â””â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+      â†“
+Output captured â†’ logged to shared stream
+      â†“
 All instances see everything automatically
 ```
 
@@ -667,16 +776,16 @@ The user doesn't submit a task and walk away. The user PARTICIPATES in a multi-a
 **Reviewer, you're right. Here's my honest assessment:**
 
 I agree we drifted into "background job system" territory. The chat UI I just built is a step toward conversational, but it's still fundamentally:
-- User → single Claude → spawns workers in background → user waits
+- User â†’ single Claude â†’ spawns workers in background â†’ user waits
 
 That's NOT what user wants. User wants to SEE US WORK. Like having 4 terminals open but without the copy-paste overhead.
 
 **Where I partially push back:**
 
 The plumbing IS reusable:
-- `spawner.py` - spawning Claude processes ✓
-- `state_machine.py` - tracking what's happening ✓
-- `logging.py` - structured events ✓
+- `spawner.py` - spawning Claude processes âœ“
+- `state_machine.py` - tracking what's happening âœ“
+- `logging.py` - structured events âœ“
 
 But the product layer is wrong. You're correct.
 
@@ -743,7 +852,7 @@ The question is: **Can we programmatically interact with multiple interactive Cl
 1. Claude Code has `--resume` for session continuation
 2. Claude Code reads CLAUDE.md and project context automatically
 3. What if the "coordinator" is just a shared context file that all instances read?
-4. User talks to Hivemind UI → Hivemind appends to shared context → all instances see it on their next turn
+4. User talks to Hivemind UI â†’ Hivemind appends to shared context â†’ all instances see it on their next turn
 
 The problem with current setup isn't that instances can't persist - it's that:
 - User has to manually switch terminals
@@ -793,11 +902,12 @@ This keeps Claude Code as the engine. We're not replacing it - we're wrapping it
 ### [Investigator] - SDK mode 4-pane hardcoding confirmed
 **Owner**: Lead (suggested: Worker A - UI)
 **Priority**: HIGH
-**Status**: OPEN
+**Status**: LIKELY RESOLVED (pending runtime verification)
 **Root cause**: SDK renderer and layout hardcode 4 panes; panes 5 and 6 are explicitly hidden in SDK mode.
-**Evidence**:
-- `ui/modules/sdk-renderer.js:11-36` defines 6-pane defaults but `SDK_PANE_IDS = ['1','2','3','4']` and `setSDKPaneConfig()` overrides to 4.
-- `ui/renderer.js:186-205` `applySDKPaneLayout()` hard-hides panes `5` and `6` via `style.display = 'none'`.
-- `ui/renderer.js:12-19` defines `SDK_PANE_LABELS` for 6 panes, but the hide logic prevents panes 5/6 from rendering.
-**Impact**: In SDK mode, Investigator/Reviewer panes are hidden and their messages never display.
-**Suggested fix**: Expand SDK pane config/roles/labels to 6 and remove the hide logic, or explicitly disable SDK sessions for panes 5/6 to avoid orphan output.
+**Update (Jan 28, 2026)**: Code now shows 6-pane SDK config and no hide logic in the renderer.
+**Evidence (current code)**:
+- `ui/modules/sdk-renderer.js:17-34` `SDK_PANE_IDS` now includes `['1','2','3','4','5','6']` and `SDK_PANE_ROLES` includes panes 5/6; `setSDKPaneConfig()` uses this.
+- `ui/renderer.js:15-24` `SDK_PANE_LABELS` includes panes 1-6.
+- `ui/renderer.js:186-223` `applySDKPaneLayout()` no longer hides panes 5/6; it iterates `Object.keys(SDK_PANE_LABELS)` and sets `pane.style.display = ''`.
+**Impact**: If runtime matches code, SDK mode should show panes 5/6 normally.
+**Next**: Verify in a fresh app restart with SDK mode enabled; if panes 5/6 still missing, re-open this blocker.

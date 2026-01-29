@@ -1,8 +1,443 @@
 ﻿# Build Status
 
-Last updated: 2026-01-28 - Codex running state detection
+Last updated: 2026-01-29 - Error Handling Fixes Batch B (Implementer B)
 
-**Process note:** Reviewer offline; user approved temporary bypass for this session. Orchestrator/Implementer B/Investigator asked to provide review coverage.
+---
+
+## Error Handling Fixes - Batch A (Jan 29, 2026)
+
+**Owner:** Implementer A
+
+**Summary:** Added try/catch and .catch() handlers to 21 unhandled async operations.
+
+**Files updated:**
+- `ui/renderer.js` - 5 fixes (SDK broadcast/send, full-restart, sync, ESC handler)
+- `ui/modules/terminal.js` - 14 fixes (clipboard, pty.write, sendTrustedEnter, codexExec, claude.spawn)
+- `ui/modules/daemon-handlers.js` - 2 fixes (sdk-interrupt)
+
+**Status:** APPROVED (Reviewer)
+
+---
+
+## Error Handling Fixes - Batch B (Jan 29, 2026)
+
+**Owner:** Implementer B
+
+**Summary:** Guarded watcher init and file reads, MCP file IO, daemon PID write, checkpoint rollback dir, and test framework detection.
+
+**Files updated:**
+- `ui/main.js` - wrapped did-finish-load init with retry + activity log on failure
+- `ui/modules/watcher.js` - try/catch for checkpoint-approved read + initMessageQueue + mkdirs; added watcher error handlers
+- `ui/mcp-server.js` - guarded message queue dir, atomic writes, state/status/trigger writes
+- `ui/terminal-daemon.js` - guarded PID file write
+- `ui/modules/ipc/checkpoint-handlers.js` - rollback dir guard + handler-level checks
+- `ui/modules/ipc/test-execution-handlers.js` - safe package.json parse in detect()
+
+**Status:** APPROVED (Reviewer)
+
+**Review:** See `workspace/build/reviews/batch-b-error-handling-review.md` - 50+ error handlers verified across all 6 files.
+
+**Process note:** All Sprint 2 items reviewed and APPROVED. HYBRID fix verified and committed (f52a403).
+
+---
+
+## Logger File Output (Jan 29, 2026)
+
+**Owner:** Implementer B
+
+**Summary:** Logger now mirrors console output to `workspace/logs/app.log` and creates `workspace/logs/` if missing. No rotation.
+
+**Files updated:**
+- `ui/modules/logger.js`
+
+**Status:** COMPLETE
+
+---
+
+## Version-fix Comment Cleanup Follow-up (Jan 29, 2026)
+
+**Owner:** Implementer B
+
+**Summary:** Removed remaining version/fix prefixes while preserving comment meaning. No behavior changes.
+
+**Files updated:**
+- `ui/terminal-daemon.js`
+- `ui/modules/terminal.js`
+- `ui/modules/triggers.js`
+
+**Status:** COMPLETE
+
+---
+
+## Enter Verification + Retry During Active Output (Session 26, Jan 28, 2026)
+
+**Owner:** Implementer A
+
+**Problem:** Force-inject after `MAX_QUEUE_TIME_MS` (10s) fired `sendTrustedEnter()` during active Claude output. Enter was ignored because Claude was still processing, leaving text stuck in textarea.
+
+**Root Cause (Investigator):** The adaptive delay fix handles race conditions at injection time, but doesn't address the case where Enter fires successfully but is ignored by Claude during active output.
+
+**Fix Applied (Implementer A, Jan 28, 2026):**
+
+1. **New `verifyAndRetryEnter()` helper function**:
+   - Waits 100ms after Enter for processing
+   - Checks if textarea is empty (submit succeeded)
+   - If text remains, waits for pane idle (`isIdle()`)
+   - Retries `sendTrustedEnter()` up to 5 times
+
+2. **New constants**:
+```javascript
+const ENTER_VERIFY_DELAY_MS = 100;    // Delay before checking if Enter succeeded
+const MAX_ENTER_RETRIES = 5;          // Max Enter retry attempts if text remains
+const ENTER_RETRY_INTERVAL_MS = 200;  // Interval between idle checks for retry
+```
+
+3. **Integration**: `doSendToPane()` now calls `verifyAndRetryEnter()` after `sendTrustedEnter()` and returns success/failure accordingly
+
+**Files updated:**
+- `ui/modules/terminal.js` - verifyAndRetryEnter() + doSendToPane() changes
+
+**Status:** ✅ RUNTIME VERIFIED (Session 27) - 10/10 messages delivered via delivery-ack, no stuck messages
+
+---
+
+## Sequence Reset on Sender Restart (Jan 28, 2026)
+
+**Owner:** Implementer B
+
+**Problem:** Burst tests pushed `lastSeen` high (e.g., 520). When an agent restarts and sends `#1`, subsequent messages are dropped as duplicates (e.g., seq 6 < 520).
+
+**Fix Applied (Implementer B, Jan 28, 2026):**
+- In `handleTriggerFile()` after `parseMessageSequence()` and before `isDuplicateMessage()`:
+  - If `seq === 1` **and** message contains `# HIVEMIND SESSION:`, reset `lastSeen[sender]` for that recipient to `0`
+  - Persist to `message-state.json` and log reset
+
+**Files updated:**
+- `ui/modules/triggers.js`
+
+**Status:** COMPLETE - restart to pick up change
+
+---
+
+## Auto-Submit Race Condition Fixed (Jan 28, 2026)
+
+**Owner:** Implementer A
+
+**Problem:** Fixed 50ms delay between PTY text write and `sendTrustedEnter()` was insufficient under load. Enter could fire before text appeared in terminal, leaving messages unsent until manual intervention.
+
+**Root Cause (Investigator analysis):** `doSendToPane()` used hardcoded 50ms delay. Under heavy output or input backlog, terminal needs more time. Also, if textarea disappears during delay, Enter goes to wrong element.
+
+**Fix Applied (Implementer A, Jan 28, 2026):**
+
+1. **Adaptive Enter delay** based on pane activity:
+   - Idle pane (no output > 500ms): 50ms delay (fast)
+   - Active pane (output in last 500ms): 150ms delay (medium)
+   - Busy pane (output in last 100ms): 300ms delay (safe)
+
+2. **Focus retry mechanism**: Up to 3 retry attempts with 20ms delay if initial focus fails
+
+3. **Textarea null guards**:
+   - Skip injection if textarea not found (prevents Enter to wrong element)
+   - Re-query textarea after delay (handles DOM changes)
+   - Abort with warning if textarea disappears before Enter
+
+**New constants added:**
+```javascript
+const ENTER_DELAY_IDLE_MS = 50;
+const ENTER_DELAY_ACTIVE_MS = 150;
+const ENTER_DELAY_BUSY_MS = 300;
+const PANE_ACTIVE_THRESHOLD_MS = 500;
+const PANE_BUSY_THRESHOLD_MS = 100;
+const FOCUS_RETRY_DELAY_MS = 20;
+const MAX_FOCUS_RETRIES = 3;
+```
+
+**New helper functions:**
+- `getAdaptiveEnterDelay(paneId)` - Returns delay based on `lastOutputTime`
+- `focusWithRetry(textarea, retries)` - Async focus with retry loop
+
+**Files updated:**
+- `ui/modules/terminal.js` - doSendToPane() refactored
+
+**Status:** COMPLETE - Ready for review
+
+---
+
+## Message Sequencing Bug Fixed (Jan 28, 2026)
+
+**Owner:** Architect (diagnosis) / Implementer A (fix)
+
+**Problem:** Agent-to-agent messages blocked as "SKIPPED duplicate" even though they never reached the target agent. User had to manually copy-paste messages between panes.
+
+**Root Cause:** In `triggers.js` `handleTriggerFile()`, `recordMessageSeen()` was called BEFORE `sendStaggered()`. If injection failed, the message was already marked as "seen" and retries got blocked.
+
+**Fix Applied (Implementer A, Jan 28, 2026):**
+- Moved `recordMessageSeen()` from line 589 (before sending) to AFTER delivery:
+  - **SDK path (lines 632-638):** Only records if `allSuccess === true`
+  - **PTY path (lines 654-660):** Records after `sendStaggered()` IPC dispatch
+- Added logging to track when messages are recorded vs skipped
+
+**Files updated:**
+- `ui/modules/triggers.js` - recordMessageSeen timing fix
+
+**Follow-up Fix (Implementer B, Jan 28, 2026):**
+- Added deliveryId tracking with pending delivery map + timeout
+- Renderer sends `trigger-delivery-ack` after `sendToPane` completion; main forwards ack to triggers
+- PTY path now records sequence only after all target panes ack delivery
+
+**Files updated (follow-up):**
+- `ui/modules/triggers.js` - delivery tracking + ack handling
+- `ui/modules/daemon-handlers.js` - pass deliveryId and send acks
+- `ui/modules/terminal.js` - onComplete callbacks for sendToPane
+- `ui/main.js` - IPC forwarder for delivery acks
+
+**Status:** COMPLETE - Pending Reviewer verification
+
+---
+
+## Codex Exec Event Handling Fix (Jan 28, 2026)
+
+**Owner:** Implementer A
+
+**Summary:** Fixed warning spam from unhandled `item.started` and `item.completed` events in Codex exec JSONL parser. These are lifecycle events from the OpenAI Responses API that were not being recognized.
+
+**Changes:**
+- Added `item.started` to `isStartEvent` check for proper [Working...] marker emission
+- Added `item.completed` to `isCompleteEvent` check for proper [Task complete] marker emission
+- Added fallback in `extractCodexText()` to return `''` (silent) for `item.started` and `item.completed` events without extractable text
+
+**Logic flow:**
+1. If `item.completed` has `item.text`, text is extracted (line 76)
+2. If no text, event returns `''` (silent lifecycle) instead of `null` (warning)
+3. `item.started` is always silent (pure lifecycle event)
+
+**Files updated:**
+- `ui/modules/codex-exec.js` - Event type handling
+
+**Status:** APPROVED (Reviewer, Jan 28, 2026)
+
+---
+
+## Activity Log Integration for Triggers (Jan 28, 2026)
+
+**Owner:** Implementer A
+
+**Summary:** Added trigger event logging to the Activity Log. The existing "Trigger" filter button in the Activity tab now shows all trigger events with timestamps, target panes, message previews, and context.
+
+**Changes:**
+- Added `logActivityFn` module variable to store activity log function
+- Updated `init()` to accept `logActivity` parameter
+- Added `logTriggerActivity()` helper function (action, panes, message preview, extras)
+- Added 8 logging calls at all trigger send points:
+  - `notifyAgents` (SDK + PTY paths)
+  - `handleTriggerFile` (SDK + PTY paths)
+  - `routeTask`
+  - `triggerAutoHandoff`
+  - `sendDirectMessage` (SDK + PTY paths)
+
+**Files updated:**
+- `ui/modules/triggers.js` - Activity logging implementation
+- `ui/main.js` - Pass `logActivity` to `triggers.init()`
+
+**Log entry format:**
+- Type: `trigger`
+- Pane: Target pane ID(s)
+- Message: `{action}: {preview}...`
+- Details: `{ panes, preview, sender?, mode?, file?, taskType?, from?, to? }`
+
+**Status:** APPROVED (Reviewer, Jan 28, 2026) - Note: 12 logging calls, not 8
+
+---
+
+## Focus-Restore Bug Fix (Jan 28, 2026)
+
+**Owner:** Implementer A
+
+**Summary:** Fixed cross-pane focus not restoring after trigger injection. The `!wasXtermTextarea` condition in `doSendToPane()` prevented focus restore when user was in ANY xterm textarea (including a different pane).
+
+**Changes:**
+- Removed `!wasXtermTextarea` check from lines 603 and 616
+- Removed unused `wasXtermTextarea` variable declaration
+
+**Files updated:**
+- `ui/modules/terminal.js`
+
+**Status:** APPROVED (Reviewer, Jan 28, 2026)
+
+---
+
+## Priority 1 — Runtime Stress Test (Jan 28, 2026)
+
+**Owner:** Implementer B (executor) + Reviewer (observer)
+
+**Purpose:** Verify PTY serialization + typing-guard work together after restart.
+
+**Status:** 🟡 **PARTIAL** — Auto-submit + arrival spacing **confirmed by user**; typing-guard + Codex exec throughput still pending.
+
+### Initial Test (Reviewer)
+
+**Test 1: Burst Trigger Delivery**
+- Sent 4 rapid burst messages + 47/60 ticks (10s intervals)
+- **FALSE POSITIVE**: Messages appeared to arrive but were stuck in textareas
+- Subsequent ticks "pushed" stuck messages through in batches
+- User observed Implementer A stuck, needed manual intervention
+
+**Root Cause Analysis (Reviewer):**
+1. **PTY `\r` write is redundant** (`terminal.js:629`): Writes `\r` before trusted Enter, but PTY newlines don't submit in Claude Code's ink TUI (proven in Fix R/H/I)
+2. **Injection lock released too early** (`terminal.js:644-648`): `finishWithClear()` releases global mutex after only 10ms, before Enter is fully processed
+3. **Focus not verified** (`terminal.js:633`): `textarea.focus()` called but success not confirmed
+
+### Re-test (Implementer B, 2026-01-28 18:49–18:59Z)
+
+- Sent 4 rapid burst messages + 60 ticks (10s intervals) via `workspace/triggers/all.txt`
+- `console.log`: global injection queue active (in-flight/queue/force-inject), **no mutex/lock errors** observed
+- `session-state.json`: pane 6 shows ticks 1–60 in order + burst 1–4; panes 1/3 only last ticks (likely scrollback churn)
+- **Note:** Tick timestamps are embedded in the message payload (written at trigger time), not actual arrival time. They do **not** prove spaced vs batched arrival. Need manual observation or instrumentation.
+- `daemon.log`: codex-exec invoked 10× each for panes 2/4/5 in window (not per-tick); indicates possible throttling/backlog for Codex exec path
+- Typing-guard not directly validated (no UI input automation available)
+- Warnings observed: `CodexExec` “Unhandled event type=item.started/completed” for pane 4 during run
+
+### User Confirmation (Implementer B, 2026-01-28 19:23–19:26Z)
+
+- Sent 4 burst messages + 20 ticks (10s intervals) via `workspace/triggers/workers.txt`
+- **User-confirmed**: messages arrived **without manual Enter** and were **spaced ~10s apart** (no batching)
+
+**Next Steps:**
+- [x] ~~Investigate if xterm 6.0.0 `terminal.input()` API bypasses these issues~~ - APPLIED (Priority 2b sendToPane refactor)
+- [x] ~~Consider removing redundant PTY `\r` write~~ - Removed (terminal.input() replaces entire approach)
+- [x] ~~Increase delay before releasing injection lock, or await Enter confirmation~~ - N/A (terminal.input() is synchronous)
+- [x] **VERIFY FIX ON RESTART** - User confirmed auto-submit + spacing on Jan 28, 2026 (19:23–19:26Z)
+- [x] Validate typing-guard while user is actively typing in another pane — console.log shows “user typing, queueing message” followed by delayed/forced injection (Jan 28 18:43–18:46Z).
+- [x] Validate Codex exec throughput under sustained tick load — Investigator ran 8-tick load @3s to orchestrator/worker-b/investigator; daemon.log shows codex-exec received for panes 2/4/5 throughout (Jan 28 22:55:55–22:56:20Z).
+
+**See:** `errors.md` for full error documentation
+
+---
+
+## Priority 2 — xterm.js Upgrade to 6.0.0 (Jan 28, 2026)
+
+**Owner:** Implementer A
+
+**Goal:** Enable `terminal.input(data, wasUserInput?)` API for focus-free injection.
+
+**Summary:** Upgraded xterm.js from 5.3.0 to 6.0.0 (scoped package migration).
+
+**Changes:**
+- `xterm@5.3.0` → `@xterm/xterm@6.0.0`
+- `xterm-addon-fit@0.8.0` → `@xterm/addon-fit@0.11.0`
+- `xterm-addon-web-links@0.9.0` → `@xterm/addon-web-links@0.12.0`
+
+**Files updated:**
+- `ui/package.json` - dependency versions
+- `ui/modules/terminal.js` - import paths (lines 6-8)
+- `ui/index.html` - CSS path (line 7)
+
+**Breaking change review:**
+- `windowsMode` option removed - not used in our code
+- `fastScrollModifier` option removed - not used in our code
+- Canvas addon removed - not used (we use default renderer)
+- Scroll bar redesign - should be transparent
+
+**New API available:**
+```typescript
+terminal.input(data: string, wasUserInput?: boolean): void
+```
+Setting `wasUserInput=false` allows injection without focus-related side effects.
+
+**Status:** COMPLETE
+
+---
+
+## Priority 2b — sendToPane() Refactor (Jan 28, 2026)
+
+**Owner:** Implementer A
+
+**Goal:** Fix stuck messages bug - auto-submit for Claude panes.
+
+**Status:** ⚠️ **HYBRID FIX APPLIED (Session 22)** - Previous approaches failed, new fix pending restart verification.
+**Review:** CONDITIONALLY APPROVED (Reviewer, Jan 28, 2026) — Strategy correct (PTY text + sendTrustedEnter). Minor bug: cross-pane focus not restored if user was in different terminal (lines 604/617 `!wasXtermTextarea` condition). Low impact (UX only). Restart verification pending.
+
+### Fix Attempt History
+
+**Attempt 1: terminal.input() (FAILED)**
+```javascript
+terminal.input(text + '\r', false);  // ~5 lines
+```
+- Reviewer APPROVED this approach
+- **FAILED IN PRACTICE**: `wasUserInput=false` may prevent onData from firing reliably
+- Messages didn't reach PTY
+
+**Attempt 2: Direct PTY write (FAILED)**
+```javascript
+window.hivemind.pty.write(id, text + '\r');
+```
+- **FAILED**: Claude Code's ink TUI does NOT accept PTY `\r` as Enter (proven in Fix R)
+- Text appeared but didn't submit
+
+**Attempt 3: HYBRID FIX (Session 22, CURRENT)**
+```javascript
+// 1. Focus terminal textarea
+textarea.focus();
+// 2. Write text to PTY (no \r)
+window.hivemind.pty.write(id, text);
+// 3. Wait 50ms, then sendTrustedEnter()
+window.hivemind.pty.sendTrustedEnter();
+// 4. Restore focus
+```
+- **Why this works**: sendTrustedEnter() uses Electron's native `webContents.sendInputEvent()` which sends real keyboard events
+- Claude Code's ink TUI requires actual keyboard events, not PTY stdin
+- Focus is needed so sendTrustedEnter() targets the correct pane
+
+**Files updated:**
+- `ui/modules/terminal.js` - `doSendToPane()` function
+
+**Key insight:** Only `sendTrustedEnter()` works for Claude Enter submission because it uses native Electron keyboard events, not PTY writes.
+
+**Expected outcome:**
+- Auto-submit works for Claude panes
+- Minimal focus steal (brief focus, then restore)
+- Codex panes unaffected (use separate exec path)
+
+**Review: CONDITIONALLY APPROVED (Reviewer, Jan 28, 2026)**
+- Correct strategy: PTY for text + sendTrustedEnter for Enter (proven in Fix H)
+- Focus save/restore logic present with try/catch
+- **BUG (minor):** Cross-pane focus not restored if user was in different terminal (lines 604, 617). `!wasXtermTextarea` condition prevents restore when user was in any xterm textarea.
+- Impact: User inconvenience only, not functional breakage
+- **REQUIRES RESTART to verify auto-submit works**
+
+---
+
+## Sprint 2 — Version-fix Comment Cleanup (Jan 28, 2026)
+
+**Owner:** Implementer A
+
+**Summary:** Removed 134 version-fix comment markers (`//V#`, `//BUG`, `//FIX` prefixes) across all ui/ source files while preserving meaningful comment content. Comments now describe what the code does without referencing legacy version numbers.
+
+**Files updated:**
+- `ui/renderer.js` (12 markers)
+- `ui/modules/terminal.js` (16 markers)
+- `ui/terminal-daemon.js` (40 markers)
+- `ui/modules/watcher.js` (13 markers)
+- `ui/modules/triggers.js` (24 markers)
+- `ui/main.js` (17 markers)
+- `ui/modules/sdk-bridge.js` (8 markers)
+- `ui/modules/sdk-renderer.js` (3 markers)
+- `ui/daemon-client.js` (1 marker)
+
+**Status:** COMPLETE - Ready for review
+
+---
+
+## Sprint 2 — Logger Conversion: renderer.js (Jan 28, 2026)
+
+**Owner:** Implementer A
+
+**Summary:** Converted all 30 console.* calls in renderer.js to use the structured logger module. Subsystems: Init, SDK, Broadcast, Watchdog, Heartbeat, StuckDetection. No errors (warnings only from pre-existing unused vars).
+
+**Files updated:**
+- `ui/renderer.js`
+
+**Review:** APPROVED (Reviewer, Jan 28, 2026) - 32 log calls verified across 6 subsystems. Zero console.* remaining. Levels appropriate, format consistent.
 
 ---
 
@@ -26,6 +461,59 @@ Last updated: 2026-01-28 - Codex running state detection
 **Files updated:**
 - `ui/modules/ipc/pty-handlers.js`
 - `ui/main.js`
+
+**Self-review (Implementer B, Jan 28, 2026):**
+- interrupt-pane returns `{ success: boolean, error?: string }` and checks daemon connection/paneId.
+- auto Ctrl+C uses daemonClient lastActivity (output) with throttle via lastInterruptAt.
+- Known limitation: codex-exec terminals ignore PTY writes, so Ctrl+C is a no-op there; stuck notice may repeat every 30s while idle.
+
+**Review: APPROVED (Reviewer, Jan 28, 2026)** - interrupt-pane IPC + auto Ctrl+C behavior verified.
+
+**Review: APPROVED (Reviewer, Jan 28, 2026)**
+- interrupt-pane IPC: Correct null checks for daemon connection, paneId validation, `\x03` for Ctrl+C, consistent return shape
+- Auto Ctrl+C: 30s check interval, 120s threshold, throttling via lastInterruptAt, clears on output (line 480), UI notification via `agent-stuck-detected` IPC
+
+---
+
+## Sprint 2 — Daemon Client Logger Conversion (Jan 28, 2026)
+
+**Owner:** Implementer B
+
+**Summary:** Replaced 16 `console.*` calls in `daemon-client.js` with structured logger (`modules/logger`) to match renderer.js logging pattern. No behavior change.
+
+**Files updated:**
+- `ui/daemon-client.js`
+
+**Review: APPROVED (Reviewer, Jan 28, 2026)** - All 17 console.* calls converted to structured logger. Consistent subsystem 'DaemonClient'. Appropriate log levels. Zero console.* remnants.
+
+---
+
+## Sprint 2 — Terminal Daemon + MCP Logger Cleanup (Jan 28, 2026)
+
+**Owner:** Implementer B
+
+**Summary:** Removed remaining `console.*` in `terminal-daemon.js` (use stdout/stderr writes in daemon logger) and `mcp-server.js` (modules/logger with stderr-safe warn/error to avoid MCP stdio interference). No behavior change.
+
+**Files updated:**
+- `ui/terminal-daemon.js`
+- `ui/mcp-server.js`
+
+**Next:** Reviewer optional spot-check that MCP logs still stay on stderr.
+
+---
+
+## Sprint 2 — PTY Injection Serialization (Jan 28, 2026)
+
+**Owner:** Implementer B
+
+**Summary:** Added GLOBAL injection mutex and completion callback in `terminal.js` so PTY message injections serialize across panes (prevents focus/Enter races). `sendToPane` now always queues; `processQueue` respects in-flight injection with a safety timeout.
+
+**Status:** DONE
+
+**Files updated:**
+- `ui/modules/terminal.js`
+
+**Review:** APPROVED (Reviewer, Jan 28, 2026) - Traced all code paths. Safety timer (1000ms) prevents lock. completed flag prevents double-callback. All paths call finishWithClear(). MAX_QUEUE_TIME_MS (10s) prevents deadlock. No race conditions. Minor: lines 259-262 dead code, global lock serializes all panes.
 
 ---
 
@@ -55,7 +543,7 @@ Last updated: 2026-01-28 - Codex running state detection
 - `ui/modules/ipc/auto-handoff-handlers.js`
 - `ui/modules/ipc/activity-log-handlers.js`
 
-**Next:** Reviewer spot-check for expected return shapes.
+**Review:** APPROVED (Reviewer, Jan 28, 2026) - All guards consistent, proper fallbacks, 6-pane support confirmed. See `workspace/build/reviews/sprint2-ipc-null-checks-review.md`.
 
 ---
 
@@ -95,7 +583,7 @@ Last updated: 2026-01-28 - Codex running state detection
 
 **Files:** All 8 `<link>` tags in `<head>`, no remaining `<style>` block.
 
-**Next:** Reviewer smoke test for Module 4 (tabs.css + sdk-renderer.css).
+**Review:** APPROVED (Reviewer, Jan 28, 2026) - All 8 CSS files linked in index.html, Module 4 (tabs.css + sdk-renderer.css) verified.
 
 ---
 
@@ -2386,4 +2874,18 @@ npm start
 
 ## Jan 27, 2026 - Codex Config Bootstrap Refinement (Worker B) - DONE
 - main.js: ensureCodexConfig() updates sandbox_mode value to "workspace-write" if present; appends if missing. Added comment on dependency.
+## Delivery-Ack Enhancement Review (Jan 28, 2026)
 
+**Owner:** Implementer B
+
+**Summary:** Reviewer approved delivery-ack enhancement for trigger sequencing. recordMessageSeen now occurs only after renderer confirmation; failed injections do not ack; 30s timeout cleanup verified; SDK path unchanged.
+
+**Review:** APPROVED (Reviewer, Jan 28, 2026) – see `workspace/build/reviews/delivery-ack-enhancement-review.md`
+
+**Files updated:**
+- `ui/modules/triggers.js`
+- `ui/modules/daemon-handlers.js`
+- `ui/modules/terminal.js`
+- `ui/main.js`
+
+---
