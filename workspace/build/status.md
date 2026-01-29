@@ -1,6 +1,51 @@
 ﻿# Build Status
 
-Last updated: 2026-01-29 - Unit Tests: watcher/logger (Implementer B)
+Last updated: 2026-01-29 - P1 Visibility: Unstick Escalation + Sync Indicator (Implementer B)
+
+---
+
+## P1 Visibility - Unstick Escalation + Sync Indicator (Jan 29, 2026)
+
+**Owner:** Implementer B
+
+**Summary:** Added per-pane unstick escalation (nudge -> interrupt -> restart) and sync indicator for shared_context/blockers/errors.
+
+**Files updated:**
+- `ui/modules/terminal.js` - unstick escalation, interrupt/restart helpers, syncSharedContext returns success
+- `ui/modules/daemon-handlers.js` - sync indicator UI + IPC listeners
+- `ui/modules/watcher.js` - sync-file-changed event + auto-sync for blockers/errors
+- `ui/renderer.js` - unstick button wiring + manual sync marker + sync indicator setup
+- `ui/styles/layout.css` - status bar sync indicator styling
+
+**Notes:** Sync indicator uses runtime DOM injection; auto-sync for blockers/errors respects autoSync setting.
+
+**Status:** READY FOR REVIEW
+
+---
+
+## Renderer Unit Tests Sprint (Jan 28, 2026)
+
+**Owner:** Implementer A
+
+**Summary:** Added comprehensive unit tests for renderer-side modules.
+
+**Test Files Created/Updated:**
+- `ui/__tests__/triggers.test.js` - 115 tests (message sequencing, SDK mode, routing)
+- `ui/__tests__/terminal.test.js` - 104 tests (PTY, idle detection, queuing)
+- `ui/__tests__/daemon-handlers.test.js` - 78 tests (IPC handlers, state display)
+- `ui/__tests__/sdk-renderer.test.js` - 34 tests (streaming, delivery tracking)
+
+**Coverage Results:**
+- Statements: **60.99%**
+- Branches: **45.75%** (target 50% not met)
+- Functions: **59.63%**
+- Lines: **61.84%**
+- Total Tests: **418 passing** (9 test suites)
+
+**Coverage Gap Analysis:**
+The 4.25% branch gap is primarily due to IPC event handler callbacks and complex state machine transitions that require integration testing rather than unit tests.
+
+**Status:** COMPLETE - Ready for Reviewer verification
 
 ---
 
@@ -2915,3 +2960,20 @@ npm start
 - `ui/main.js`
 
 ---
+
+---
+
+## Session 30 - P1 Implementation
+
+### Task #1: Agent Health Dashboard - DONE (Implementer A)
+- HTML: Added health indicators, stuck warnings, action buttons to all 6 pane headers
+- CSS: Color-coded health states (.recent green, .active gray, .stale yellow), stuck pulse animation
+- JS: updateHealthIndicators() with 1-second interval, formatTimeSince() helper, button handlers for Ctrl+C and ESC
+
+### Task #2: Message Delivery Visibility - DONE (Implementer A)
+- HTML: Added delivery-indicator elements to all 6 pane headers
+- CSS: Delivery indicator styling with pop animation, delivery-flash on pane header
+- JS: showDeliveryIndicator() and showDeliveryFailed() in daemon-handlers.js
+- Hooked into both SDK and PTY delivery completion paths in processQueue()
+
+All 418 tests pass. Awaiting Reviewer audit.

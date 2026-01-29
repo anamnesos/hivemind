@@ -1,7 +1,28 @@
 ﻿# Hivemind Shared Context
 
-**Last Updated:** Jan 29, 2026 (Session 29 - Unit Tests in progress)
-**Status:** Watcher/logger tests added; coverage now 63.9% statements / 51.58% branches. Remaining: mcp-server, codex-exec, ipc handlers.
+**Last Updated:** Jan 29, 2026 (P1 Visibility tasks in progress)
+**Status:** Implementer B completed unstick escalation + sync indicator (#6/#7); pending review. Implementer A working on health dashboard + delivery visibility (#1/#2).
+
+---
+
+## 🟡 P1 Visibility - Unstick + Sync Indicator (Jan 29, 2026)
+
+### Implementer B Progress
+- Added per-pane unstick escalation (nudge -> interrupt -> restart) with SDK-aware interrupt + restart guard
+- Added sync indicator chips in status bar for shared_context/blockers/errors; updates on sync-triggered and sync-file-changed
+- Watcher now emits sync-file-changed and auto-syncs blockers/errors when autoSync enabled
+- Manual sync marks shared_context as synced in UI
+
+### Files updated
+- ui/modules/terminal.js
+- ui/modules/daemon-handlers.js
+- ui/modules/watcher.js
+- ui/renderer.js
+- ui/styles/layout.css
+
+### Next Steps
+- **Reviewer:** Verify unstick escalation behavior + sync indicator UI; confirm blockers/errors auto-sync acceptable
+- **Implementer A:** Continue #1/#2 health dashboard + delivery visibility DOM wiring
 
 ---
 
