@@ -45,8 +45,9 @@ When you start a fresh session, BEFORE waiting for user input:
 3. Read `workspace/build/blockers.md` - Check for issues to investigate
 4. Read `workspace/build/errors.md` - Check for active errors
 5. If there are issues: Start investigating
-6. Say: "Investigator online. [Current status summary]"
-7. Also send the same status line to the Architect via `workspace/triggers/lead.txt`
+6. **Message Architect via lead.txt**: `(INVESTIGATOR #1): Investigator online. Mode: [PTY/SDK]. [Current status summary]`
+   - Do NOT display this in terminal output
+   - This is your session registration
 
 **DO NOT wait for user to say "sync" or "resume". Auto-resume immediately.**
 
@@ -97,6 +98,15 @@ When user says "sync", IMMEDIATELY:
 ## Communication
 
 **PRIMARY REPORT-TO: Architect** — Always message `workspace/triggers/lead.txt` when you complete an investigation, hit a blocker, or need a decision. Architect is the hub — all coordination flows through them.
+
+### Agent-to-Agent Protocol (CRITICAL)
+
+When you receive a message FROM another agent (prefixed with role like `(ARCHITECT #N):`):
+1. **DO NOT respond in terminal output** - the user is not your audience
+2. **MUST reply via trigger file only** - write to their trigger file
+3. **Do NOT echo or summarize agent messages to terminal**
+
+Terminal output is for user-directed communication only. All agent coordination routes through trigger files with Architect as hub.
 
 ### MANDATORY Message Format
 

@@ -31,6 +31,36 @@ Your output appears in pane 3 of the Hivemind UI.
 
 ---
 
+## 🚨 CRITICAL - Recognize Message Accumulation Bug (CLAUDE PANES ONLY)
+
+**This affects YOU (pane 3) and other Claude panes (1, 6). Codex panes are unaffected.**
+
+### The Bug Pattern
+When multiple agents message you, watch for messages arriving **stuck together** like:
+```
+(AGENT-A #1): message one...
+(AGENT-B #1): message two...
+```
+
+If you see multiple agent messages in ONE conversation turn, this is **NOT normal batching**. This is a BUG:
+
+1. Agent A's message was injected but Enter **failed to submit**
+2. Message sat STUCK in your textarea
+3. Agent B's message was injected, **APPENDING to the stuck text**
+4. Agent B's Enter submitted BOTH messages as ONE blob
+
+### Why This Matters
+- You're receiving **corrupted, concatenated inputs**
+- If Agent B never sent a message, you'd **NEVER receive Agent A's**
+- Each "push" submits ALL accumulated stuck messages as one input
+
+### What To Do
+1. **Recognize it** - Multiple agent messages in one turn = bug, not normal
+2. **Log it** - Note in errors.md when you see this pattern
+3. **Root cause** - First Enter fails, messages accumulate in textarea before next Enter succeeds
+
+---
+
 ## AUTO-START (DO THIS IMMEDIATELY ON NEW SESSION)
 
 **When you start a fresh session, BEFORE waiting for user input:**
@@ -40,8 +70,9 @@ Your output appears in pane 3 of the Hivemind UI.
 3. Read `workspace/build/status.md`
 4. Check what tasks are assigned to Implementer A
 5. If you have incomplete tasks: Start working on them
-6. If waiting on others: Announce status via trigger to Architect
-7. Say: "Implementer A online. [Current status summary]"
+6. **Message Architect via lead.txt**: `(IMPLEMENTER-A #1): Implementer A online. Mode: [PTY/SDK]. [Current status summary]`
+   - Do NOT display this in terminal output
+   - This is your session registration
 
 **DO NOT wait for user to say "sync" or "resume". Auto-resume immediately.**
 
@@ -88,6 +119,15 @@ When user asks "can you see the image?" or shares a screenshot:
 - Update status when you complete work
 - When you receive a [HIVEMIND SYNC], acknowledge and check for your tasks
 - **PRIMARY REPORT-TO: Architect** — Always message `workspace/triggers/lead.txt` when you complete work, hit a blocker, or need a decision. Architect is the hub — all coordination flows through them.
+
+### Agent-to-Agent Protocol (CRITICAL)
+
+When you receive a message FROM another agent (prefixed with role like `(ARCHITECT #N):`):
+1. **DO NOT respond in terminal output** - the user is not your audience
+2. **MUST reply via trigger file only** - write to their trigger file
+3. **Do NOT echo or summarize agent messages to terminal**
+
+Terminal output is for user-directed communication only. All agent coordination routes through trigger files with Architect as hub.
 
 ## Web Search Mandate (MANDATORY)
 

@@ -93,6 +93,15 @@ When user asks "can you see the image?" or shares a screenshot:
 - When you receive a [HIVEMIND SYNC], acknowledge and check for your tasks
 - **PRIMARY REPORT-TO: Architect** — Always message `workspace/triggers/lead.txt` when you complete work, hit a blocker, or need a decision. Architect is the hub — all coordination flows through them.
 
+### Agent-to-Agent Protocol (CRITICAL)
+
+When you receive a message FROM another agent (prefixed with role like `(ARCHITECT #N):`):
+1. **DO NOT respond in terminal output** - the user is not your audience
+2. **MUST reply via trigger file only** - write to their trigger file
+3. **Do NOT echo or summarize agent messages to terminal**
+
+Terminal output is for user-directed communication only. All agent coordination routes through trigger files with Architect as hub.
+
 ## Web Search Mandate (MANDATORY)
 
 1. **Web search FIRST** — Do not assume API signatures, default behaviors, or platform quirks.

@@ -31,6 +31,43 @@ Your messages appear in pane 1 of the Hivemind UI.
 
 ---
 
+## 🚨 CRITICAL - Recognize Message Accumulation Bug (CLAUDE PANES ONLY)
+
+**This affects YOU (pane 1) and other Claude panes (3, 6). Codex panes are unaffected.**
+
+### The Bug Pattern
+When multiple agents message you, watch for messages arriving **stuck together** like:
+```
+(AGENT-A #1): message one...
+(AGENT-B #1): message two...
+```
+
+If you see multiple agent messages in ONE conversation turn, this is **NOT normal batching**. This is a BUG:
+
+1. Agent A's message was injected but Enter **failed to submit**
+2. Message sat STUCK in your textarea
+3. Agent B's message was injected, **APPENDING to the stuck text**
+4. Agent B's Enter submitted BOTH messages as ONE blob
+
+### Why This Matters
+- You're receiving **corrupted, concatenated inputs**
+- If Agent B never sent a message, you'd **NEVER receive Agent A's**
+- Each "push" submits ALL accumulated stuck messages as one input
+- Your conversation structure is wrong
+
+### What To Do
+1. **Recognize it** - Multiple agent messages in one turn = bug, not normal
+2. **Log it** - Note in shared_context.md or errors.md when you see this pattern
+3. **Don't celebrate "all agents checked in"** - If they arrived together, the bug is active
+4. **Root cause** - First Enter fails, messages accumulate in textarea
+
+### How To Verify
+- Messages from different agents should arrive in SEPARATE conversation turns
+- If you see `(AGENT-A #N):` and `(AGENT-B #N):` in the SAME turn, that's the bug
+- Ask user: "Did those arrive separately or together in my pane?"
+
+---
+
 ## AUTO-START (DO THIS IMMEDIATELY ON NEW SESSION)
 
 **When you start a fresh session, BEFORE waiting for user input:**
