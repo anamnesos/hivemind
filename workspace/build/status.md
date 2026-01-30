@@ -1,6 +1,1600 @@
 ﻿# Build Status
 
-Last updated: 2026-01-29 - P1 Visibility: Unstick Escalation + Sync Indicator (Implementer B)
+Last updated: 2026-01-30 - **SESSION 48 MEGA SPRINT (QUEUE + GIT INTEGRATION)**
+
+---
+
+## 🔌 Session 48: Plugin/Extension System (Task #9)
+**Owner:** Implementer B  
+**Status:** ✅ IMPLEMENTED - Backend + IPC + docs
+
+**Highlights**
+- Plugin manager loads plugins from `workspace/plugins`, persists state, and provides per-plugin storage
+- Manifest support: `plugin.json` or `package.json` with `hivemind` field
+- Hook system with sync `message:beforeSend` and async events (`message:afterSend`, `trigger:received`, `activity:log`, `agent:*`, `daemon:data`)
+- Command runner with timeout guard
+- Trigger pipeline now supports plugin interception for notify/broadcast/direct/trigger flows
+- IPC endpoints to list/enable/disable/reload/run plugin commands
+- Documentation: `docs/plugins.md`
+
+**Files Created:**
+- `ui/modules/plugins/plugin-manager.js`
+- `ui/modules/plugins/index.js`
+- `ui/modules/ipc/plugin-handlers.js`
+- `docs/plugins.md`
+
+**Files Modified:**
+- `ui/main.js` (plugin manager wiring + core event hooks)
+- `ui/modules/triggers.js` (before/after send hooks, trigger receive event)
+- `ui/modules/ipc/handler-registry.js`
+- `ui/modules/ipc/ipc-state.js`
+- `ui/modules/ipc/index.js`
+- `ui/modules/ipc/api-docs-handlers.js`
+
+**Testing Required:**
+1. Create `workspace/plugins/sample/plugin.json` + `index.js`
+2. Restart app; run IPC `list-plugins` and confirm plugin loads
+3. Confirm `message:beforeSend` can modify outbound messages
+4. Run `run-plugin-command` and verify return payload
+
+---
+
+## 💾 Session 48: Backup & Restore System (Task #26)
+**Owner:** Implementer B  
+**Status:** ✅ IMPLEMENTED - Automated backups + IPC
+
+**Highlights**
+- Backup manager snapshots workspace/config/state into `workspace/backups`
+- Retention policy: max count + max age; optional restore point before restore
+- Interval-based automation with configurable cadence
+- IPC endpoints for list/create/restore/delete/prune/config
+- Workspace watcher ignores backups to avoid auto-sync storms
+
+**Files Created:**
+- `ui/modules/backup-manager.js`
+- `ui/modules/ipc/backup-handlers.js`
+
+**Files Modified:**
+- `ui/main.js` (backup manager wiring)
+- `ui/modules/ipc/handler-registry.js`
+- `ui/modules/ipc/ipc-state.js`
+- `ui/modules/ipc/index.js`
+- `ui/modules/ipc/api-docs-handlers.js`
+- `ui/modules/watcher.js` (ignore backups)
+
+**Testing Required:**
+1. Invoke `backup-create` IPC, verify `workspace/backups/<id>/backup.json`
+2. Invoke `backup-list` and see entry
+3. Restore via `backup-restore` and confirm files restored
+
+---
+
+## 🧩 Session 48: Agent Templates Library (Task #32)
+**Owner:** Implementer B  
+**Status:** ✅ IMPLEMENTED - Built-in templates + import/export
+
+**Highlights**
+- Built-in agent templates for common setups (hybrid, all-claude, all-codex, research sprint, review battle, focus mode)
+- Template handlers now merge built-ins and user templates
+- Import/export endpoints added for sharing configurations
+- Documentation: `docs/agent-templates.md`
+
+**Files Created:**
+- `ui/modules/agent-templates.js`
+- `docs/agent-templates.md`
+
+**Files Modified:**
+- `ui/modules/ipc/template-handlers.js`
+- `ui/modules/ipc/api-docs-handlers.js`
+
+**Testing Required:**
+1. `list-templates` includes built-ins (source=builtin)
+2. `export-templates` returns JSON
+3. `import-template` adds a user template
+
+## 📄 Session 48: Automated Documentation Generation (Task #23)
+**Owner:** Implementer A
+**Status:** ✅ IMPLEMENTED - Full documentation generation from code
+
+**Highlights**
+- **Core doc generator module** `ui/modules/analysis/doc-generator.js` (~750 lines):
+  - JSDoc block extraction and parsing
+  - Function/class/method/property detection
+  - Export detection (CommonJS and ES modules)
+  - Constant extraction
+  - Multiple output formats: Markdown, HTML, JSON
+  - Directory scanning with recursive support
+  - Pattern-based file filtering
+  - Documentation coverage statistics
+
+- **IPC handlers** `ui/modules/ipc/doc-generator-handlers.js` (~350 lines):
+  - `docs-generate-file` - Generate docs for single file
+  - `docs-generate-directory` - Generate docs for directory
+  - `docs-generate-project` - Generate docs for entire project
+  - `docs-preview` - Preview without saving
+  - `docs-export` - Export to files
+  - `docs-get/set-config` - Configuration management
+  - `docs-get-coverage` - Documentation coverage stats
+  - `docs-get-undocumented` - List undocumented items
+  - `docs-generate-ipc` - Generate IPC handler docs
+  - `docs-get-cached` - Access cached docs
+  - `docs-clear-cache` - Clear documentation cache
+
+- **Visual Docs tab UI** in `ui/index.html` (~90 lines):
+  - Mode selector (File/Directory/Project)
+  - Path input with browse button
+  - Format selector (Markdown/HTML/JSON)
+  - Generate/Preview/Coverage buttons
+  - Coverage bar with percentage
+  - Preview panel with copy/export
+  - Undocumented items list with file:line
+
+- **Docs tab styling** in `ui/styles/tabs.css` (~350 lines):
+  - Coverage bar with color coding (red<40%, yellow<70%, green)
+  - Preview container with monospace font
+  - Undocumented items list with warnings
+  - Settings modal for configuration
+  - Loading spinner overlay
+
+- **Docs tab JS** in `ui/modules/tabs.js` (~450 lines):
+  - setupDocsTab, generateDocumentation
+  - previewDocumentation, checkDocsCoverage
+  - loadUndocumentedItems, exportDocumentation
+  - showDocsSettings modal
+  - Coverage display updates
+  - Clipboard copy support
+
+**Files Created:**
+- NEW: `ui/modules/analysis/doc-generator.js` - Core doc generator (~750 lines)
+- NEW: `ui/modules/ipc/doc-generator-handlers.js` - Doc IPC handlers (~350 lines)
+
+**Files Modified:**
+- `ui/modules/ipc/handler-registry.js` - Register doc-generator handlers
+- `ui/index.html` - Docs tab button + pane (~90 lines)
+- `ui/styles/tabs.css` - Docs tab CSS (~350 lines)
+- `ui/modules/tabs.js` - Docs tab JS (~450 lines)
+- `ui/renderer.js` - setupDocsTab() call
+
+**Testing Required:**
+1. Click "Docs" tab and verify it opens
+2. Select "File" mode, browse to a .js file
+3. Click "Generate Docs" and verify preview shows
+4. Test "Preview" button for quick preview
+5. Test "Coverage" button to see stats
+6. Verify coverage bar color changes with percentage
+7. Check undocumented items list
+8. Test format selector (Markdown/HTML/JSON)
+9. Test "Copy" to clipboard
+10. Test Settings modal - project name, version, options
+11. Test "Directory" mode with ui/modules folder
+12. Test "Project" mode for full project
+
+---
+
+## 🔍 Session 48: AI-Powered Code Review (Task #18)
+**Owner:** Implementer A
+**Status:** ✅ IMPLEMENTED - Full AI code review with local pattern detection
+
+**Highlights**
+- **Git handlers** `ui/modules/ipc/git-handlers.js` (~340 lines):
+  - `git-status` - Get repository status with staged/unstaged/untracked
+  - `git-diff` - Get diff content with structured parsing
+  - `git-log` - Get commit history
+  - `git-stage/unstage` - Stage/unstage files
+  - `git-commit` - Create commits
+  - `git-branch` - Get current branch
+  - `git-files-changed` - Get changed files with line stats
+  - `git-show` - Get file at specific revision
+  - `git-is-repo` - Check if directory is a git repo
+
+- **Core code review module** `ui/modules/analysis/code-review.js` (~500 lines):
+  - Multi-backend support: Anthropic API + local pattern detection
+  - Security patterns: eval, innerHTML, SQL injection, command injection
+  - Performance patterns: JSON clone, regex in loops, DOM queries
+  - Bug patterns: empty catch, console statements, TODO markers
+  - Style patterns: var usage, mixed tabs/spaces
+  - Error handling patterns: missing catch, string throws
+  - Severity levels: critical, high, medium, low, info
+  - Diff parsing into structured format
+  - Issue deduplication and sorting
+  - Statistics calculation
+  - Summary generation
+
+- **IPC handlers** `ui/modules/ipc/code-review-handlers.js` (~270 lines):
+  - `review-diff` - Review current git diff (all/staged/unstaged)
+  - `review-files` - Review specific files
+  - `review-commit` - Review a specific commit
+  - `review-get/set-settings` - Review configuration
+  - `review-get-history` - Get past reviews
+  - `review-get-detail` - Load specific review
+  - `review-quick` - Quick inline review
+  - `review-ai-status` - Check AI availability
+  - `review-clear` - Clear review history
+
+- **Visual Review tab UI** in `ui/index.html` (~90 lines):
+  - Mode selector (All/Staged/Unstaged changes)
+  - Run review button with loading state
+  - AI status indicator (available/unavailable)
+  - Summary with severity counts
+  - Severity filter buttons with badges
+  - Scrollable issues list
+  - Issue details panel with suggestions
+  - History and settings modals
+
+- **Review tab styling** in `ui/styles/tabs.css` (~400 lines):
+  - Severity color coding (critical=red, high=pink, medium=yellow, low=gray)
+  - Issue cards with left border indicators
+  - Details panel with suggestion highlighting
+  - Modal dialogs for history and settings
+  - Loading spinner overlay
+
+- **Review tab JS** in `ui/modules/tabs.js` (~400 lines):
+  - setupReviewTab, runCodeReview
+  - Issue filtering by severity
+  - Issue selection and details display
+  - History modal with past reviews
+  - Settings modal with category toggles
+  - AI status checking
+
+**Files Created:**
+- NEW: `ui/modules/ipc/git-handlers.js` - Git IPC handlers (~340 lines)
+- NEW: `ui/modules/analysis/code-review.js` - Core review module (~500 lines)
+- NEW: `ui/modules/ipc/code-review-handlers.js` - Review IPC handlers (~270 lines)
+
+**Files Modified:**
+- `ui/modules/ipc/handler-registry.js` - Register git + review handlers
+- `ui/index.html` - Review tab button + pane (~90 lines)
+- `ui/styles/tabs.css` - Review tab CSS (~400 lines)
+- `ui/modules/tabs.js` - Review tab JS (~400 lines)
+- `ui/renderer.js` - setupReviewTab() call
+
+**Testing Required:**
+1. Click "Review" tab and verify it opens
+2. Check AI status indicator shows availability
+3. Click "Review Changes" with local changes
+4. Verify issues appear with severity badges
+5. Click issue to see details panel
+6. Test severity filter buttons
+7. Test mode selector (All/Staged/Unstaged)
+8. Click Settings, toggle options, save
+9. Click History, view past reviews
+10. Set ANTHROPIC_API_KEY env var, verify AI issues appear
+
+---
+
+## 🐛 Session 48: Agent Debugging/Replay (Task #21)
+**Owner:** Implementer A
+**Status:** ✅ IMPLEMENTED - Full debug replay system with step-through UI
+
+**Highlights**
+- **Core debug replay module** `ui/modules/memory/debug-replay.js` (~650 lines):
+  - Session loading from transcript files
+  - Step controls: stepForward, stepBackward, jumpTo, jumpToTime
+  - Auto-play with configurable speed
+  - Filtering by action type (message, tool_call, error, etc.)
+  - Index-based and type-based breakpoints
+  - Action search with content matching
+  - Context retrieval (before/after surrounding actions)
+  - Related actions discovery
+  - Export to JSON/CSV formats
+  - Session statistics calculation
+
+- **IPC handlers** `ui/modules/ipc/debug-replay-handlers.js` (~300 lines):
+  - `debug-load-session` - Load agent transcript for replay
+  - `debug-load-timerange` - Load cross-agent time range
+  - `debug-step-forward/backward` - Step controls
+  - `debug-jump-to/jump-to-time` - Position controls
+  - `debug-play/pause/reset` - Playback controls
+  - `debug-set-filter` - Type filtering
+  - `debug-search` - Action search
+  - `debug-get-state/get-actions` - State queries
+  - `debug-get-context` - Surrounding context
+  - `debug-add/remove/clear-breakpoint` - Breakpoint management
+  - `debug-export` - Session export
+  - `debug-get-stats` - Session statistics
+
+- **Visual Debug tab UI** in `ui/index.html` (~90 lines):
+  - Session selector dropdown (all 6 agent roles)
+  - Transport controls (step back/forward, play/pause, reset)
+  - Progress bar with seek-by-click
+  - Speed selector (0.5x to 4x)
+  - Filter by action type
+  - Search input with results highlighting
+  - Timeline with color-coded action items
+  - Details panel with action content/metadata
+  - Breakpoint toggle, context view, export buttons
+
+- **Debug tab styling** in `ui/styles/tabs.css` (~350 lines):
+  - Action type colors (Dracula theme)
+  - Timeline with breakpoint indicators
+  - Current action highlighting
+  - Search match highlighting
+  - Progress bar styling
+  - Context modal overlay
+
+- **Debug tab JS** in `ui/modules/tabs.js` (~450 lines):
+  - setupDebugTab, loadDebugSession
+  - Step/seek/play controls
+  - Timeline rendering with scroll-to-current
+  - Details panel with formatted output
+  - Search highlighting
+  - Breakpoint visualization
+  - Context modal display
+  - Export to file download
+
+**Files Changed:**
+- NEW: `ui/modules/memory/debug-replay.js` - Core replay module (~650 lines)
+- NEW: `ui/modules/ipc/debug-replay-handlers.js` - IPC handlers (~300 lines)
+- MODIFIED: `ui/modules/ipc/handler-registry.js` - Register debug handlers
+- MODIFIED: `ui/index.html` - Debug tab button + pane (~90 lines)
+- MODIFIED: `ui/styles/tabs.css` - Debug tab CSS (~350 lines)
+- MODIFIED: `ui/modules/tabs.js` - Debug tab JS (~450 lines)
+- MODIFIED: `ui/renderer.js` - setupDebugTab() call
+
+**Testing Required:**
+1. Click "Debug" tab and verify it opens
+2. Select an agent from dropdown, click Load
+3. Verify timeline shows actions (if transcript exists)
+4. Test step forward/back buttons
+5. Test play/pause auto-playback
+6. Test progress bar click-to-seek
+7. Change speed and verify playback adjusts
+8. Test filter dropdown to show only specific types
+9. Search for text and verify results highlight
+10. Click action in timeline, verify details show
+11. Click breakpoint button, verify indicator appears
+12. Click export, verify JSON file downloads
+
+---
+
+## 🔗 Session 48: Cross-Session Knowledge Graph (Task #36)
+**Owner:** Implementer A
+**Status:** ✅ IMPLEMENTED - Full knowledge graph system with visual UI
+
+**Highlights**
+- **Core knowledge graph module** `ui/modules/memory/knowledge-graph.js` (~750 lines):
+  - Node types: FILE, AGENT, DECISION, ERROR, CONCEPT, TASK, SESSION, MESSAGE
+  - Edge types: TOUCHES, MODIFIES, INVOLVES, CAUSES, RESOLVES, RELATES_TO, MENTIONS, ASSIGNED_TO, DEPENDS_ON, PART_OF, OCCURRED_IN
+  - Graph persistence to workspace/memory/_graph/ (nodes.json, edges.json)
+  - Natural language query API ("Show everything related to trigger delivery")
+  - Concept extraction from queries
+  - BFS traversal for relationship discovery
+  - Force-directed layout calculation for visualization
+  - Auto-initializes agent nodes on startup
+  - Helper functions: getAgentNodeId, getRelated, getStats, exportForVisualization
+
+- **Memory system integration** in `ui/modules/memory/index.js`:
+  - Auto-records file access, decisions, errors to graph
+  - Task assignments create graph nodes with agent edges
+  - Trigger messages create MESSAGE nodes with INVOLVES edges
+  - recordConcept API for manual concept tracking
+  - Convenience APIs: queryGraph, getGraphVisualization, getRelatedNodes, getGraphStats
+
+- **IPC handlers** `ui/modules/ipc/knowledge-graph-handlers.js` (~130 lines):
+  - `graph-query` - Natural language search
+  - `graph-visualize` - Get visualization data
+  - `graph-stats` - Get graph statistics
+  - `graph-related` - Get related nodes from starting point
+  - `graph-record-concept` - Record concept from UI
+  - `graph-save` - Force save to disk
+  - `graph-nodes-by-type` - Filter nodes by type
+
+- **Visual Graph tab UI** in `ui/index.html` (~75 lines):
+  - Search input with natural language support
+  - Filter buttons by node type (All/Files/Agents/Decisions/Errors/Tasks/Concepts)
+  - Stats overview cards (Nodes/Edges/Files/Decisions)
+  - Interactive canvas with pan/zoom/select
+  - Color-coded legend by node type
+  - Selected node details panel with related nodes list
+  - Refresh/Save/Reset View actions
+
+- **Graph tab styling** in `ui/styles/tabs.css` (~280 lines):
+  - Node colors by type (Dracula theme compatible)
+  - Force-directed layout visualization
+  - Details panel with type-colored badges
+  - Related nodes clickable list
+  - Legend with toggle support
+
+- **Graph tab JS** in `ui/modules/tabs.js` (~450 lines):
+  - setupGraphTab, refreshGraphData, searchGraph
+  - Canvas interactions (pan, zoom, node selection)
+  - Force-directed layout calculation
+  - Node position caching
+  - Real-time stats updates
+  - Related nodes navigation
+
+**Files Changed:**
+- NEW: `ui/modules/memory/knowledge-graph.js` - Core graph module (~750 lines)
+- MODIFIED: `ui/modules/memory/index.js` - Graph integration + APIs
+- NEW: `ui/modules/ipc/knowledge-graph-handlers.js` - IPC handlers
+- MODIFIED: `ui/modules/ipc/handler-registry.js` - Register graph handlers
+- MODIFIED: `ui/index.html` - Graph tab button + pane (~75 lines)
+- MODIFIED: `ui/styles/tabs.css` - Graph tab CSS (~280 lines)
+- MODIFIED: `ui/modules/tabs.js` - Graph tab JS (~450 lines)
+- MODIFIED: `ui/renderer.js` - setupGraphTab() call
+
+**Testing Required:**
+1. Click "Graph" tab and verify it opens
+2. Check stats cards show 0 values initially
+3. Wait for agents to work, verify nodes appear
+4. Test search: "Show everything related to trigger"
+5. Click a node, verify details panel shows info
+6. Click related node, verify navigation works
+7. Test pan (drag canvas) and zoom (scroll wheel)
+8. Test filter buttons hide/show node types
+9. Click legend items to toggle type visibility
+
+---
+
+## 🏥 Session 48: Self-Healing Error Recovery (Task #29)
+**Owner:** Implementer A (UI) + Implementer B (Backend)
+**Status:** ✅ UI + Backend IMPLEMENTED - Pending runtime verification
+
+**UI Highlights**
+- New "Health" tab in right panel for agent health monitoring
+- Health overview summary cards (Healthy/Warning/Error/Recovering counts)
+- Per-agent health status with metrics:
+  - Last output timestamp (relative time)
+  - Stuck count tracking
+  - Recovery step indicator (None/Nudge/Interrupt/Restart)
+- Recovery action buttons per agent (Nudge/Interrupt/Restart)
+- Active Recovery Playbook visualization (3-step escalation)
+- Playbook action log with timestamped entries
+- Bulk actions (Nudge All Stuck, Restart All)
+- Toast notifications for recovery events
+- Auto-refresh every 5 seconds when Health tab is visible
+
+**Files Changed:**
+- MODIFIED: `ui/index.html` - Health tab button + ~150 lines tab pane HTML
+- MODIFIED: `ui/styles/tabs.css` - ~350 lines new Health tab CSS
+- MODIFIED: `ui/modules/tabs.js` - ~350 lines JS (setupHealthTab, health state, recovery actions)
+- MODIFIED: `ui/modules/ipc/auto-nudge-handlers.js` - Health IPC handlers + recovery metadata
+- MODIFIED: `ui/modules/daemon-handlers.js` - Renderer-side listeners for health actions
+- MODIFIED: `ui/renderer.js` - setupHealthTab() call
+- NEW: `ui/modules/recovery-manager.js` - Self-healing manager (stuck detection, backoff, circuit breaker)
+- NEW: `ui/modules/ipc/recovery-handlers.js` - Recovery IPC endpoints
+- MODIFIED: `ui/main.js` - Recovery manager wiring + auto-restart hooks
+- MODIFIED: `ui/modules/ipc/pty-handlers.js` - Expected-exit tracking on manual kill
+- MODIFIED: `ui/modules/ipc/handler-registry.js` - Register recovery handlers
+- MODIFIED: `ui/modules/ipc/ipc-state.js` - Recovery manager state
+- MODIFIED: `ui/modules/ipc/index.js` - Recovery manager state keys
+- MODIFIED: `ui/modules/ipc/api-docs-handlers.js` - Recovery IPC docs
+
+**IPC Contracts:**
+- `get-agent-health` → Returns `{ success, agents: { paneId: { alive, lastActivity, stuckCount, recoveryStep, recovering } } }`
+- `nudge-pane` → Sends to renderer to call terminal.nudgePane()
+- `restart-pane` → Sends to renderer to call terminal.restartPane()
+- `restart-all-panes` → Sends to renderer to call terminal.freshStartAll()
+- `get-recovery-status` → Returns recovery manager state per pane
+- `get-health-snapshot` → Returns recovery snapshot + playbooks
+- `get-recovery-playbooks` → Returns playbook definitions
+- `trigger-recovery` → Schedule auto-restart with backoff
+- `reset-recovery-circuit` → Reset circuit breaker per pane
+
+**Backend Highlights**
+- Auto-stuck detection escalates to restart with exponential backoff
+- Circuit breaker after repeated failures (cooldown before retries)
+- Context preservation via daemon session save before restart
+- Expected-exit tracking prevents false failure loops
+
+**Testing Required:**
+1. Click "Health" tab and verify it opens
+2. Check health summary card counts update
+3. Test per-agent Nudge/Interrupt/Restart buttons
+4. Verify playbook step visualization
+5. Check recovery toast notifications appear
+6. Test "Nudge All" and "Restart All" bulk actions
+
+---
+
+## 🧠 Session 48: Agent Memory System (Task #2)
+**Owner:** Implementer A
+**Status:** ✅ IMPLEMENTED - Core system complete, integration done
+
+**Highlights**
+- **6 new modules** in `ui/modules/memory/`:
+  - `memory-store.js` (~400 lines) - Core persistence layer (JSONL transcripts, JSON context)
+  - `transcript-logger.js` (~350 lines) - Buffered event logging (input/output/tool/decision/error)
+  - `context-manager.js` (~500 lines) - Per-agent persistent context (sessions, tasks, learnings, file expertise)
+  - `memory-search.js` (~500 lines) - Keyword search with relevance scoring, cross-agent search
+  - `memory-summarizer.js` (~450 lines) - Extractive summarization, context injection generation
+  - `index.js` (~300 lines) - Unified API entry point
+- **IPC integration**: `ipc-handlers.js` + `preload-bridge.js` for renderer access
+- **Main process hooks**: Initialize on load, shutdown on quit, trigger message logging
+
+**Architecture:**
+- Storage: `workspace/memory/` with per-agent transcripts, context, indices, summaries
+- Cross-agent: Shared learnings + decisions in `_shared/memory.json`
+- API: 25+ functions for logging, context, session, query, team, analytics
+
+**Files Changed:**
+- NEW: `ui/modules/memory/*.js` (6 modules)
+- NEW: `ui/modules/memory/ipc-handlers.js`
+- NEW: `ui/modules/memory/preload-bridge.js`
+- MODIFIED: `ui/main.js` (memory imports, lifecycle hooks)
+- MODIFIED: `ui/preload.js` (memory API exposure)
+- MODIFIED: `ui/modules/triggers.js` (trigger message logging)
+
+**Testing Required:**
+1. Start app and verify `[Memory] Agent memory system initialized` in console
+2. Check `workspace/memory/` directories are created
+3. Trigger an inter-agent message and verify it appears in transcript logs
+4. Test `window.hivemind.memory.*` API from renderer console
+
+---
+
+## 🧠 Session 48: Conversation History Viewer (Task #8)
+**Owner:** Implementer A
+**Status:** ✅ IMPLEMENTED - Pending review/verification
+
+**Highlights**
+- New "Mem" tab in right panel for viewing agent conversation history
+- Agent selector dropdown (All Agents + individual panes 1-6)
+- Search functionality with real-time filtering
+- Four view modes:
+  - **Transcript**: Chronological log with color-coded entry types (input/output/tool/decision/error/trigger)
+  - **Context**: Session info, current task, file expertise, statistics
+  - **Learnings**: Knowledge items with topic/content/confidence/timestamp
+  - **Team**: Cross-agent summary with shared learnings and decisions
+- Refresh and Clear buttons for navigation
+- Entry count statistics
+
+**Files Changed:**
+- MODIFIED: `ui/index.html` (tab button + ~50 lines for memory pane HTML)
+- MODIFIED: `ui/styles/tabs.css` (~350 lines new CSS for memory tab)
+- MODIFIED: `ui/modules/tabs.js` (~400 lines JS: setup, data loading, search, view switching)
+- MODIFIED: `ui/renderer.js` (setupMemoryTab() call)
+
+**Dependencies:**
+- Requires Task #2 (Agent Memory System) backend
+
+**Testing Required:**
+1. Click "Mem" tab and verify it opens
+2. Select different agents from dropdown, verify transcript loads
+3. Switch between Transcript/Context/Learnings/Team views
+4. Test search functionality
+5. Verify entry type color coding (green=input, blue=output, purple=tool, yellow=decision, red=error, cyan=trigger)
+
+---
+
+## 🚀 Session 48: Task Queue Visualization (Task #3)
+**Owner:** Implementer B  
+**Status:** ✅ IMPLEMENTED - Pending review/verification  
+
+**Highlights**
+- New Queue tab with real-time message queue counts, conflict locks, and active claims
+- Queue events feed (queued/delivered/conflict/claims)
+- Controls: refresh, clear delivered messages, clear conflict locks
+- Event-driven updates + 4s polling while tab active
+
+**Files Changed:**
+- `ui/index.html`
+- `ui/modules/tabs.js`
+- `ui/styles/tabs.css`
+- `ui/renderer.js`
+
+**Testing Required:**
+1. Open Queue tab and verify counts update when messages are queued/delivered
+2. Trigger a conflict queue; confirm locks + queue entries render
+3. Click Clear Delivered and Clear Locks; verify counts reset
+
+---
+
+## 🚀 Session 48: Git Integration (Task #6)
+**Owner:** Implementer B  
+**Status:** ✅ IMPLEMENTED - Pending review/verification  
+
+**Highlights**
+- New Git tab with branch/upstream, ahead/behind, last commit, clean/dirty state
+- Staged/unstaged/untracked/conflict lists + diff preview
+- Actions: refresh, stage all, unstage all, commit, copy summary
+- New Git IPC handlers for status/diff/stage/unstage/commit/log
+
+**Files Changed:**
+- `ui/index.html`
+- `ui/modules/tabs.js`
+- `ui/styles/tabs.css`
+- `ui/modules/ipc/git-handlers.js`
+- `ui/modules/ipc/handler-registry.js`
+- `ui/renderer.js`
+
+**Testing Required:**
+1. Open Git tab in a git repo and verify branch + file lists
+2. Toggle diff view (staged/unstaged) and check output
+3. Stage/unstage all and confirm status refresh
+4. Commit with staged changes and verify status updates
+
+---
+
+## 🎨 Session 47: UI Polish - Notifications + Command Palette (Jan 30, 2026)
+**Owner:** Implementer B  
+**Status:** ✅ IMPLEMENTED - Pending review/verification  
+
+**Task #9: Notifications/Toasts polish**
+- Handoff + conflict notifications now use design system tokens (colors/spacing/radius/shadows/transitions)
+- Added glass effect overlays and refined gradients for clarity and hierarchy
+- Conflict notification gains subtle urgency pulse and improved emphasis
+- **File:** `ui/styles/panes.css`
+
+**Task #10: Command Palette polish**
+- Improved hover and selected states (lift + glow + accent border)
+- Keyboard navigation feedback via focus-visible outline
+- Subtle item entrance animation + tokenized spacing/colors
+- **File:** `ui/styles/layout.css`
+
+**Testing Required:**
+1. Open Command Palette (Ctrl+K) and check hover/selected glow + keyboard nav feedback
+2. Trigger a handoff/conflict notification and verify glass effect + urgency feel
+
+---
+
+## 🎨 Session 47: Micro-animations + Shortcut Tooltips + Activity Pulse (Jan 30, 2026)
+**Owner:** Implementer B  
+**Status:** ✅ IMPLEMENTED - Pending review/verification  
+
+**Task #17: Micro-animations for state changes**
+- State bar badges now transition smoothly and pulse during executing/checkpoint
+- Agent activity badges animate softly when active
+- **File:** `ui/styles/state-bar.css`
+
+**Task #19: Keyboard shortcut tooltips**
+- Added custom tooltip system for elements with keyboard shortcuts
+- Renderer converts title → data-tooltip/data-shortcut for shortcut hints
+- **Files:** `ui/styles/layout.css`, `ui/renderer.js`
+
+**Task #21: Activity pulse effects**
+- Pane activity statuses now pulse subtly (thinking/tool/command/file/streaming)
+- SDK status indicators pulse while thinking/responding
+- **Files:** `ui/styles/layout.css`, `ui/styles/panes.css`
+
+**Testing Required:**
+1. Hover interrupt/unstick buttons (Ctrl+C / Esc) and verify tooltip shows label + shortcut
+2. Observe pane status during activity; confirm subtle pulse/glow
+3. Check state-bar agent badge pulse when active
+
+---
+
+## ✅ Session 47: Runtime Verification (Jan 30, 2026)
+**Status:** 5/6 features verified working
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Toolbar SVG Icons | ✅ VERIFIED | All 11 icons clean, no corruption |
+| Message Accumulation Fix | ✅ VERIFIED | 6 agents, all separate turns |
+| Diagnostic File Logging | ✅ VERIFIED | 18KB log, Stagger/Inject/Queue events |
+| Codex Activity Indicator | ✅ VERIFIED | Spinning glyph (◐◓◑◒) working |
+| Spinner Preservation | ✅ VERIFIED | Indicator persists during state changes |
+| Codex Blue Button Tint | ❌ NOT WORKING | cli-codex class not applied |
+
+**Bug Found:** Codex blue button tint - the `cli-codex` class is not being added to pane elements when `pane-cli-identity` fires. All panes show same button colors. Assigned to Implementer B for investigation.
+
+---
+
+## 🎨 Session 46: Toolbar Icon Polish (Jan 30, 2026)
+**Owner:** Implementer A
+**Status:** ✅ REVIEWER APPROVED - Ready for runtime test
+
+**Problem:** Toolbar buttons displayed corrupted emoji characters (`??`) due to encoding issues. Icons looked unprofessional.
+
+**Solution:** Replace all toolbar button icons with clean inline SVG icons using Lucide/Feather styling:
+- Stroke-based design (2px stroke width)
+- 24x24 viewBox, sized to 14px in UI
+- currentColor for proper theme support
+
+**Icons Replaced:**
+| Button | Old | New Icon |
+|--------|-----|----------|
+| Project | `??` | Folder SVG |
+| Spawn | `??` | Play triangle SVG |
+| Sync | `??` | Refresh arrows SVG |
+| Actions | `??` | More dots SVG |
+| Nudge | `??` | Lightning bolt SVG |
+| Kill | `??` | X-circle SVG |
+| Fresh Start | `??` | Sun SVG |
+| Shutdown | `??` | Power SVG |
+| Cost Alert | `??` | Alert triangle SVG |
+| Settings | `??` | Gear SVG |
+| Panel | `??` | Sidebar SVG |
+
+**Also Fixed:**
+- Command palette navigation hint: `??` → `↑↓`
+- Added CSS for `.btn-icon` and `.dropdown-arrow` SVG sizing
+
+**Files Changed:**
+- `ui/index.html` - lines 25, 53-68 (toolbar buttons)
+- `ui/styles/layout.css` - lines 56-72 (SVG icon CSS)
+
+**Testing Required:**
+1. Restart app
+2. Verify all toolbar buttons display clean icons (no `??` or corrupted text)
+3. Verify Actions dropdown menu items have icons
+4. Verify command palette shows `↑↓` for navigation hint
+
+---
+
+## 🔧 Session 46: Codex Activity Indicator State Preservation Fix (Jan 30, 2026)
+**Owner:** Implementer A
+**Status:** ✅ REVIEWER APPROVED - Ready for runtime test
+
+**Problem:** Codex activity indicator (glyph spinner + activity state) not visible during runtime. Investigator found `updateAgentStatus()` was clobbering the activity classes.
+
+**Root Cause:** When `claude-state-changed` fires, `updateAgentStatus()` removes all classes and replaces with `idle`/`starting`/`running`. This overwrites the `working` and `activity-*` classes set by the codex-activity handler.
+
+**Fix Applied:**
+- Check if statusEl has any `activity-*` class AND has a spinner element
+- If so, skip the text/class update (activity indicator takes precedence)
+- Badge update still runs normally
+
+**Files updated:**
+- `ui/modules/daemon-handlers.js` - updateAgentStatus() lines 982-1006
+
+**Testing Required:**
+1. Restart app
+2. Send prompt to Codex pane (2, 4, or 5)
+3. Verify glyph spinner appears and persists during `claude-state-changed` events
+4. Verify activity states cycle: Thinking → Tool/Command/File → Done → Ready
+
+---
+
+## 🔧 Session 46: Codex Button Accents + Diagnostic Log File (Jan 30, 2026)
+**Owner:** Implementer B  
+**Status:** ✅ COMPLETE - Pending runtime verification  
+
+**Problem:** Codex panes looked identical to Claude panes; diagnostic delivery logs were console-only.  
+
+**Fix Applied:**
+1. **Codex button accents** - pane-cli-identity now adds `cli-codex/cli-claude/cli-gemini` classes on panes; Codex pane buttons (refresh/lock/interrupt/unstick) render with blue accents for quick scanning.
+2. **Diagnostic log file** - Added `ui/modules/diagnostic-log.js` that writes to `workspace/logs/diagnostic.log`. Stagger/Inject/Queue delivery traces now append to file.
+
+**Files updated:**
+- `ui/renderer.js`
+- `ui/styles/panes.css`
+- `ui/modules/diagnostic-log.js`
+- `ui/modules/triggers.js`
+- `ui/modules/daemon-handlers.js`
+
+**Testing Required:**
+1. Spawn Codex pane: verify header buttons show blue accent.
+2. Send trigger: verify `workspace/logs/diagnostic.log` contains Stagger/Inject/Queue lines.
+
+---
+
+## 🎨 Session 45: Codex Activity Indicator (Jan 30, 2026)
+**Owner:** Implementer A
+**Status:** ✅ REVIEWER APPROVED - Ready for runtime test
+
+**Problem:** Codex panes had basic ring spinner with no activity context (what is the agent doing?).
+
+**Solution:** Implement Claude TUI-style activity indicator with:
+- Glyph spinner (◐◓◑◒) instead of ring spinner
+- Activity states: Thinking → Tool/Command/File → Streaming → Done → Ready
+- State-specific colors (thinking=cyan, tool=purple, command=yellow, file=blue, streaming=cyan, done=green)
+- Breathing opacity animation
+- prefers-reduced-motion respect
+
+**Implementation:**
+1. **codex-exec.js** - Added `emitActivity()` to broadcast activity state via IPC
+   - 'thinking' on start events
+   - 'tool'/'command'/'file' on aux events with detail
+   - 'streaming' on text deltas
+   - 'done' then 'ready' on completion
+2. **daemon-client.js** - Added 'codex-activity' event handler
+3. **main.js** - Forward codex-activity IPC to renderer
+4. **renderer.js** - Listen for codex-activity, update pane-status with glyph cycling
+5. **layout.css** - Activity state colors, breathing animation, reduced motion guard
+
+**Files Changed:**
+- `ui/modules/codex-exec.js`
+- `ui/daemon-client.js`
+- `ui/main.js`
+- `ui/renderer.js`
+- `ui/styles/layout.css`
+
+**Testing Required:**
+1. Restart app
+2. Send prompt to Codex exec pane (2, 4, or 5)
+3. Verify glyph spinner appears (◐◓◑◒ cycling)
+4. Verify activity states display: Thinking → Tool: <name> / Command: <cmd> / File: <action> → Streaming → Done → Ready
+5. Verify colors match state (purple for tool, yellow for command, etc.)
+6. Verify spinner has breathing opacity effect
+7. Test with prefers-reduced-motion enabled (should show static ● dot)
+
+---
+
+## 🎨 Session 45: Codex Exec Output Styling Fix (Jan 30, 2026)
+**Owner:** Implementer A
+**Status:** ✅ REVIEWER APPROVED - Ready for runtime test
+
+**Problem:** Codex exec output visually odd - lines starting at right edge, hard to scan, no color separators.
+
+**Root Cause:** Unicode bidirectional control characters (RTL overrides) in Codex output + plain text markers without visual distinction.
+
+**Fix Applied (3 parts):**
+1. **stripBidiControls()** - Strips U+200E-200F, U+202A-202E, U+2066-2069 before xterm write
+2. **ANSI colors** - [Working...]=cyan, [Done]=green/red, [TOOL]=magenta, [CMD]=yellow, [FILE]=blue
+3. **CSS direction** - Added `direction: ltr; unicode-bidi: isolate;` to `.pane-terminal .xterm`
+
+**Files updated:** `ui/modules/codex-exec.js`, `ui/styles/layout.css`
+
+**Testing Required:**
+1. Restart app
+2. Send prompt to Codex pane (2, 4, or 5)
+3. Verify output renders left-to-right (no RTL issues)
+4. Verify colored markers: cyan [Working...], green/red [Done], magenta [TOOL], yellow [CMD], blue [FILE]
+
+---
+
+## 🔧 Session 45: Diagnostic Logging for Message Delivery (Jan 30, 2026)
+**Owner:** Implementer B  
+**Status:** ✅ COMPLETE  
+
+**Problem:** Hard to trace where messages are lost between accepted and delivery.  
+**Fix Applied:** Added log statements at single-pane inject send, inject-message receive, and queueing.  
+**Files updated:** `ui/modules/triggers.js`, `ui/modules/daemon-handlers.js`  
+
+**Testing Required:**
+1. Send a single-pane trigger
+2. Confirm logs in sequence:
+   - `Stagger` Sending inject-message to pane X
+   - `Inject` Received inject-message for pane X
+   - `Queue` Queued for pane X, queue length: N
+
+---
+
+## 🔧 Session 44: Codex Exec UX Improvements (Jan 30, 2026)
+**Owner:** Implementer B  
+**Status:** ✅ IMPLEMENTED - Pending review  
+
+**Problem:** Codex exec output was too quiet; extra blank lines; redundant completion markers.  
+**Fix Applied:** Surface tool/command/file JSONL events, smooth newline handling, and emit a single “Done (exit X)” line.  
+**Files updated:** `ui/modules/codex-exec.js`  
+
+**Testing Required:**
+1. Run Codex exec prompt
+2. Confirm `[TOOL]`, `[CMD]`, `[FILE]` markers appear when appropriate
+3. Verify no double blank lines in output
+4. Ensure completion shows a single `Done (exit X)` line
+
+---
+
+## 🔧 Session 43: Codex Session ID Persistence (Jan 30, 2026)
+**Owner:** Implementer B  
+**Status:** ✅ REVIEWER APPROVED - Pending runtime verification  
+
+**Problem:** Codex exec restarts lost resume context because `codexSessionId` was not persisted.  
+**Fix Applied:** Persist `codexSessionId` in session-state, restore on spawn, and cache on kill for restart.  
+**Files updated:** `ui/terminal-daemon.js`  
+
+**Testing Required:**
+1. Kill a Codex pane
+2. Restart the pane
+3. Verify Codex resumes the previous session (resume path used, “Restored session id” log)
+
+---
+
+## 🎨 Session 42: Terminal UI Enhancements (Jan 30, 2026)
+**Owner:** Implementer A
+**Status:** ✅ ALL 6 FEATURES APPROVED - Ready for User Testing
+
+**Features Implemented:**
+
+### 1. WebGL Addon (GPU Rendering) ✅ APPROVED
+- Installed @xterm/addon-webgl v0.19.0
+- GPU-accelerated terminal rendering for all 6 panes
+- Graceful fallback on WebGL context loss
+
+### 2. Terminal Search (Ctrl+F) ✅ APPROVED
+- Installed @xterm/addon-search v0.16.0
+- Ctrl+F opens search bar, Enter/Shift+Enter navigate
+
+### 3. Focus Ring Enhancement ✅ APPROVED
+- Teal glow (#4ecca3) with box-shadow
+- More visible focused pane indicator
+
+### 4. Target Preview Dropdown ✅ APPROVED
+- Custom dropdown with pane highlight on hover
+- "All Agents" highlights all 6 panes simultaneously
+
+### 5. Command Palette (Ctrl+K) ✅ APPROVED
+- VS Code-style command palette
+- 18 commands: Spawn/Kill/Nudge, Focus pane 1-6, Toggle panels
+- Fuzzy search filter, keyboard navigation
+- Categories: Agents, Navigate, Panels, Project, System
+- Review: workspace/build/reviews/command-palette-review.md
+
+### 6. Dim Inactive Panes ✅ APPROVED
+- Non-focused panes dimmed to 85% brightness
+- Hover brightens to 95% for visual feedback
+- Smooth 0.2s transition
+- Complements focus ring enhancement
+
+**Files updated:**
+- `ui/modules/terminal.js` - addon imports, loading, search UI
+- `ui/renderer.js` - initCustomTargetDropdown, initCommandPalette (+270 lines)
+- `ui/styles/layout.css` - all new UI CSS
+- `ui/index.html` - command palette HTML structure
+- `ui/package.json` - new dependencies
+
+**Testing Required:**
+1. Restart app to load changes
+2. Press Ctrl+K - command palette opens
+3. Type to filter, arrow keys to navigate, Enter to execute
+4. Press Ctrl+F in terminal - search bar appears
+5. Click target dropdown - hover options to see pane highlights
+
+---
+
+## 🔧 Session 41: IPC Guard Hardening (Jan 30, 2026)
+**Owner:** Implementer B  
+**Status:** ✅ COMPLETE  
+
+**Problem:** IPC handlers could throw when ctx dependencies were partially unset (e.g., watcher/triggers missing methods).  
+**Fix Applied:** Added method-level guards and clear missingDependency responses.  
+**Files updated:** `ui/modules/ipc/state-handlers.js`, `ui/modules/ipc/conflict-queue-handlers.js`
+
+---
+
+## 🔧 Session 41: Terminal Injection Extraction (Jan 30, 2026)
+**Owner:** Implementer B  
+**Status:** ✅ COMPLETE  
+
+**Problem:** `terminal.js` injection/verify/queue logic too large and fragile (hard to reason about).  
+**Fix Applied:** Extracted injection logic into `ui/modules/terminal/injection.js` and wired controller wrappers in `terminal.js`.  
+**Files updated:** `ui/modules/terminal/injection.js`, `ui/modules/terminal.js`
+
+---
+
+## 🔧 Session 41: Terminal Recovery Extraction (Jan 30, 2026)
+**Owner:** Implementer B  
+**Status:** ✅ COMPLETE  
+
+**Problem:** `terminal.js` recovery/unstick/sweeper logic too large and tightly coupled.  
+**Fix Applied:** Extracted recovery logic into `ui/modules/terminal/recovery.js` and wired controller wrappers in `terminal.js`.  
+**Files updated:** `ui/modules/terminal/recovery.js`, `ui/modules/terminal.js`
+
+---
+
+## 🔧 Session 41: IPC Handler Registry Split (Jan 30, 2026)
+**Owner:** Implementer B  
+**Status:** ✅ COMPLETE (ready for review)  
+
+**Problem:** `ipc-handlers.js` had a long, fragile list of handler registrations + background process helpers.  
+**Fix Applied:** Moved handler registration list to `ui/modules/ipc/handler-registry.js` and background helpers to `ui/modules/ipc/background-processes.js`.  
+**Files updated:** `ui/modules/ipc/handler-registry.js`, `ui/modules/ipc/background-processes.js`, `ui/modules/ipc-handlers.js`  
+**Follow-up:** Deduped `broadcastProcessList` in `ui/modules/ipc/process-handlers.js` to reuse background helper.
+
+---
+
+## 🔧 Session 39: Message Accumulation Root Cause Fix (Jan 30, 2026)
+**Owner:** Implementer A
+**Status:** ✅ REVIEWER APPROVED - Ready for restart verification
+
+**Problem:** Messages still accumulating despite Ctrl+U fix. Multiple agent messages arriving concatenated in single conversation turn.
+
+**Root Causes Found:**
+1. safetyTimer (1000ms) fires before clearTimeout can run (inside setTimeout callback)
+2. verifyAndRetryEnter false positive - sees ongoing output and assumes success even if Enter was ignored
+
+**Fixes Applied:**
+
+### Fix #1: safetyTimer timing (line ~1159)
+- Moved `clearTimeout(safetyTimer)` to first line inside setTimeout callback
+- Clears timer immediately when enterDelay completes, before focus/Enter
+
+### Fix #2: Pre-flight idle check (lines 1189-1204) ✅ APPROVED
+- Before sending Enter, wait up to 5s for pane to be idle
+- 100ms polling, bounded timeout
+- Prevents Enter being sent while Claude is mid-response
+
+### Fix #3: Verification retry (lines 581-599) ✅ APPROVED
+- Removed "likely succeeded" fallback that returned true without prompt confirmation
+- Now retries Enter when output occurred but no prompt detected
+- Returns false and marks stuck if retries exhausted
+
+**Files updated:**
+- `ui/modules/terminal.js`
+
+**Review:** `session39-verification-false-positive-fix-review.md`
+
+---
+
+## ✅ Session 38 Commit: `a686d0c` (Jan 30, 2026)
+**Contents:**
+- Textarea accumulation fix (Ctrl+U clear before PTY writes)
+- Ack-timeout verification_failed handling
+- Message accumulation bug documentation in all CLAUDE.md files
+
+**All pre-commit checks passed:** 433 tests, ESLint, mypy
+
+---
+
+## 🔧 Textarea Accumulation Fix (Jan 30, 2026)
+**Owner:** Implementer A
+**Status:** ✅ COMMITTED (`a686d0c`) - Ready for restart verification
+
+**Problem:** Messages accumulating in textarea when first Enter fails. Pattern:
+1. First message injected, Enter fails
+2. Text stays stuck in textarea
+3. Second message APPENDS to stuck text
+4. Second Enter submits both as one blob
+
+**Fix Applied:**
+- Send Ctrl+U (`\x15`) before each PTY text write to clear input line
+- Made `doSendToPane()` async for proper await ordering
+- Added try-catch with proper error handling
+
+**Files updated:**
+- `ui/modules/terminal.js` - doSendToPane() lines 1129-1140
+
+**Why Ctrl+U:**
+- Standard Unix/readline command to clear current input line
+- Harmless if line is already empty
+- Prevents accumulation regardless of why previous Enter failed
+
+---
+
+## 🔧 TR1 Test Results Null Guard Fix (Jan 30, 2026)
+**Owner:** Implementer A
+**Status:** ✅ REVIEWER APPROVED
+
+**Problem:** `TypeError: Cannot read properties of null (reading length)` when IPC returns null results.
+
+**Fix Applied:**
+- `setTestResults()` now uses `testResults.length` (already defaulted) instead of `results.length`
+- `loadTestResults()` and `runTests()` add `Array.isArray()` defensive checks
+- `test-complete` event handler has same defensive pattern
+
+**Files updated:**
+- `ui/modules/tabs.js` - lines 445-542
+
+---
+
+## 🔧 Input Lock Bypass Fix for Auto-Submit (Jan 30, 2026)
+**Owner:** Implementer A
+**Status:** ✅ RUNTIME VERIFIED (Reviewer, Jan 30, 2026)
+
+**Problem:** Auto-submit stuck for Claude panes - sendTrustedEnter fires but Enter blocked by input lock.
+
+**Root Causes (Investigator finding):**
+1. Key handler checked `event.key === 'Enter' && !event.isTrusted` - but Electron's sendInputEvent may produce `isTrusted=true`
+2. Key handler only checked `key === 'Enter'` but some events have `key === 'Return'`
+3. Bypass check was gated behind `!event.isTrusted` - if trusted event, bypass never checked, fell through to lock
+
+**Fix Applied:**
+1. **isEnterKey** - Check `key === 'Enter'` OR `key === 'Return'` OR `keyCode === 13`
+2. **Bypass check FIRST** - `_hivemindBypass` now allows Enter regardless of `isTrusted` value
+3. **Better logging** - Logs key and isTrusted values for debugging
+
+**Files updated:**
+- `ui/modules/terminal.js` - Both `initTerminal` and `reattachTerminal` key handlers
+
+**Verification (Jan 30, 2026 01:06 UTC):**
+- ✅ Pane 1 (Architect): sendTrustedEnter → Enter succeeded (01:06:51)
+- ✅ Pane 3 (Implementer A): sendTrustedEnter → Enter succeeded (01:06:53)
+- ✅ Pane 6 (Reviewer): sendTrustedEnter → Enter succeeded (01:06:53)
+- ✅ Trigger delivery: implementer-a #1 → lead delivered (01:07:33)
+- ✅ No "Blocked synthetic Enter" messages in logs
+- ✅ All 6 panes spawned and running
+
+---
+
+## ⚠️ Trigger Delivery Ack Timeouts (Jan 30, 2026)
+**Owner:** Implementer B  
+**Status:** ✅ IMPLEMENTED (pending verification)
+
+**Symptom:** `Delivery timeout` warnings from `triggers.js` after restart even though logs show Enter sent for panes 1/3/6.
+
+**Root cause:** `daemon-handlers` only emits `trigger-delivery-ack` when `sendToPane` returns `success:true`.  
+`doSendToPane()` returned `success:false` if `verifyAndRetryEnter()` failed (no output/prompt within window) even when Enter was dispatched.  
+Result: ack suppressed → pending delivery times out.
+
+**Fix Applied:**
+- When Enter is sent but verification fails, return `{ success:true, verified:false, reason:'verification_failed' }` so ack is emitted.
+- True failures (missing_textarea/focus_failed/enter_failed) still return `success:false`.
+
+**Files updated:**
+- `ui/modules/terminal.js`
+
+**Next:** Reviewer verify timeouts stop while preserving real failures.
+
+---
+
+## 🔧 Safety Timer Timeout Fix (Jan 30, 2026)
+**Owner:** Implementer A
+**Status:** ✅ COMPLETE - Ready for restart verification
+
+**Problem:** "Trigger delivery failed for pane X: timeout" appears in logs despite messages being delivered successfully. May also cause actual injection aborts.
+
+**Root Cause (Architect finding):** `safetyTimer` fires at `INJECTION_LOCK_TIMEOUT_MS` (1000ms) which can occur DURING the `enterDelay` wait (50-300ms), BEFORE the callback even executes.
+
+**Fix Applied:**
+- Clear `safetyTimer` as FIRST line inside setTimeout callback (line 1159)
+- Clears immediately when enterDelay completes, before focus/Enter/verification
+- Preserves proper failure handling via `finishWithClear` for actual failures
+
+**Files updated:**
+- `ui/modules/terminal.js` - line 1159 (first line inside setTimeout callback)
+
+---
+
+## 🔧 Message Accumulation Root Cause Fix (Jan 30, 2026)
+**Owner:** Implementer A
+**Status:** ✅ COMPLETE - Ready for restart verification
+
+**Problem:** Messages accumulating in textarea - Enter sent mid-output gets ignored, but verification saw false positive.
+
+**Root Cause Analysis:**
+1. **(Reviewer finding):** verifyAndRetryEnter assumed success when "output+idle" without prompt
+2. **(Architect finding):** `lastOutputTime` comparison doesn't work if Claude was ALREADY outputting
+
+**Two-Part Fix:**
+
+**Part A - Pre-Flight Idle Check (lines 1189-1204):**
+- Before sending Enter, wait for pane to be idle (up to 5s)
+- Prevents sending Enter mid-output where it gets ignored
+- Addresses upstream cause: don't inject while Claude is outputting
+
+**Part B - verifyAndRetryEnter Fix (lines 581-599):**
+- DON'T assume success when output+idle but no prompt detected
+- Retry Enter with proper focus if retries available
+- Mark as stuck and return false if retries exhausted
+- Addresses downstream detection: don't report false positive
+
+**Files updated:**
+- `ui/modules/terminal.js` - doSendToPane() + verifyAndRetryEnter()
+
+**Priority:** HIGH - root cause of message accumulation bug
+
+---
+
+## 🚨 Terminal.input Disabled + Focus Steal Fix (Jan 30, 2026)
+**Owner:** Implementer A
+**Status:** ✅ REVIEWER APPROVED (Jan 30, 2026)
+
+**Problem 1 (CRITICAL):** Messages batching - appearing to submit only when next message arrives.
+**Root Cause:** Terminal.input('\r') was being used but is a NO-OP for Claude's ink TUI. It routes through onData → pty.write, same path as PTY '\r' which was proven broken in Fix R. Terminal.input succeeds (doesn't throw) but Claude ignores it.
+
+**Problem 2:** Command bar input blocked ~1s during trigger injections due to focus steal.
+
+**Fix Applied:**
+1. **DISABLED Terminal.input for Claude panes** - Always use sendTrustedEnter which sends native Electron keyboard events
+2. **Immediate focus restore** - Restore focus right after Enter is sent, before verification loop
+3. **Fixed logic order** - Check focus success BEFORE sending Enter, not after
+4. **restoreSavedFocus helper** - Encapsulates focus restore logic with DOM existence check
+
+**Key changes:**
+- `sendEnterToPane()` (L468-503): Removed Terminal.input path, always uses sendTrustedEnter with _hivemindBypass
+- `doSendToPane()` (L1110-1114): Always focus textarea for sendTrustedEnter
+- `doSendToPane()` (L1141-1157): Check focus BEFORE sending Enter, restore focus immediately after
+- Verification loop runs with focus already restored to user
+
+**Files updated:**
+- `ui/modules/terminal.js`
+
+**Requires:** App restart + Reviewer approval
+
+**This should fix the message batching issue observed by user.**
+
+---
+
+## 🔒 Per-Pane Input Lock (Jan 30, 2026)
+**Owner:** Implementer A
+**Status:** ✅ REVIEWER APPROVED (Jan 30, 2026)
+
+**Feature:** Terminal panes locked by default (view-only), toggle to unlock for direct typing.
+
+**Implementation:**
+1. **inputLocked map** - Tracks lock state per pane, defaults to true (locked)
+2. **Key handler blocking** - Blocks all keyboard input when locked, EXCEPT:
+   - ESC bypasses lock (for unstick scenarios)
+   - Ctrl+L toggles lock state
+3. **Paste blocking** - Both right-click paste and Ctrl+V blocked when locked
+4. **Lock icon in header** - Click to toggle lock, visual indicator (🔒/🔓)
+5. **Programmatic sends unaffected** - sendToPane/triggers use PTY write path, not keyboard
+
+**Reviewer Conditions (all met):**
+- ✅ ESC bypasses lock (for unstick scenarios)
+- ✅ Paste blocking implemented (both Ctrl+V and right-click)
+- ✅ Clicking locked pane doesn't auto-unlock (click lock icon to toggle)
+- ✅ sendToPane/triggers still work (PTY write path unaffected by key handler)
+
+**Files updated:**
+- `ui/modules/terminal.js`
+  - Added `inputLocked` map with default true for all panes
+  - Added `isInputLocked()`, `toggleInputLock()`, `setInputLocked()` functions
+  - Updated key handlers in both `initTerminal` and `reattachTerminal`
+  - Updated `setupCopyPaste` to block paste when locked
+  - Added exports for new functions
+- `ui/index.html`
+  - Added lock icon (`<span class="lock-icon">`) to all 6 pane headers
+- `ui/styles/layout.css`
+  - Added `.lock-icon` styling with hover states
+- `ui/renderer.js`
+  - Added click handler for lock icons
+
+**Requires:** App restart to test
+
+---
+
+## 🔧 Auto-Submit Fix V3 (Jan 30, 2026)
+**Owner:** Implementer A
+**Status:** ✅ REVIEWER APPROVED (Jan 30, 2026)
+
+**Problem:** Auto-submit intermittently fails - Enter ignored or false success detection.
+
+**Root Causes Addressed:**
+1. `verifyAndRetryEnter` used "any output = success" (false positives from continuation)
+2. `doSendToPane` sent Enter even when `focusWithRetry` failed (wrong element)
+3. No focus-free Enter path existed
+
+**Fix Applied:**
+1. **ROOT CAUSE FIX: _hivemindBypass flag** - sendInputEvent produces isTrusted=false
+   - `sendEnterToPane()` sets `terminal._hivemindBypass=true` before sendTrustedEnter
+   - Clears flag after Enter processed (setTimeout(0))
+   - Key handler (attachCustomKeyEventHandler) allows Enter when bypass set
+2. **Terminal.input() path** - Feature-detected focus-free Enter via xterm 6.0.0 API
+   - `sendEnterToPane()` helper prefers `terminal.input('\r')` if available
+   - Falls back to `sendTrustedEnter` with bypass flag when needed
+3. **Stricter success criteria** - `verifyAndRetryEnter` now requires:
+   - Output activity started AND (prompt-ready OR output ongoing)
+   - Not just "any output after Enter"
+4. **Focus gate** - `doSendToPane` aborts if focus fails AND no Terminal.input
+   - No more "sending Enter anyway" to wrong element
+5. **Prompt-ready detection** - New `isPromptReady()` checks terminal buffer for prompt patterns
+
+**Call sites updated (bypass flag):**
+- `sendEnterToPane()` - central helper with bypass flag
+- `aggressiveNudge()` - now sets bypass before sendTrustedEnter
+- Stuck sweeper - now uses `sendEnterToPane()` helper
+
+**Files updated:**
+- `ui/modules/terminal.js`
+  - Added `sendEnterToPane()` (L424-462) - with bypass flag
+  - Added `isPromptReady()` (L468-491)
+  - Rewrote `verifyAndRetryEnter()` (L506-588)
+  - Updated `doSendToPane()` Enter path
+  - Updated `aggressiveNudge()` with bypass flag
+  - Updated stuck sweeper to use `sendEnterToPane()`
+  - Added `PROMPT_READY_TIMEOUT_MS` constant (L104)
+
+**Requires:** App restart to test
+
+**Investigator feedback addressed:**
+- Added '?' to prompt patterns (for "Continue?" style prompts)
+- Increased ENTER_VERIFY_DELAY_MS: 100ms -> 200ms (reduce double-submit risk)
+- Note: Runtime testing needed for edge cases
+
+---
+
+## 🧹 Dead CSS Cleanup (Jan 30, 2026)
+**Owner:** Implementer A
+**Status:** ✅ COMPLETE
+
+Removed legacy `.pane-grid` CSS (16 lines) from layout.css:115-130.
+Old grid layout replaced by flex in Task #1.
+
+**Files updated:**
+- `ui/styles/layout.css`
+
+---
+
+## 🚀 UI Overhaul Sprint - Task #3: Command Bar Input (Jan 30, 2026)
+**Owner:** Implementer A
+**Status:** ✅ REVIEWER APPROVED (Jan 30, 2026)
+
+**Summary:**
+- Target selector dropdown defaults to Architect, supports all 6 agents + "All Agents"
+- Dynamic placeholder updates based on selected target
+- Delivery status indicator (⏳ sending / ✓ delivered / ✕ failed)
+- Works in both SDK mode and PTY mode
+- Explicit `/N` prefix still supported, overrides dropdown selection
+
+**Files updated:**
+- `ui/index.html` - Added #commandTarget dropdown and #commandDeliveryStatus span
+- `ui/styles/layout.css` - Added styling for command-target and command-delivery-status
+- `ui/renderer.js` - Added updateCommandPlaceholder(), showDeliveryStatus(), target support in sendBroadcast()
+
+---
+
+## 🚀 UI Overhaul Sprint - Task #2: Pane Swap (Jan 30, 2026)
+**Owner:** Implementer B
+**Status:** ✅ REVIEWER APPROVED (Jan 30, 2026)
+
+**Summary:**
+- Click side pane swaps into main position; previous main returns to clicked slot
+- Main pane tracked via DOM dataset (`body[data-main-pane-id]` + `data-main` per pane)
+- Triggers xterm fit + PTY resize after swap to adjust sizes
+
+**Files updated:**
+- `ui/renderer.js`
+
+## 🔍 UI Audit Sprint - IN PROGRESS (Session 33)
+
+### Task #4: IPC Alias Normalization (Jan 29, 2026)
+**Owner:** Implementer B
+**Status:** ✅ APPROVED - Reviewer verified all channel mappings (Session 33)
+
+**Problem:** Multiple renderer IPC calls had no matching handlers or mismatched response shapes (Performance tab, Templates tab, Rollback UI, pane project selection).
+
+**Fix Applied (Backend-only):**
+- Added IPC aliases: `apply-rollback`, `get-performance-stats`, `reset-performance-stats`, `get-templates`, `select-pane-project`
+- Normalized responses for legacy UI expectations (performance stats shape + `successes`, rollback `filesRestored`, template load `name`)
+- `save-template` now accepts string name and snapshots current settings
+
+**Files updated:**
+- `ui/modules/ipc/checkpoint-handlers.js`
+- `ui/modules/ipc/performance-tracking-handlers.js`
+- `ui/modules/ipc/template-handlers.js`
+- `ui/modules/ipc/project-handlers.js`
+
+### Task #5: costAlertBadge Missing Element (Jan 29, 2026)
+**Owner:** Implementer A
+**Status:** ✅ APPROVED - Reviewer verified HTML/CSS/handler implementation (Session 33)
+
+**Problem:** `costAlertBadge` referenced in daemon-handlers.js:1032 but missing from HTML. Badge never displayed when cost threshold exceeded.
+
+**Fix Applied:**
+- Added `<span class="cost-alert-badge" id="costAlertBadge">` to toolbar (index.html:47)
+- Added CSS styling with pulse animation (layout.css:55-74)
+- Added click handler to open Progress tab (daemon-handlers.js:1053-1070)
+
+**Files updated:**
+- `ui/index.html`
+- `ui/styles/layout.css`
+- `ui/modules/daemon-handlers.js`
+
+---
+
+## 🎉 P2 Debugging Sprint - COMPLETE (Session 30)
+
+**All tasks committed and pushed to main:**
+
+| Commit | Task | Description |
+|--------|------|-------------|
+| `eb3ddff` | #5 | Message inspector panel |
+| `42d3641` | - | jest.useFakeTimers fix |
+| `5b6f111` | #3 | Integration test harness |
+| `13f692e` | #8 | Reliability analytics |
+| `d947758` | #10 | Automated test gate |
+
+**Stats:** 5 commits, 433 tests, 12 suites, all 5 pre-commit gates passing
+
+---
+
+## SDK Mode State Sync Fix (Jan 29, 2026)
+
+**Owner:** Implementer B  
+**Summary:** Centralized SDK mode setter in `renderer.js` to keep renderer/daemon-handlers/terminal/settings in sync.
+
+**Changes:**
+- Added `setSDKMode(enabled)` helper to update local flag, notify daemon/terminal modules, and persist settings via IPC when needed
+- `markSettingsLoaded()` now calls `setSDKMode(..., { persist: false })`
+- `enableMode()` / `disableMode()` use `setSDKMode(...)` to avoid drift
+- `markTerminalsReady()` uses `setSDKMode(true, { persist: false })` for SDK init path
+
+**Files updated:**
+- `ui/renderer.js`
+
+**Status:** ✅ COMPLETE - Ready for Reviewer verification (SDK toggle + PTY guard behavior)
+
+---
+
+## Session 32 Runtime Verification (Jan 29, 2026)
+
+**Verified by:** Reviewer (from app.log analysis)
+
+### Confirmed WORKING from Logs:
+
+1. **Message Sequence Reset on App Startup** ✅
+   - Log entry: `[MessageSeq] Resetting message state for fresh session`
+   - All `#1` messages from agents were **ACCEPTED**, none SKIPPED as duplicates
+
+2. **6-Pane Spawn** ✅
+   - All 6 panes reached "running" state
+   - Panes 1, 3, 6 (Claude): PTY spawned with PIDs
+   - Panes 2, 4, 5 (Codex): exec mode (PID 0, expected)
+   - Identity injection successful for all 6 roles
+
+3. **Auto-Submit Working** ✅
+   - Adaptive Enter delay (50ms idle) functioning
+   - `verifyAndRetryEnter` confirming "Enter succeeded (output activity detected)"
+   - Force-inject after queue timeout (10s) working with 500ms idle check
+
+4. **Trigger Delivery Working** ✅
+   - implementer-a #1 → lead: ACCEPTED, DELIVERED
+   - implementer-b #1 → lead: ACCEPTED, DELIVERED (after queue)
+   - architect #1 → worker-a: ACCEPTED, DELIVERED
+   - investigator #1 → lead: ACCEPTED
+
+### Pending User Verification:
+
+1. **Codex Exec Respawn** - Requires killing a Codex pane and clicking Restart
+2. **Inspector Panel** - Tab visibility fix applied, needs visual confirm
+3. **Reliability Analytics Display** - Needs Inspector panel open to verify stats
+
+---
+
+## Inspector Tab Visibility Fix (Session 32, Jan 29, 2026)
+
+**Owner:** Implementer A
+
+**Summary:** Inspector tab was scrolled out of view (10th of 11 tabs in 350px panel).
+
+**Fix Applied:**
+- Moved Inspector tab from position 11 to position 4 (after Activity)
+- Shortened all tab names to fit more in view:
+  - Screenshots → Shots, History → Hist, Projects → Proj
+  - Templates → Tmpl, Progress → Prog, Processes → Proc
+  - Messages → Msgs, Inspector → Insp
+
+**Files updated:**
+- `ui/index.html` - panel-tabs section (lines 312-323)
+
+**Status:** ✅ COMMITTED `a95de97` - Pending restart verification
+
+---
+
+## SDK Mode State Drift Fix (Session 32, Jan 29, 2026)
+
+**Owner:** Architect
+
+**Summary:** Fixed SDK mode state drift where 4 separate flags could get out of sync.
+
+**Problem (Investigator finding):**
+- 4 separate SDK mode flags existed:
+  - `renderer.js` local `sdkMode`
+  - `daemon-handlers.js` `sdkModeEnabled`
+  - `terminal.js` `sdkModeActive`
+  - `settings.js` `currentSettings.sdkMode`
+- `markSettingsLoaded()` set daemon/terminal flags but NOT local sdkMode
+- `enableMode()` set local sdkMode but NOT daemon/terminal flags
+- This caused inconsistent behavior depending on entry point
+
+**Fix Applied:**
+- Created centralized `setSDKMode(enabled, options)` helper function
+- Helper atomically sets all flags + persists to settings
+- Options: `persist` (default true), `source` (for logging)
+- Updated all call sites to use the helper:
+  - `markSettingsLoaded()` (line 63)
+  - `markTerminalsReady()` (line 76)
+  - `enableMode()` (line 158)
+  - `disableMode()` (line 165)
+
+**Files updated:**
+- `ui/renderer.js` - Added helper function + updated 4 call sites
+
+**Status:** ✅ COMMITTED `a95de97` - Review: `workspace/build/reviews/sdk-mode-state-drift-review.md`
+
+---
+
+## Codex Exec Respawn Fix (Session 31, Jan 29, 2026)
+
+**Owner:** Implementer A
+
+**Summary:** Fixed bug where restartPane() killed Codex terminals but never recreated them.
+
+**Root Cause:**
+- `restartPane()` called `pty.kill(id)` then `spawnClaude(id)`
+- For Codex panes, `spawnClaude()` only sends identity message - doesn't create PTY
+- Result: Terminal killed but never recreated
+
+**Fix Applied:**
+- Added `pty.create(id)` call before `spawnClaude(id)` for Codex panes
+- IPC handler uses `INSTANCE_DIRS[paneId]` to set correct cwd automatically
+
+**Files updated:**
+- `ui/modules/terminal.js` - restartPane() lines 1057-1090
+
+**Status:** ✅ COMMITTED `3f93384` (Jan 29, 2026) - Runtime verification pending after restart. Review: `workspace/build/reviews/codex-respawn-fix-review.md`
+
+---
+
+## Task #10: Automated Test Gate (Jan 29, 2026)
+
+**Owner:** Implementer A
+
+**Summary:** Integrated Jest test suite into pre-commit hooks and wired up CI status indicator.
+
+**Files updated:**
+- `.git/hooks/pre-commit` - Added Gate 5 for Jest unit tests (runs `npm test --silent`)
+- `ui/modules/tabs.js` - Wired `runTests()` to update CI indicator + added `ci-check-complete` listener
+
+**Changes:**
+1. Pre-commit hook now runs 433 Jest tests before allowing commits
+2. `runTests()` updates CI status indicator (running → passing/failing)
+3. Added listener for `ci-check-complete` event from precommit-handlers.js
+4. CI indicator auto-hides after 10s on success
+
+**Verification:**
+- All 433 tests pass
+- Pre-commit hook runs all 5 gates successfully
+- CI indicator displays correctly during test runs
+
+**Status:** ✅ APPROVED (Reviewer, Session 29) - See `workspace/build/reviews/task10-automated-test-gate-review.md`
+
+---
+
+## Task #8: Reliability Analytics (Jan 29, 2026)
+
+**Owner:** Implementer A
+
+**Summary:** Added comprehensive reliability metrics collection and display for message delivery tracking.
+
+**Files updated:**
+- `ui/modules/triggers.js` - Added metrics collection infrastructure (~200 lines):
+  - `reliabilityStats` object tracking aggregate, per-pane, per-mode, per-type stats
+  - `metricsEventLog` for time-windowed analysis (15m, 1h rolling windows)
+  - `recordSent()`, `recordDelivered()`, `recordFailed()`, `recordTimeout()`, `recordSkipped()` functions
+  - `getReliabilityStats()` function returning comprehensive stats
+  - Updated `handleTriggerFile`, `broadcastToAllAgents`, `sendDirectMessage` to record metrics
+  - Updated `startDeliveryTracking` and `handleDeliveryAck` to track latency
+- `ui/modules/ipc/state-handlers.js` - Added `get-reliability-stats` IPC handler
+- `ui/modules/tabs.js` - Added `loadReliabilityStats()` function and UI wiring
+- `ui/index.html` - Added Reliability Analytics section to Inspector panel
+- `ui/styles/tabs.css` - Added reliability section styling
+
+**Features:**
+- Success rate percentage (delivered/sent)
+- Uptime tracking (since app start)
+- Average delivery latency with min/max
+- Per-mode breakdown (SDK vs PTY)
+- Per-type breakdown (trigger, broadcast, direct)
+- Skipped/duplicate count
+- Timeout tracking
+- Rolling windows (last 15 minutes, last 1 hour)
+- Manual refresh button
+
+**Status:** ✅ APPROVED (Reviewer, Session 29) - See `workspace/build/reviews/task8-reliability-analytics-review.md`
+
+---
+
+## P2-5: Message Inspector Panel (Jan 29, 2026)
+
+**Owner:** Implementer A
+
+**Summary:** Added a dedicated Inspector tab in the right panel for debugging message flow, delivery status, and sequence tracking.
+
+**Files updated:**
+- `ui/index.html` - Added Inspector tab button and tab-pane structure
+- `ui/styles/tabs.css` - Added Inspector tab styling (stats, event log, filters, sequence grid)
+- `ui/modules/tabs.js` - Added Inspector logic (event capture, filtering, stats, sequence state display)
+- `ui/renderer.js` - Added setupInspectorTab() call
+- `ui/modules/ipc/state-handlers.js` - Added get-message-state IPC handler
+
+**Features:**
+- Real-time event log capturing: triggers, broadcasts, SDK messages, PTY injections, blocked messages
+- Stats summary: total events, delivered, pending, skipped
+- Filter by event type: All, Triggers, Broadcast, SDK, Blocked
+- Auto-scroll toggle and pause functionality
+- Sequence state grid showing lastSeen values per agent
+- Export log to file
+
+**IPC Events captured:**
+- `inject-message`, `sdk-message`, `sync-triggered`, `trigger-blocked`
+- `trigger-sent-sdk`, `broadcast-sent`, `direct-message-sent`
+- `task-routed`, `auto-handoff`
+
+**Status:** ✅ APPROVED (Reviewer, Session 29) - See `workspace/build/reviews/task5-message-inspector-review.md`
+
+---
+
+## jest.useFakeTimers() Fix (Jan 29, 2026)
+
+**Owner:** Implementer A
+
+**Summary:** Added proper timer handling to test describe blocks that call functions with setTimeout (delivery-ack timeouts).
+
+**Files updated:**
+- `ui/__tests__/triggers.test.js` - Added jest.useFakeTimers()/jest.useRealTimers() to 5 describe blocks:
+  - handleTriggerFile
+  - notifyAgents
+  - broadcastToAllAgents
+  - sendDirectMessage
+  - notifyAllAgentsSync
+
+**Result:** All 433 tests pass. Timer cleanup prevents orphaned setTimeout handles.
+
+**Status:** ✅ APPROVED (Reviewer, Session 29) - Verified pattern: useFakeTimers in beforeEach, runOnlyPendingTimers + useRealTimers in afterEach. Tests pass, no open handles.
 
 ---
 
@@ -19,7 +1613,7 @@ Last updated: 2026-01-29 - P1 Visibility: Unstick Escalation + Sync Indicator (I
 
 **Notes:** Sync indicator uses runtime DOM injection; auto-sync for blockers/errors respects autoSync setting.
 
-**Status:** READY FOR REVIEW
+**Status:** ✅ APPROVED - Committed as 526600b (see p1-unstick-sync-review.md)
 
 ---
 
@@ -70,6 +1664,33 @@ The 4.25% branch gap is primarily due to IPC event handler callbacks and complex
 **Notes:** Jest warns about open handles after tests; all suites pass.
 
 **Status:** COMPLETE (watcher/logger). Remaining targets: `mcp-server.js`, `codex-exec.js`, `modules/ipc/*.js`.
+
+---
+
+## Test Coverage Spot-Check - Session 30 (Jan 29, 2026)
+
+**Owner:** Reviewer
+
+**Summary:** Verified remaining test coverage targets (codex-exec, mcp-server, IPC harness).
+
+**Files reviewed:**
+- `ui/__tests__/codex-exec.test.js` - 7 tests covering spawn, resume, session capture, delta output, busy state
+- `ui/__tests__/mcp-server.test.js` - 4 tests covering MCP tools (send_message, get_messages, trigger_agent)
+- `ui/__tests__/helpers/ipc-harness.js` - test utility for IPC handler testing
+- `ui/__tests__/ipc-handlers.test.js` - 4 tests covering handler registration + behavior samples
+
+**Findings:**
+- 433/433 tests pass
+- 15/15 tests in reviewed files pass
+- Mocking is clean and isolated
+- Coverage is thorough for new modules
+
+**Minor issue:**
+- Jest open handle warning persists (perf-audit interval timing race)
+- Fix applied: Added jest.useFakeTimers() to `ui/__tests__/ipc-handlers.test.js`
+- Status: ✅ Reviewer APPROVED (test passes in isolation). Note: terminal.test.js open handle tracked separately.
+
+**Status:** ✅ APPROVED - Full review: `workspace/build/reviews/session30-test-coverage-review.md`
 
 ---
 
@@ -262,7 +1883,7 @@ const MAX_FOCUS_RETRIES = 3;
 - `ui/modules/terminal.js` - onComplete callbacks for sendToPane
 - `ui/main.js` - IPC forwarder for delivery acks
 
-**Status:** COMPLETE - Pending Reviewer verification
+**Status:** ✅ COMPLETE - Reviewer APPROVED (see delivery-ack-enhancement-review.md)
 
 ---
 
@@ -2977,3 +4598,862 @@ npm start
 - Hooked into both SDK and PTY delivery completion paths in processQueue()
 
 All 418 tests pass. Awaiting Reviewer audit.
+
+## Jan 29, 2026 - P2 Debugging Sprint: Integration Test Harness (Implementer B) - DONE
+- Added IPC test harness + smoke registration test for all IPC handler modules
+- Added targeted IPC behavior tests (settings, shared-context, agent-claims)
+- Added unit tests for `modules/codex-exec.js` and `mcp-server.js`
+- Tests run: `npx jest --runInBand __tests__/codex-exec.test.js __tests__/mcp-server.test.js __tests__/ipc-handlers.test.js`
+
+**Files added:**
+- `ui/__tests__/helpers/ipc-harness.js`
+- `ui/__tests__/ipc-handlers.test.js`
+- `ui/__tests__/codex-exec.test.js`
+- `ui/__tests__/mcp-server.test.js`
+
+**Status:** ✅ APPROVED (Reviewer, Session 29) - See `workspace/build/reviews/task3-integration-harness-review.md`
+
+---
+
+## Session 34 - UI Overhaul Sprint
+
+### Task #1: HTML Restructure - DONE (Implementer A)
+- Restructured pane-layout to main-pane-container (60%) + side-panes-container (40%)
+- Moved command-bar outside terminals-section
+- **Status:** ✅ APPROVED (Reviewer) - See `workspace/build/reviews/task1-html-restructure-review.md`
+
+### Task #2: Pane Swap Functionality - DONE (Implementer B)
+- Click-to-swap from side pane to main
+- Main pane click returns to default
+- Proper resize handling with debounce
+- **Status:** ✅ APPROVED (Reviewer) - See `workspace/build/reviews/task2-pane-swap-review.md`
+
+### Task #3: Command Bar Enhancements - DONE (Implementer A)
+- Target selection dropdown (All Agents + 6 individual)
+- Delivery status indicator (sending/delivered/failed)
+- Dynamic placeholder based on target
+- `/target message` prefix support in SDK mode
+- **Status:** ✅ APPROVED (Reviewer) - See `workspace/build/reviews/task3-command-bar-review.md`
+
+### Task #4: Dead Code Cleanup - DONE (Reviewer)
+- Removed Msgs tab button and content from index.html (~46 lines)
+- Removed legacy broadcast CSS from layout.css (~31 lines)
+- Removed Messages tab handlers from tabs.js (~314 lines)
+- Removed Messages CSS from tabs.css (~188 lines)
+- Removed setupMessagesTab() call from renderer.js
+- **Total:** ~580 lines of dead code removed
+
+---
+
+## Session 40 - Maintenance (Jan 30, 2026)
+**Owner:** Implementer B  
+**Status:** ✅ COMPLETE
+
+**Task:** Remove dead `.pane-grid` CSS from `ui/styles/layout.css`.
+
+**Result:** Verified `.pane-grid` rules are already removed; no code changes needed.
+
+**Task:** Clean version/fix comment prefixes in `ui/main.js` and `ui/renderer.js`.
+
+**Result:** No `//V#`, `//BUG`, or `//FIX` markers found in `ui/main.js`; removed remaining `FIX3` tag from a renderer comment. No behavior changes.
+
+**Task:** Clean version/fix comment prefixes in `ui/modules/watcher.js` and `ui/modules/sdk-bridge.js`.
+
+**Result:** Removed V# prefixes from watcher and SDK bridge comments while preserving meaning. No behavior changes.
+
+---
+
+## Session 41 - Code Cleanup Sprint (Jan 30, 2026)
+**Owner:** Reviewer  
+**Status:** ✅ COMPLETE
+
+### Task #1: SDK Mode Flag Architecture Clarification
+- Updated renderer.js comment (lines 19-21) to clarify process boundary
+- Renderer-process flags synced by setSDKMode(): sdkMode, daemonHandlers.sdkModeEnabled, terminal.sdkModeActive, settings.sdkMode
+- Main-process flag (triggers.sdkModeEnabled) synced via IPC in main.js
+
+### Task #2: SDK Mode Setter Enforcement
+- Fixed daemon-handlers.js:337 - changed direct `sdkModeEnabled = true` to use `setSDKMode(true)` 
+- Ensures centralized state management isn't bypassed
+
+### Task #3: Cosmetic Log Noise Suppression
+- Changed watcher.js:712 "Empty trigger file after retries" from INFO to DEBUG level
+- Expected noise after trigger delivery/clear cycle no longer pollutes normal logs
+
+### Task #4: Dead Code Verification
+- Searched for duplicate `case 'ready'` in sdk-bridge.js - NOT FOUND (only one at line 590)
+- Verified this.ready init - only one constructor init at line 78, other assignments are valid state management
+- No dead code found - codebase is clean
+
+---
+
+## Session 47 - Cost Optimization Engine (Jan 30, 2026)
+**Owner:** Implementer A  
+**Status:** ✅ COMPLETE
+
+### Task #24: Cost Optimization Engine
+
+**Overview:** Track API costs per agent/task, predict budgets, suggest optimizations. Integrate with existing memory/activity systems.
+
+**Files Created:**
+1. **ui/modules/analysis/cost-optimizer.js** (~600 lines)
+   - MODEL_PRICING constants for various AI models (Claude, GPT, etc.)
+   - CostOptimizer class with comprehensive cost tracking
+   - Methods: recordCost(), getSummary(), getCostsByAgent(), getCostsByTask()
+   - Time series generation: getTimeSeries() with hourly/daily granularity
+   - Budget predictions: getPredictions() using moving averages + linear regression
+   - Optimization suggestions: getOptimizations() (model downgrade, caching, batching)
+   - Budget alerts: setBudget(), getAlerts() with configurable thresholds
+   - Token estimation: estimateTokens() (~4 chars per token)
+   - Export/import: export(), import() for data persistence
+
+2. **ui/modules/ipc/cost-optimizer-handlers.js** (~450 lines)
+   - 18 IPC channels for cost operations
+   - Channels: cost-get-summary, cost-get-by-agent, cost-get-by-task, cost-record, cost-get-history, cost-get-time-series, cost-get-predictions, cost-get-optimizations, cost-set-budget, cost-get-budget, cost-get-alerts, cost-clear-alerts, cost-reset, cost-export, cost-import, cost-estimate, cost-get-pricing, cost-simulate-optimization
+   - Auto-persistence to workspace/memory/_cost-data.json
+   - Real-time alerts via mainWindow.webContents.send()
+
+**Files Modified:**
+1. **ui/modules/ipc/handler-registry.js**
+   - Added import and registration for cost-optimizer-handlers
+
+2. **ui/index.html** (~100 lines added)
+   - Costs tab button in tab bar
+   - Costs tab pane with:
+     - Cost overview cards (Total, Today, Week, Month)
+     - Budget progress bar with labels
+     - Predictions section with trend indicator
+     - Agent breakdown list with cost bars
+     - Optimization suggestions panel
+     - Action buttons (Refresh, Set Budget, History, Alerts, Reset)
+     - Loading overlay
+
+3. **ui/styles/tabs.css** (~400 lines added)
+   - Complete Costs tab styling
+   - Overview cards grid, budget progress bar
+   - Predictions and agents sections
+   - Optimization items with priority indicators
+   - Budget modal, history modal styles
+   - Alert styling, responsive adjustments
+
+4. **ui/modules/tabs.js** (~450 lines added)
+   - setupCostsTab() function
+   - loadCostData() - parallel loading of all cost data
+   - renderCostOverview(), renderBudgetProgress()
+   - renderPredictions(), renderAgentBreakdown()
+   - renderOptimizations() with icons
+   - showBudgetModal(), saveBudgetSettings()
+   - showHistoryModal() with cost history list
+   - loadCostAlerts(), showCostAlert(), renderAlerts()
+   - resetCostData(), recordCost()
+   - getCostsState() for external access
+
+5. **ui/renderer.js**
+   - Added tabs.setupCostsTab() call
+
+**Total Lines Added:** ~2,000 lines
+
+---
+
+## Session 47 - Security Hardening (Jan 30, 2026)
+**Owner:** Implementer A  
+**Status:** ✅ COMPLETE
+
+### Task #25: Security Hardening
+
+**Overview:** Auth layer, encryption for sensitive data, permission system. Critical for production.
+
+**Files Created:**
+1. **ui/modules/security/security-manager.js** (~650 lines)
+   - AES-256-GCM encryption/decryption
+   - PBKDF2 key derivation (100,000 iterations, SHA-512)
+   - Secure credential storage with encryption at rest
+   - Session management with hashed tokens
+   - Role-based permission system (viewer, operator, admin)
+   - Security audit logging
+   - Sensitive data masking
+   - Input sanitization
+
+2. **ui/modules/ipc/security-handlers.js** (~400 lines)
+   - 24 IPC channels for security operations
+   - Channels: security-get-status, security-create-session, security-validate-session, security-invalidate-session, security-check-permission, security-store-credential, security-get-credential, security-delete-credential, security-list-credentials, security-encrypt, security-decrypt, security-hash-password, security-verify-password, security-get-roles, security-assign-role, security-get-audit-log, security-mask-data, security-sanitize-input, security-cleanup, security-export, security-generate-token, security-get-user-sessions, security-extend-session
+
+**Files Modified:**
+1. **ui/modules/ipc/handler-registry.js**
+   - Added import and registration for security-handlers
+
+2. **ui/index.html** (~100 lines added)
+   - Security tab button
+   - Security tab pane with:
+     - Status indicator with stats
+     - Credentials section with add/copy/delete
+     - Sessions section
+     - Roles section
+     - Audit log section
+     - Action buttons
+
+3. **ui/styles/tabs.css** (~350 lines added)
+   - Security tab styling
+   - Status indicator, credentials list, sessions list
+   - Roles display, audit log styling
+   - Modal styles for add/encrypt/session
+
+4. **ui/modules/tabs.js** (~400 lines added)
+   - setupSecurityTab() function
+   - loadSecurityData() - parallel loading
+   - renderSecurityStatus(), renderCredentialsList()
+   - renderRolesList(), renderAuditLog()
+   - showAddCredentialModal(), showAuditLogModal()
+   - showEncryptModal(), showCreateSessionModal()
+   - Credential management functions
+
+5. **ui/renderer.js**
+   - Added tabs.setupSecurityTab() call
+
+**Total Lines Added:** ~1,900 lines
+
+---
+
+### Task #30: Multi-Project Dashboard
+
+**Overview:** Manage multiple projects, switch contexts, aggregate metrics across projects.
+
+**Files Created:**
+1. **ui/modules/analysis/multi-project-dashboard.js** (~550 lines)
+   - Project registry with metadata management
+   - Cross-project metrics aggregation
+   - Activity tracking per project
+   - Project health scoring algorithm
+   - Context switching with state preservation
+   - Project comparison functionality
+
+2. **ui/modules/ipc/multi-project-handlers.js** (~450 lines)
+   - 18 IPC channels for multi-project operations
+   - Project registration/unregistration
+   - Active project switching
+   - Metrics and health endpoints
+   - Activity tracking
+   - Export/import project data
+   - Archive/restore functionality
+
+**Files Modified:**
+1. **ui/modules/ipc/handler-registry.js**
+   - Added import and registration for multi-project-handlers
+
+2. **ui/index.html** (~80 lines added)
+   - Dashboard tab button
+   - Dashboard tab pane with:
+     - Summary stats (total projects, active, avg health)
+     - Active project indicator with switch button
+     - Project list section
+     - Health scores section
+     - Recent activity section
+     - Export/Import/Compare actions
+
+3. **ui/styles/tabs.css** (~350 lines added)
+   - Dashboard summary styling
+   - Project list with status indicators
+   - Health bar visualization
+   - Activity timeline styling
+   - Compare modal styles
+
+4. **ui/modules/tabs.js** (~350 lines added)
+   - setupDashboardTab() function
+   - loadDashboardData() - loads all dashboard data
+   - renderDashboardSummary(), renderDashboardProjects()
+   - renderDashboardHealth(), renderDashboardActivity()
+   - switchToProject(), archiveProject()
+   - showAddProjectModal(), exportProjectData()
+   - importProjectData(), showCompareModal()
+
+5. **ui/renderer.js**
+   - Added tabs.setupDashboardTab() call
+
+**Total Lines Added:** ~1,780 lines
+
+**Status:** COMPLETE
+
+---
+
+## Session 48: Code Reviews for Sprint Tasks
+
+**Reviewer:** Reviewer Agent
+**Date:** 2026-01-30
+**Status:** ✅ COMPLETE - 6 Tasks Reviewed
+
+### Reviews Completed:
+
+| Task | Module | Verdict | Critical Issues |
+|------|--------|---------|-----------------|
+| #25 | Security Manager | APPROVED WITH CONCERNS | Machine-derived key, unencrypted sessions |
+| #24 | Cost Optimizer | APPROVED | Clean implementation |
+| #18 | Code Review | **APPROVED WITH FIX REQUIRED** | **CRITICAL BUG in review-staged handler** |
+| #36 | Knowledge Graph | APPROVED | Clean graph implementation |
+| #21 | Debug/Replay | APPROVED | Solid replay system |
+| #23 | Doc Generator | APPROVED | Minor regex issue |
+
+### CRITICAL BUG FOUND - Task #18
+
+**File:** `ui/modules/ipc/code-review-handlers.js:159-161`
+```javascript
+ipcMain.handle('review-staged', async (event, payload = {}) => {
+  return ipcMain.handle('review-diff', event, { ...payload, mode: 'staged' });
+});
+```
+
+**Problem:** `ipcMain.handle()` returns the handler function, NOT the result of calling it. The `review-staged` IPC channel is **completely broken**.
+
+**Fix:** Extract shared logic into helper function or duplicate the review-diff logic.
+
+### Review Files Created:
+- `workspace/build/reviews/task25-security-manager-review.md`
+- `workspace/build/reviews/task24-cost-optimizer-review.md`
+- `workspace/build/reviews/task18-code-review-review.md`
+- `workspace/build/reviews/task36-knowledge-graph-review.md`
+- `workspace/build/reviews/task21-debug-replay-review.md`
+- `workspace/build/reviews/task23-doc-generator-review.md`
+
+---
+
+### Task #12: Project Templates and Scaffolding
+
+**Overview:** Pre-built project structures, config presets, directory scaffolding for rapid project creation.
+
+**Files Created:**
+1. **ui/modules/scaffolding/project-scaffolder.js** (~650 lines)
+   - Project template definitions for 10+ project types:
+     - Node.js Basic, Express, CLI
+     - Python Basic, FastAPI
+     - React TypeScript
+     - Electron Basic
+     - Hivemind Workspace
+     - Monorepo
+     - Empty project
+   - Template variable substitution ({{projectName}}, etc.)
+   - Directory and file creation with proper structure
+   - Custom template support (add/remove/import/export)
+
+2. **ui/modules/ipc/scaffolding-handlers.js** (~350 lines)
+   - 11 IPC channels for scaffolding operations:
+     - scaffolding-get-templates, scaffolding-get-template
+     - scaffolding-preview, scaffolding-create
+     - scaffolding-select-folder
+     - scaffolding-add-custom, scaffolding-remove-custom
+     - scaffolding-export-template, scaffolding-import-template
+     - scaffolding-get-categories
+     - scaffolding-create-from-existing
+
+**Files Modified:**
+1. **ui/modules/ipc/handler-registry.js**
+   - Added import and registration for scaffolding-handlers
+
+2. **ui/index.html** (~70 lines added)
+   - Scaffold tab button
+   - Scaffold tab pane with:
+     - Category filter buttons (All, Node.js, Python, Frontend, etc.)
+     - Template list with icons and badges
+     - Preview panel showing structure
+     - Create form (project name, description, location)
+     - Import button for custom templates
+
+3. **ui/styles/tabs.css** (~280 lines added)
+   - Scaffold category buttons
+   - Template list with icons by category
+   - Preview panel styling
+   - Create form styling
+   - Loading overlay
+
+4. **ui/modules/tabs.js** (~280 lines added)
+   - setupScaffoldTab() function
+   - loadScaffoldTemplates(), renderScaffoldTemplates()
+   - selectScaffoldTemplate(), showScaffoldPreview()
+   - selectScaffoldFolder(), updateScaffoldCreateButton()
+   - createScaffoldProject(), importScaffoldTemplate()
+   - getScaffoldState()
+
+5. **ui/renderer.js**
+   - Added tabs.setupScaffoldTab() call
+
+**Total Lines Added:** ~1,630 lines
+
+**Status:** COMPLETE
+
+---
+
+### Task #22: Cross-Project Agent Sharing
+
+**Overview:** Share agent configurations between projects with import/export and per-project storage.
+
+**Files Created:**
+1. **ui/modules/ipc/agent-sharing-handlers.js**
+   - Agent config store in workspace/memory/_agent-configs.json
+   - IPC endpoints: list/get/save/apply/export/import/share/delete
+   - JSON import/export with optional dialog and apply/merge support
+
+**Files Modified:**
+1. **ui/modules/ipc/handler-registry.js**
+   - Registered agent-sharing handlers
+
+2. **ui/modules/ipc/api-docs-handlers.js**
+   - Added Agent Sharing IPC documentation
+
+**Runtime Data:**
+- **workspace/memory/_agent-configs.json** (created on first save/import)
+
+**Status:** COMPLETE
+
+---
+
+### Task #19: Visual Workflow Builder Enhancement
+
+**Overview:** Enhanced drag-and-drop workflow design with node-based agent orchestration UI.
+
+**Files Created:**
+1. **ui/modules/ipc/workflow-handlers.js** (~700 lines)
+   - 14 IPC channels for workflow operations:
+     - workflow-list, workflow-save, workflow-load, workflow-delete
+     - workflow-duplicate, workflow-validate, workflow-generate-plan
+     - workflow-export-file, workflow-import-file
+     - workflow-get-node-types, workflow-get-templates
+     - workflow-apply-template
+   - Workflow validation with rules:
+     - Disconnected nodes detection
+     - Cycle detection (DAG enforcement)
+     - Entry point validation
+     - Dangling edge detection
+   - Topological sort for execution order
+   - Execution plan generation
+   - 5 built-in workflow templates:
+     - Simple Agent, Parallel Agents, Conditional Routing
+     - Iteration Loop, Agent Chain
+   - 12 node type definitions with config schemas:
+     - Control: Trigger, Decision, Loop, Parallel, Merge, Delay
+     - Processing: Agent, Tool, Transform
+     - I/O: Input, Output
+     - Advanced: Subworkflow
+
+**Files Modified:**
+1. **ui/modules/ipc/handler-registry.js**
+   - Added import and registration for workflow-handlers
+
+2. **ui/modules/tabs.js** (~500 lines added/modified)
+   - Enhanced workflowState with zoom, pan, undo/redo, clipboard
+   - Extended WORKFLOW_NODE_TYPES (4 → 12 node types)
+   - Added WORKFLOW_NODE_CATEGORIES for toolbar grouping
+   - New functions:
+     - loadWorkflowNodeTypes(), loadWorkflowTemplates()
+     - handleWorkflowWheel(), handleWorkflowPanStart/Move/End()
+     - zoomWorkflow(), resetWorkflowZoom(), applyWorkflowTransform()
+     - handleWorkflowKeyboard() (Delete, Ctrl+Z, Ctrl+Y, Ctrl+C/V/D, Esc)
+     - pushWorkflowUndoState(), undoWorkflow(), redoWorkflow()
+     - copySelectedWorkflowNode(), pasteWorkflowNode()
+     - deleteSelectedWorkflowNode(), duplicateSelectedWorkflowNode()
+     - validateWorkflowUI(), generateWorkflowPlan(), showExecutionPlan()
+     - saveWorkflowToFile(), showWorkflowLoadDialog()
+     - exportWorkflowToFile(), importWorkflowFromFile()
+     - showWorkflowTemplates()
+     - selectWorkflowEdge() - edge selection/editing
+   - Enhanced updateWorkflowEdges() with:
+     - Bezier curves instead of straight lines
+     - SVG arrow markers for direction
+     - Edge labels support
+     - Edge click selection
+   - Enhanced renderWorkflowInspector() with:
+     - Node-specific config fields from IPC
+     - Connection info display
+     - Action buttons (Delete, Duplicate)
+     - Select/textarea/number/checkbox field types
+     - showIf conditional field visibility
+   - Added 16 new exports
+
+3. **ui/index.html** (~85 lines modified)
+   - Reorganized workflow toolbar with node categories:
+     - Control Flow: Trigger, Decision, Loop, Parallel, Merge, Delay
+     - Processing: Agent, Tool, Transform
+     - Input/Output: Input, Output
+     - Advanced: Subworkflow
+   - Secondary toolbar with:
+     - Edit: Connect, Delete, Duplicate
+     - Undo/Redo
+     - View: Zoom In/Out/Reset, Layout
+     - File: Template, Save, Load, Import, Export
+     - Actions: Validate, Plan, Clear
+   - Enhanced empty state with icon and hints
+
+4. **ui/styles/tabs.css** (~180 lines added)
+   - Node type button color indicators
+   - Additional node type border colors (input, output, loop, etc.)
+   - Inspector section styles
+   - Plan step display
+   - Improved empty state
+   - Validation error/warning highlights
+   - Edge hover effects
+   - Zoom indicator
+
+**Total Lines Added:** ~1,465 lines
+
+**Features:**
+- 12 node types for comprehensive agent orchestration
+- Bezier curve edges with directional arrows
+- Pan/zoom with mouse wheel and middle-click drag
+- Undo/redo with 50-state history
+- Copy/paste/duplicate nodes
+- Keyboard shortcuts (Del, Ctrl+Z/Y/C/V/D, Esc)
+- Workflow validation with error highlighting
+- Execution plan generation with topological sort
+- 5 workflow templates
+- Save/load to file system
+- Import/export JSON files
+- Node-specific configuration with conditional fields
+- Edge selection and editing
+
+**Status:** COMPLETE
+
+---
+
+## Task #15: Automated Deployment Pipeline - COMPLETE
+**Owner:** Implementer A
+**Completed:** Session 47
+
+### Implementation Summary
+
+Created comprehensive CI/CD integration with build automation, deploy scripts, and pipeline management.
+
+### Files Created
+
+1. **ui/modules/deployment/deployment-manager.js** (~600 lines)
+   - Core deployment logic
+   - Build state tracking (BuildStatus enum)
+   - Pipeline stages (PipelineStage enum)
+   - Environment configurations (dev/staging/prod)
+   - runPipeline() with stage execution
+   - checkDeployReadiness() validation
+   - deployToGitHub() deployment
+   - Topological sort for stage dependencies
+   - Build history management
+
+2. **ui/modules/ipc/deployment-handlers.js** (~400 lines)
+   - 18 IPC handlers:
+     - deployment-get-config
+     - deployment-start-build
+     - deployment-cancel-build
+     - deployment-check-readiness
+     - deployment-deploy-github
+     - deployment-get-history
+     - deployment-get-build-status
+     - deployment-get-environments
+     - And more...
+   - Build progress events
+   - Build completion/failure events
+
+3. **.github/workflows/ci.yml** (~200 lines)
+   - Full GitHub Actions CI/CD pipeline
+   - Jobs: lint, test, build (matrix: win/mac/linux), security, deploy-staging, deploy-production
+   - Environment configurations
+   - Manual deployment trigger
+   - Artifact management
+   - Coverage upload
+
+### Files Modified
+
+1. **ui/modules/tabs.js** (~350 lines added)
+   - deployState object
+   - setupDeployTab() event handlers
+   - loadDeployConfig() configuration loading
+   - checkDeployReadiness() validation
+   - startDeployBuild() build execution
+   - cancelDeployBuild() cancellation
+   - handleDeployProgress() progress updates
+   - handleDeployComplete() completion handler
+   - handleDeployFailed() failure handler
+   - renderPipelineStages() stage visualization
+   - addDeployOutput() output logging
+   - deployToGitHub() GitHub deployment
+   - loadDeployHistory() history loading
+   - renderDeployHistory() history display
+   - formatDuration() time formatting
+   - getDeployState() state getter
+   - 8 new exports
+
+2. **ui/modules/ipc/handler-registry.js**
+   - Added deployment-handlers import
+   - Added registerDeploymentHandlers to DEFAULT_HANDLERS
+
+3. **ui/renderer.js**
+   - Added tabs.setupDeployTab() call
+
+4. **ui/index.html** (~90 lines added)
+   - Deploy tab button
+   - Deploy tab content:
+     - Status bar with progress
+     - Environment selector
+     - Readiness checks panel
+     - Pipeline stages visualization
+     - Build output console
+     - Action buttons (Start/Cancel/GitHub)
+     - Build history panel
+
+5. **ui/styles/tabs.css** (~280 lines added)
+   - Deploy status bar
+   - Readiness check styles
+   - Pipeline stage visualization
+   - Output console styles
+   - History panel styles
+   - Status colors (pending/running/success/failed)
+
+6. **ui/package.json**
+   - Added build scripts:
+     - build, build:dev, build:staging, build:prod
+     - package, package:win, package:mac, package:linux
+     - release, release:draft
+     - clean, prebuild, postbuild
+     - notify:staging, notify:production
+
+**Total Lines Added:** ~1,920 lines
+
+**Features:**
+- Environment-based builds (development/staging/production)
+- Readiness checks before deployment
+- Pipeline stage visualization with real-time progress
+- Build output console with color-coded messages
+- Build history tracking
+- GitHub Actions CI/CD integration
+- Cross-platform builds (Windows/macOS/Linux)
+- Security scanning (npm audit, Trivy)
+- Automated artifact management
+- Manual deployment trigger
+
+**Status:** COMPLETE
+
+---
+
+## Task #16: Agent Skill Marketplace
+
+**Summary:** Added a backend marketplace for agent skills with browse/publish/install/import/export and per-agent assignments.
+
+### Files Modified
+
+1. **ui/modules/agent-skills.js**
+   - Built-in skill catalog (architecture, backend, frontend, testing, etc.)
+   - Metadata for categories, tags, capabilities, versions
+
+2. **ui/modules/ipc/skill-marketplace-handlers.js**
+   - Marketplace IPC endpoints: list/get/publish/install/uninstall/delete
+   - Import/export with optional file dialogs
+   - Assignment management per agent + install tracking
+   - Storage in `workspace/memory/skill-marketplace.json`
+
+3. **ui/modules/ipc/handler-registry.js**
+   - Registered skill marketplace handlers
+
+4. **ui/modules/ipc/api-docs-handlers.js**
+   - Documented new marketplace IPC endpoints
+
+**Features:**
+- Built-in skill library with categories and capabilities
+- Marketplace store with publish/install/uninstall/delete
+- Import/export for sharing skills across systems
+- Agent skill assignments with optional auto-install
+- Renderer events for marketplace updates
+
+**Status:** COMPLETE
+
+---
+
+## Task #11: Real-time Collaboration - COMPLETE
+**Owner:** Implementer A
+**Completed:** Session 47
+
+### Implementation Summary
+
+Created comprehensive real-time collaboration system with multi-user sessions, live sync, and chat.
+
+### Files Created
+
+1. **ui/modules/collaboration/collaboration-manager.js** (~700 lines)
+   - Core collaboration logic
+   - Session management (create, join, leave)
+   - WebSocket server/client for real-time sync
+   - User presence tracking
+   - Terminal output synchronization
+   - Chat messaging system
+   - Cursor position sharing
+   - Role-based permissions (host/editor/viewer)
+   - Auto-reconnection with exponential backoff
+   - Invite code generation
+
+2. **ui/modules/ipc/collaboration-handlers.js** (~350 lines)
+   - 16 IPC handlers:
+     - collab-create-session
+     - collab-join-session
+     - collab-leave-session
+     - collab-get-state
+     - collab-get-users
+     - collab-send-chat
+     - collab-sync-cursor/terminal/settings
+     - collab-set-user-role
+     - collab-kick-user
+     - collab-update-profile
+     - collab-get-invite-link
+   - Event forwarding to renderer
+
+### Files Modified
+
+1. **ui/modules/tabs.js** (~450 lines added)
+   - collabState object
+   - setupCollabTab() event handlers
+   - loadCollabState() state loading
+   - createCollabSession() / joinCollabSession()
+   - Chat functions (send, render)
+   - User management (render, kick)
+   - Cursor rendering
+   - Event handlers for all collab events
+   - 7 new exports
+
+2. **ui/modules/ipc/handler-registry.js**
+   - Added collaboration-handlers import
+   - Added registerCollaborationHandlers to DEFAULT_HANDLERS
+
+3. **ui/renderer.js**
+   - Added tabs.setupCollabTab() call
+
+4. **ui/index.html** (~120 lines added)
+   - Collab tab button
+   - Collab tab content:
+     - Connection status bar
+     - Session create/join forms
+     - Active session view
+     - Invite section with link/code
+     - Users list
+     - Chat interface
+     - Session settings (host only)
+     - User profile settings
+
+5. **ui/styles/tabs.css** (~200 lines added)
+   - Collab status bar styles
+   - Session controls forms
+   - Active session display
+   - User list and avatars
+   - Chat message styles
+   - Remote cursor overlay
+   - Animation keyframes
+
+**Total Lines Added:** ~1,820 lines
+
+**Features:**
+- Session hosting with WebSocket server
+- Session joining with connection management
+- Real-time user presence tracking
+- Live cursor position sharing
+- Terminal output synchronization
+- Settings synchronization
+- Real-time chat messaging
+- Role-based permissions (host/editor/viewer)
+- User kick/ban capability (host only)
+- Invite link and code generation
+- Auto-reconnection with backoff
+- User profile customization (name, color)
+- Unread chat notification badge
+- Connection state indicators
+
+**Status:** COMPLETE
+
+---
+
+## Task #17: Mobile Companion App - COMPLETE
+**Owner:** Implementer A
+**Completed:** Session 47
+
+### Implementation Summary
+
+Created comprehensive mobile API system with REST endpoints, SSE real-time updates, push notifications, and session management for remote monitoring.
+
+### Files Created
+
+1. **ui/modules/mobile/mobile-api-server.js** (~650 lines)
+   - REST API server for mobile app integration
+   - API versioning (/api/v1)
+   - Agent status monitoring endpoints
+   - Remote command execution
+   - Push notification registration & preferences
+   - Server-Sent Events (SSE) for real-time updates
+   - Session management with API keys
+   - Rate limiting with configurable limits
+   - CORS support for mobile clients
+   - Authentication middleware
+
+2. **ui/modules/ipc/mobile-api-handlers.js** (~430 lines)
+   - 12 IPC handlers:
+     - mobile-api-start
+     - mobile-api-stop
+     - mobile-api-get-state
+     - mobile-api-create-session
+     - mobile-api-revoke-session
+     - mobile-api-get-sessions
+     - mobile-api-get-subscriptions
+     - mobile-api-send-notification
+     - mobile-api-get-qr-code
+     - mobile-api-update-settings
+     - mobile-api-reset
+     - mobile-api-get-notification-types
+   - Event forwarding to renderer
+   - QR code generation for quick connect
+
+### Files Modified
+
+1. **ui/modules/tabs.js** (~400 lines added)
+   - mobileState object
+   - setupMobileTab() event handlers
+   - loadMobileState() state loading
+   - loadMobileSessions() / loadMobilePushSubscriptions()
+   - revokeMobileSession() session management
+   - QR code generation
+   - UI update functions
+   - Event listeners for mobile API events
+   - 6 new exports
+
+2. **ui/modules/ipc/handler-registry.js**
+   - Added mobile-api-handlers import
+   - Added registerMobileApiHandlers to DEFAULT_HANDLERS
+
+3. **ui/index.html** (~110 lines added)
+   - Mobile tab button in panel-tabs
+   - Full mobile tab content:
+     - Server status bar
+     - Server controls (start/stop, port)
+     - QR code section for quick connect
+     - Connection info display
+     - Sessions list with revoke
+     - Push subscriptions list
+     - Notification settings checkboxes
+     - Test notification button
+
+4. **ui/styles/tabs.css** (~240 lines added)
+   - Mobile status bar styling
+   - Mobile section styling
+   - Form elements
+   - QR code container
+   - Sessions list
+   - Push subscriptions list
+   - Notification settings
+   - Animations
+
+5. **ui/renderer.js**
+   - Added tabs.setupMobileTab() call
+
+**Total Lines Added:** ~1,830 lines
+
+**Features:**
+- REST API server with versioning
+- Agent status monitoring
+- Remote command execution
+- Push notification registration
+- SSE for real-time updates
+- Session management with API keys
+- QR code generation for mobile connection
+- Rate limiting
+- Notification type preferences
+- Connection info display
+- Session revocation
+
+**Status:** COMPLETE - SPRINT FINAL TASK

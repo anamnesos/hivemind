@@ -6,6 +6,88 @@
 
 ## Active Errors
 
+### Sequence Skip After Context Compaction (Session 40, Jan 30, 2026) - ✅ FIXED
+**Commit**: `9e078cc`
+**Owner**: Investigator (triggers.js)
+
+- **Where**: triggers.js handleTriggerFile lines 893-898
+- **Symptoms**:
+  - After agent context compacts, their messages were SKIPPED as duplicates
+  - Agent thinks they're fresh but message-state.json has higher lastSeen
+- **Root Cause**:
+  - App restart resets message-state.json but context compaction does NOT
+  - Agent restarts fresh, app keeps old sequence tracking
+- **Fix Applied**:
+  - If seq is more than 5 behind lastSeen, RESET counter instead of skip
+  - Small gaps (1-5) still skip as true duplicates (network reorder protection)
+  - Proper logging for reset events
+- **Team**: Reviewer found bug, Investigator implemented, all verified
+- **Status**: Committed and pushed. Takes effect on next app restart.
+
+---
+
+### Message Accumulation Bug Still Active (Session 39, Jan 30, 2026) - INVESTIGATING
+**Owner**: Implementer A (terminal.js)
+**Priority**: HIGH - corrupts agent communication
+
+- **Where**: Claude panes (1, 3, 6) - PTY injection path
+- **Symptoms**:
+  - Multiple agent messages arrive in ONE conversation turn
+  - Example: REVIEWER #3 and ORCHESTRATOR #5 arrived together in Architect pane
+  - Messages concatenated, not separate turns
+- **Root Cause**:
+  1. Message A injected, Enter sent but FAILS to submit (sits in textarea)
+  2. Message B arrives, Ctrl+U clears text (good), new text written
+  3. Message B's Enter submits BOTH accumulated inputs
+  4. If no Message B comes, Message A is NEVER delivered
+- **Evidence (Session 39)**:
+  - Reviewer #3 sent at 05:28:49 to lead.txt
+  - Orchestrator #5 sent later to lead.txt
+  - Architect received BOTH in single turn
+- **Related Fixes Applied**:
+  - ✅ Ctrl+U clear before write (prevents text accumulation)
+  - ✅ Input lock bypass (allows programmatic Enter)
+  - ⚠️ safetyTimer timeout fix (pending restart verification)
+- **Remaining Root Cause (Session 39 Analysis)**: VERIFICATION FALSE POSITIVE
+  - **EXACT LOCATION:** terminal.js:581-583 (the "likely succeeded" fallback)
+  - Flow: Output detected → wait 3s for prompt → prompt NOT detected → fallback says "likely succeeded"
+  - If Claude was ALREADY outputting, this treats continuation output as success
+  - Evidence: Logs show "Enter likely succeeded" at 05:30:05, but message sat until 05:30:14
+- **TWO FIXES APPLIED (Implementer A, Session 39):**
+  1. **Pre-flight idle check (lines 1189-1204)**: Waits for pane idle before sending Enter - prevents false positive at source
+  2. **Verification retry (lines 581-599)**: Retries Enter when prompt not detected - catches edge cases
+- **Status**: ✅ VERIFIED (Session 40 stress test) - Message accumulation fix confirmed under multi-trigger load
+
+**[Investigator update - Jan 30, 2026]:**
+- app.log (05:46:07-05:46:24) shows pre-flight idle wait ("waiting for idle before Enter") and sendTrustedEnter with bypass enabled for panes 1/3/6 identity injections.
+- No "Enter likely succeeded" fallback lines seen in that window; verifyAndRetryEnter logged "Enter succeeded (output ongoing, not idle)".
+- Multi-trigger stress test (Architect #7/#8/#9) confirmed messages arrive separately; no concatenation observed.
+
+---
+
+### Jest Open Handles Warning (Session 29, Jan 29, 2026) - RESOLVED
+**Owner**: Implementer A (triggers.test.js owner)
+**Priority**: LOW - test-only issue, no production impact
+
+- **Where**: `ui/__tests__/triggers.test.js` lines 720, 731, 746, 749, 841, 854, 872
+- **Symptoms**:
+  - Jest reports 7 open handles after test run
+  - All from `setTimeout` in `triggers.js` (delivery tracking + staggered send)
+- **Root Cause (Reviewer analysis, Session 29)**:
+  - `handleTriggerFile()` calls `startDeliveryTracking()` which creates a timeout (triggers.js:178)
+  - `broadcastToAllAgents()` calls `sendStaggered()` which creates staggered timeouts (triggers.js:549)
+  - Tests don't simulate delivery acks, so timeouts never clear
+  - No `jest.useFakeTimers()` in test file
+- **Impact**: Test-only. Production code properly clears timeouts when acks arrive.
+- **Fix Applied (Implementer A, Session 29)**:
+  - Added `jest.useFakeTimers()` to 5 describe blocks
+  - Added `jest.runOnlyPendingTimers(); jest.useRealTimers()` in afterEach
+- **Status**: ✅ RESOLVED - Reviewer verified, tests pass
+- **Discovered by**: Reviewer (Session 29)
+- **Fixed by**: Implementer A (Session 29)
+
+---
+
 ### Silent Message Loss - Agent Shell Quoting Issue (Session 27, Jan 28, 2026) - RESOLVED
 **Owner**: All agents (behavioral fix)
 **Priority**: MEDIUM - agent education issue, not app bug
@@ -273,3 +355,108 @@
 - **Fix**: What to do (or "needs investigation")
 - **Fixed by**: (your role)
 ```
+
+---
+
+### PTY Injection Delayed During Continuous Streaming (Session 32, Jan 29, 2026)
+**Owner**: Infrastructure (known limitation)
+**Priority**: LOW - expected behavior, mitigation exists
+
+- **Where**: `ui/modules/terminal.js` - message queue processing
+- **Symptoms**:
+  - Messages to a pane queue for 30+ seconds
+  - User sees "stuck" and manually pushes
+  - Log shows: `Message queued 30s+, pane last output Xms ago, still waiting for idle`
+- **Root Cause**:
+  - PTY injection requires "idle" window (no output for 500ms minimum)
+  - IDLE_THRESHOLD_MS = 2000ms (normal send)
+  - FORCE_INJECT_IDLE_MS = 500ms (force-inject after 10s wait)
+  - If agent streams continuously for 30+ seconds without a 500ms pause, messages queue
+- **Thresholds**:
+  - 10s: Consider force-inject (requires 500ms idle)
+  - 30s: Log warning
+  - 60s: Emergency force-inject regardless of idle state
+- **Evidence (Session 32)**:
+  - `06:51:15.721 [Terminal 1] Message queued 30s+, pane last output 15ms ago`
+  - `06:51:16.728 [Terminal 1] Force-injecting after 31040ms wait (pane now idle for 500ms)`
+  - User had to manually push before force-inject completed
+- **Mitigation**: 60s emergency fallback exists. User can also manually intervene.
+- **Potential Improvements** (not urgent):
+  1. Show queued message indicator in UI (visual feedback)
+  2. Reduce FORCE_INJECT_IDLE_MS to 250ms (risk: output corruption)
+  3. Earlier emergency cutoff (e.g., 45s instead of 60s)
+- **Status**: DOCUMENTED - known PTY limitation, not a bug
+
+---
+
+### Codex Exec Process Death - Pane 4 (Session 30, Jan 29, 2026)
+**Owner**: Infrastructure (Codex exec reliability)
+**Priority**: MEDIUM - disrupts workflow but recoverable
+
+- **Where**: Pane 4 (Implementer B) - Codex exec mode
+- **Symptoms**: "terminal not found or not alive" error, pane not processing messages
+- **Trigger**: Unknown - occurred after receiving ARCHITECT #18 message
+- **Root Cause**: Codex exec child processes can exit unexpectedly (non-interactive, no keepalive)
+- **Fix**: Respawn the pane
+- **Status**: RECOVERABLE - respawn pane 4
+- **Note**: This is a known limitation of Codex exec architecture (child_process vs PTY)
+
+---
+
+### Watcher Friction Resolution Transition Unreachable (Session 47, Jan 30, 2026)
+**Owner**: Implementer B (watcher.js)
+**Priority**: LOW - friction workflow edge case
+
+- **Where**: `ui/modules/watcher.js` lines 579-592
+- **Symptoms**:
+  - When in FRICTION_RESOLUTION state, editing friction-resolution.md should trigger PLAN_REVIEW
+  - Transition never happens - state stays at FRICTION_RESOLUTION
+- **Root Cause (Reviewer analysis)**:
+  - Line 579: `else if (filename.endsWith('.md') && filePath.includes('friction'))` matches first
+  - Line 580-582: Inner condition fails (we ARE in FRICTION_RESOLUTION), but else-if is consumed
+  - Line 590-592: The specific `friction-resolution.md` check is NEVER reached
+  - This is an else-if ordering bug - general condition before specific condition
+- **Fix Needed**: Reorder conditions so line 590-592 comes BEFORE line 579-588
+  - Specific filename checks should precede generic pattern matches
+- **Status**: DOCUMENTED - test updated to reflect actual behavior, production fix needed
+- **Discovered by**: Reviewer (test coverage sprint, Session 47)
+
+
+## Session 48 - Trigger Delivery Failure (Panes 2 & 5)
+
+**Reported:** Jan 30, 2026
+**Symptom:** Bidirectional trigger failure for Orchestrator (pane 2) and Investigator (pane 5)
+- My messages to them not appearing in their panes
+- Their messages not reaching me (Architect, pane 1)
+- Pane 4 (Implementer B, also Codex) WAS working fine
+
+**Observations:**
+- Investigator completed 8 tasks earlier, then went silent
+- Orchestrator completed 3 tasks early, then went silent
+- Trigger files show empty (cleared after "delivery")
+- But injection not actually happening
+
+**To investigate:**
+- Check npm console for trigger injection errors for panes 2 & 5
+- Check if those panes are in stuck state
+- Verify pane CLI identity is detected for trigger routing
+
+
+## Session 48 - Copy/Paste Unreliable in App
+
+**Reported:** Jan 30, 2026
+**Symptom:** Right-click copy/paste in Hivemind app is inconsistent
+- Sometimes works after many attempts
+- Often doesn't work at all
+- User cannot reliably copy text between panes
+
+**Impact:** User cannot manually relay messages when trigger system fails
+
+**To investigate:**
+- Check clipboard handling in renderer.js
+- xterm.js copy/paste integration
+- Electron clipboard API usage
+- Context menu implementation
+
+**Priority:** HIGH - blocks manual workarounds for other bugs
+

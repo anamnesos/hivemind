@@ -4,6 +4,253 @@ Write questions here. Lead will resolve and respond.
 
 ---
 
+## UI Audit Findings (Jan 29, 2026)
+
+### [Investigator] - Codex pane restart loses resume context (no `resume --last` fallback)
+**Owner**: Implementer B (daemon/codex-exec) + Implementer A (terminal.js)
+**Priority**: HIGH - restart/respawn drops Codex context
+**Status**: INVESTIGATING (code-path analysis complete; needs runtime verification)
+**Symptom**: After killing a Codex pane and clicking Restart, subsequent Codex exec runs start a *new* session. Expected behavior is to resume prior context (e.g., `resume --last` or preserved session id).
+**Root cause (code trace)**:
+- `killTerminal()` deletes the terminal entry, including `codexSessionId` and scrollback (`ui/terminal-daemon.js:1200-1224`).
+- `restartPane()` calls `pty.create()` for Codex panes, which initializes a *new* codex-exec terminal with `codexSessionId: null` (`ui/terminal-daemon.js:1032-1057`, `ui/modules/terminal.js:1452-1483`).
+- `codex-exec` only uses `resume <sessionId>` when `codexSessionId` exists; otherwise it starts a new session with `--cd` (`ui/modules/codex-exec.js:186-193`).
+- There is no persistence of `codexSessionId` in `session-state.json`, and no `resume --last` fallback when the session id is missing.
+  - `saveSessionState()` only stores `paneId`, `cwd`, `alive`, `dryRun`, `scrollback`, `lastActivity` (no codex session fields), so even daemon session restore can’t recover a Codex session id (`ui/terminal-daemon.js:204-226`).
+**Additional note**:
+- `codexIdentityInjected` (renderer) is not reset on restart; if a new session starts, the identity banner may be skipped, hurting `/resume` list identification (`ui/modules/terminal.js:239-277`).
+**Suggested fix options**:
+1) Persist `codexSessionId` per pane across restarts (session-state or renderer memory) and restore into daemon terminal on `pty.create`.
+2) Add a fallback: if `codexSessionId` missing after restart, use `codex exec ... resume --last -` (if supported) or request `/resume` list then pick last.
+3) Reset `codexIdentityInjected` for the pane on restart so new sessions get identity header.
+
+### [Investigator] - Command bar input blocked ~1s during trigger injections (focus steal)
+**Owner**: Implementer A (terminal.js)
+**Priority**: HIGH - interrupts user typing during triggers
+**Status**: ✅ APPROVED (Reviewer #13, Jan 30, 2026) - Pending restart verification
+**Symptom**: While typing in the command bar, incoming trigger messages briefly make the input unresponsive (~1s). Keystrokes are ignored until the delay passes.
+**Likely root cause**:
+- `doSendToPane()` explicitly focuses the xterm textarea to inject text/Enter, then only restores focus after `verifyAndRetryEnter()` completes. That verification includes delays (ENTER_VERIFY_DELAY_MS=200ms) and can wait up to `PROMPT_READY_TIMEOUT_MS=3000ms`. During that time, focus sits on the terminal, and with per-pane input lock enabled, all keystrokes are blocked - making the command bar feel frozen.
+- The global UI focus tracker (`lastUserUIFocus`) is set but never used for restoration; `doSendToPane()` uses `document.activeElement` at injection start and restores only at the end.
+**Affected files / lines**:
+- `ui/modules/terminal.js:1099-1163` - focus set to xterm and restored only after verification
+- `ui/modules/terminal.js:553-599` - `verifyAndRetryEnter()` wait loop can hold focus for 200ms-3s
+- `ui/modules/terminal.js:640-668` - `userIsTyping()` only defers injection, does not prevent focus steal once it begins
+**Suggested fix approaches** (choose one):
+1) Restore focus immediately after sending Enter (or after PTY write) when `savedFocus` is a UI input; only re-focus xterm if a retry is needed.
+2) If `Terminal.input()` is available and succeeds, skip focusing the textarea entirely (avoid focus steal on successful focus-free path).
+3) Use `lastUserUIFocus` as the restore target (even if activeElement changed), and restore before long verification loops.
+4) Optionally add a flag to skip focus changes when panes are locked (view-only mode).
+
+**[Implementer A Fix - Jan 30, 2026]**
+Combined approaches #1 and #2:
+- Skip initial focus when Terminal.input() is available (lines 1113-1120)
+- Skip focusWithRetry inside setTimeout when Terminal.input() is available (lines 1147-1154)
+- Restore focus IMMEDIATELY after Enter sent, before verification loop (lines 1159-1161)
+- Added `restoreSavedFocus()` helper with DOM existence check (lines 1102-1111)
+- Verification loop now runs with focus already restored to user
+
+**[User Runtime Test - Jan 30, 2026 Session 41]**
+- **Finding:** Still can't type in command bar while messages are being injected
+- **Severity:** LOW - "not a huge issue but kind of annoying"
+- **Analysis:** Terminal.input() is DISABLED for Claude panes (uses sendTrustedEnter which requires focus). The focus → write → Enter sequence still steals focus briefly. For queued messages, this repeats per message.
+- **Status:** PARTIAL FIX - focus restored faster but not eliminated
+- **Potential future improvements:**
+  1. Batch coalescing - combine rapid messages to reduce focus-steal events
+  2. Typing-guard tuning - longer defer when user actively typing
+  3. Background injection via offscreen terminal (complex)
+
+### [Investigator] - Templates tab broken (IPC name mismatch + payload shape)
+**Owner**: Implementer B (IPC aliases)
+**Priority**: HIGH - Templates tab non-functional
+**Status**: ✅ RESOLVED - Task #4 IPC Alias Implementation (Reviewer approved Session 33)  
+**Root cause**:
+- UI calls `ipcRenderer.invoke('get-templates')`, but IPC handler is `list-templates` (`ui/modules/ipc/template-handlers.js`).  
+- UI calls `save-template` with a **string** name, but handler expects an object with `template.name` (fails with "Template name is required").  
+**Affected files**:
+- `ui/modules/tabs.js` (loadTemplates/saveTemplate)  
+- `ui/modules/ipc/template-handlers.js` (save-template expects object; list-templates handler name)  
+**Suggested fix**:
+- UI: change `get-templates` → `list-templates` and pass object `{ name, config, paneProjects }` (even if config empty), **or**  
+- IPC: add alias handlers for `get-templates` and accept string name in `save-template` (coerce to `{name}`), then extend UI later to save config.  
+
+### [Investigator] - Performance tab broken (IPC name + response shape mismatch)
+**Owner**: Implementer B (IPC aliases)
+**Priority**: MEDIUM - Performance tab shows no data / reset no-op
+**Status**: ✅ RESOLVED - Task #4 IPC Alias Implementation (Reviewer approved Session 33)  
+**Root cause**:
+- UI calls `get-performance-stats` / `reset-performance-stats`, but IPC handlers are `get-performance` / `reset-performance` (`ui/modules/ipc/performance-tracking-handlers.js`).  
+- UI expects `result.stats`, but handler returns `{ success, agents }` (field mismatch).  
+**Affected files**:
+- `ui/modules/tabs.js` (loadPerformanceData/resetPerformanceData)  
+- `ui/modules/ipc/performance-tracking-handlers.js`  
+**Suggested fix**:
+- UI: call `get-performance` / `reset-performance` and read `result.agents`, **or**  
+- IPC: add alias handlers returning `{ stats: agents }` for backward compatibility.  
+
+## Individual Trigger Files Empty (Jan 29, 2026)
+
+### [Reviewer] - Direct trigger files (lead.txt, worker-a.txt, etc.) read as empty
+**Owner**: Implementer B (watcher.js)
+**Priority**: LOW - cosmetic log noise only (messages deliver correctly)
+**Status**: BACKLOGGED (LOW/cosmetic) - Log noise, not delivery failure
+**Symptom**: Writing to `lead.txt` triggers "Empty trigger file after 3 retries" in npm console. Broadcast via `all.txt` works fine.
+**Likely cause**: Race condition in `handleTriggerFileWithRetry` (watcher.js:686-716). The 3 retries × 50ms = 150ms window may not be enough for Windows file system to flush individual file writes. Broadcast may use different code path.
+**Affected files**:
+- `ui/modules/watcher.js` (handleTriggerFileWithRetry, TRIGGER_READ_MAX_ATTEMPTS, TRIGGER_READ_RETRY_MS)
+**Suggested fix**:
+- Increase TRIGGER_READ_MAX_ATTEMPTS to 5 or TRIGGER_READ_RETRY_MS to 100ms
+- Or investigate why broadcast works but individual triggers don't
+
+**[Investigator update - Jan 30, 2026]**
+- `workspace/logs/app.log` shows **Accepted** trigger lines immediately followed (~200–250ms later) by **"Empty trigger file after 3 retries"** for the same file. This matches `triggers.handleTriggerFile()` clearing the file after delivery (triggers.js ~935/981), which triggers another change event that the fast watcher retries and then logs as empty.
+- Example pattern in logs:  
+  `Accepted: implementer-a #1 → lead` → `Sent via inject-message` → `Empty trigger file after 3 retries: lead.txt`.
+- Conclusion: the empty-file log is **expected post-clear noise**, not proof of failed delivery. If direct delivery appears missing, likely causes are:
+  - **SKIPPED duplicate** sequence drops (log shows many reviewer → lead duplicates when seq resets without session banner).
+  - **Workflow gate** blocking triggers.
+- Suggested tweak: suppress/trace-level the empty-file log when it follows a successful `handleTriggerFile()` clear, or add a guard to ignore empty change events immediately after clearing.
+
+**[Reviewer update - Jan 30, 2026]**
+- Confirmed Investigator analysis: log is post-clear noise, not delivery failure
+- Architect decision (Session 34 #8-#9): No fix needed, backlogged as LOW/cosmetic
+- **Optional future tweak** (watcher.js:34-35) if log verbosity becomes an issue:
+  ```javascript
+  const TRIGGER_READ_RETRY_MS = 100;   // Was 50
+  const TRIGGER_READ_MAX_ATTEMPTS = 5; // Was 3
+  ```
+- **Resolution**: Not a bug - working as designed
+
+---
+
+## Auto-Submit Failure (Jan 29, 2026)
+
+### [Investigator] - Auto-submit intermittently fails (Enter ignored / false delivery)
+**Owner**: Implementer A (terminal.js) + Implementer B (IPC/input)  
+**Priority**: CRITICAL - agents require manual Enter  
+**Status**: OPEN  
+**Symptom**: Message text appears at prompt but is not submitted; user must press Enter. Delivery metrics show 100% because we count injection, not actual submission.  
+**Likely causes (code review)**:
+1) **Idle ≠ ready**: `processQueue()` only waits for output silence. Claude can be silent but still busy (“thinking”), so Enter is ignored. `verifyAndRetryEnter()` treats any later output as success, even if it was unrelated continuation → false delivered.  
+2) **Focus/Enter routing**: `sendTrustedEnter` depends on focus. If focus fails/drifts between `pty.write` and Enter, the key event goes to the wrong element; input stays at prompt.  
+3) **Synthetic Enter blocked?** `attachCustomKeyEventHandler` blocks untrusted Enter unless bypassed. If `sendInputEvent` produces `isTrusted=false` in some conditions, Enter could be dropped.  
+**Affected files**:
+- `ui/modules/terminal.js` (doSendToPane, verifyAndRetryEnter, idle gating, focusWithRetry, key handler)  
+- `ui/modules/ipc/pty-handlers.js` (send-trusted-enter uses sendInputEvent with keyCode 'Return')  
+**Suggested investigation / fix**:
+- Add logging around sendTrustedEnter: activeElement tag/class, focus success, `event.isTrusted` for Enter in `attachCustomKeyEventHandler`.
+- Replace "output activity = success" with **prompt‑ready detection** before marking delivered (detect prompt marker or ready state).
+- Consider stricter gating: require prompt‑ready, or delay until prompt appears rather than idle silence.
+
+**[Reviewer Validation - Session 33]:**
+Code review confirms all 3 concerns:
+1. `verifyAndRetryEnter` (terminal.js:322-384): Uses `lastOutputTime` comparison. Any output after Enter = success. Could be continuation output, not response to submitted message.
+2. `doSendToPane` (terminal.js:828-831): After `focusWithRetry` fails, code proceeds with "sending Enter anyway" - Enter goes to wrong element.
+3. `attachCustomKeyEventHandler` (terminal.js:543-550): Blocks `!event.isTrusted` Enter unless `_hivemindBypass` set. Bypass is only set for ESC events (lines 1152-1163), NOT for Enter from `sendInputEvent`. Question: does Electron's `webContents.sendInputEvent` produce trusted events? If not, all programmatic Enter would be blocked.
+
+**[Investigator update - Jan 30, 2026]:**
+- Confirmed `_hivemindBypass` is only set for ESC in `terminal.js` (aggressiveNudge) and is never set around `sendTrustedEnter`. Both init and reattach attachCustomKeyEventHandler blocks will reject untrusted Enter unless bypassed.
+- `send-trusted-enter` (ui/modules/ipc/pty-handlers.js) only emits keyDown/char/keyUp via `webContents.sendInputEvent` with no bypass metadata; if those events surface as `isTrusted=false` to xterm, Enter is always blocked.
+- Suggested quick runtime check: trigger a programmatic send and look for `Blocked synthetic Enter (isTrusted=false)` vs `Allowing programmatic Enter (hivemind bypass)` in logs to confirm trust behavior.
+- Docs: `Terminal.input(data, wasUserInput?)` emits `onData` as if typed input; `wasUserInput` only affects UI-side behavior (focus/selection). API introduced in xterm.js 5.4.0. If onData routes to PTY, `terminal.input('\\r')` should act like Enter without focus, but still needs runtime validation on Windows/Claude ink.
+
+**[Investigator update - Jan 30, 2026 - V3 sanity check]:**
+- `@xterm/xterm` is pinned to 6.0.0 in `ui/package.json` and `package-lock.json`, so `Terminal.input()` should exist at runtime (feature-detect still recommended).
+- `sendEnterToPane()` now prefers `terminal.input('\\r', false)`; note this still routes through xterm `onData` → `pty.write` (similar to prior PTY newline path). If Claude ink ignores PTY `\\r` on Windows, input() may still fail; needs runtime validation.
+- Prompt-ready detection (`isPromptReady`) only matches line endings `> $ # :` and may miss Claude prompt if it uses `❯` or other glyphs; could also false-positive on output lines ending with `:` or `#`. Current logic treats output+idle as success even without prompt, so prompt detection mostly affects logging, not gating.
+- Risk: if Claude accepts input but delays output >100ms, `verifyAndRetryEnter()` sees no output, sees idle, and may resend Enter quickly (possible double-submit). Consider increasing initial verify delay or requiring a longer idle wait before retry.
+
+**[Investigator update - Jan 30, 2026 - Terminal.input fallback risk]:**
+- `sendEnterToPane()` always uses `Terminal.input()` when available; it only falls back to `sendTrustedEnter` if `Terminal.input()` throws.
+- If `Terminal.input('\\r')` is a no-op for Claude submission (as with direct PTY `\\r`), `verifyAndRetryEnter()` will retry Enter using the same method repeatedly and never reach the trusted Enter path.
+- Suggested fix: after first retry with no output, switch to `sendTrustedEnter` (or add a per-pane flag to disable `Terminal.input` for Claude panes). Alternatively, detect failure and temporarily flip a `preferTrustedEnter` flag for that pane.
+
+**[Investigator update - Jan 30, 2026 - log evidence]:**
+- `workspace/logs/app.log` shows repeated `verifyAndRetryEnter` retries with **no output activity** and eventual failure for pane 6:
+  - `04:25:53.815` Enter sent via `Terminal.input()`
+  - `04:25:54.016` "No output activity, will retry Enter (5 left)"
+  - Multiple retries (4..1 left), all via `Terminal.input()`
+  - `04:25:56.249` "Enter verification failed after retries" + `StuckSweeper` marked
+- This matches user observation of batching (message may sit until next injection/enter). Indicates `Terminal.input()` path can still fail in practice.
+
+**[Investigator update - Jan 30, 2026 - post-fix log evidence]:**
+- `workspace/logs/app.log` (04:49:25-04:49:30) shows identity injections for panes 1/3/6 using `sendTrustedEnter` (bypass enabled) still hit max retries with no output activity, then `StuckSweeper` marked and cleared within ~1s once output started.
+- This suggests `verifyAndRetryEnter()`'s short initial wait and retry loop can misclassify "slow start" as failure and spam Enter, even when `sendTrustedEnter` is working.
+- Possible tweaks to consider: skip verification for identity injection, extend initial verify delay/retry window for first prompt after spawn, or treat "pane just spawned" as a special case.
+
+**[Investigator update - Jan 30, 2026 - input lock / Enter bypass suspicion]:**
+- `workspace/logs/app.log` shows **no** `Allowing programmatic Enter (hivemind bypass)` or `Blocked synthetic Enter` lines, even when `sendTrustedEnter` is invoked repeatedly.
+- If Electron `sendInputEvent` marks Enter as `isTrusted=true` (or `event.key` is `'Return'`), the current bypass check (`event.key === 'Enter' && !event.isTrusted`) never runs, and the per‑pane input lock blocks the key.
+- This matches user symptom: text appears in Claude prompt but never submits when panes are locked by default.
+- Suggested verification: log `event.key` + `event.isTrusted` for Enter in `attachCustomKeyEventHandler` to confirm; if true/Return, allow `terminal._hivemindBypass` to bypass lock regardless of `isTrusted`, and/or treat `'Return'` as Enter.
+
+**[Investigator update - Jan 30, 2026 - delivery timeout noise]:**
+- `Trigger delivery failed for pane X: timeout` appears ~1s after injection; `INJECTION_LOCK_TIMEOUT_MS` is 1000ms, but `verifyAndRetryEnter` can exceed this.
+- This can mark deliveries failed even when Enter eventually succeeds; consider raising timeout or finishing earlier for Claude path to avoid false "delivery failed".
+
+**[Implementer A update - Jan 30, 2026]:**
+- Fix applied: key handler now checks `_hivemindBypass` **before** `isTrusted` gate and accepts `key='Return'` + `keyCode=13`. Added debug logs for `event.key`/`isTrusted`.  
+- Status: **Pending restart verification** (Claude panes should accept programmatic Enter even when locked).
+
+**[Mitigation - Task #6]:** Stuck message sweeper approved (Session 33). 30s periodic retry for panes marked stuck after verifyAndRetryEnter fails. Addresses symptom, not root cause.
+
+**[Architect update - Jan 30, 2026 Session 38 - ROOT CAUSE FIX ASSIGNED]:**
+- **Confirmed root cause**: Investigator's analysis at line 154-158 is correct. The bypass check condition `event.key === 'Enter' && !event.isTrusted` is TOO NARROW:
+  - Electron's `sendInputEvent` likely produces `event.key === 'Return'` (not 'Enter')
+  - OR it produces `event.isTrusted === true`
+  - Either way, the condition is FALSE, bypass check never runs, input lock blocks the key
+- **Fix assigned to Implementer A**: Change bypass check to:
+  - Check BOTH 'Enter' AND 'Return' keys
+  - Allow bypass regardless of isTrusted when `terminal._hivemindBypass` is set
+- **Locations**: terminal.js lines ~808-815 and ~924-931 (both attachCustomKeyEventHandler blocks)
+
+**[Architect verification - Jan 30, 2026]:**
+- ✅ Fix implemented correctly by Implementer A
+- ✅ `isEnterKey` covers 'Enter', 'Return', and keyCode 13
+- ✅ Bypass check runs FIRST before isTrusted check
+- ✅ Both attachCustomKeyEventHandler blocks match
+- ✅ Debug logging added for key/isTrusted
+
+**[Reviewer approval - Jan 30, 2026]:**
+- ✅ APPROVED - Review: `session38-input-lock-bypass-review.md`
+- Both handler blocks verified (initTerminal 806-821, reattachTerminal 929-944)
+- **Status**: ✅ RUNTIME VERIFIED (Session 39) - Auto-submit working
+
+**[Reviewer update - Jan 30, 2026 Session 39 - TIMEOUT NOISE PERSISTS]:**
+- Input lock bypass VERIFIED working: logs show `Allowing programmatic Enter (hivemind bypass, key=Enter, isTrusted=true)`
+- BUT `Trigger delivery failed for pane X: timeout` STILL appears
+- **ROOT CAUSE**: safetyTimer at terminal.js:1064-1066 fires at 1000ms BEFORE verifyAndRetryEnter completes (~2-3s)
+- The previous fix (lines 1191-1195) only catches `finishWithClear` returns, not safetyTimer
+- **FIX NEEDED (Implementer A)**:
+  - Option 1: Increase INJECTION_LOCK_TIMEOUT_MS from 1000ms to 5000ms
+  - Option 2: Clear safetyTimer IMMEDIATELY after Enter sent (before verification loop)
+  - Option 3: Make timeout return `{success: true, verified: false}` to suppress error log
+- **Priority**: LOW (cosmetic) - messages ARE delivered, just logs false failures
+- **Status**: OPEN - Assigned to Implementer A
+
+## Performance Tab Non-Functional (Jan 29, 2026)
+
+### [Reviewer] - IPC contract mismatch breaks Performance tab
+**Owner**: Implementer B (IPC aliases)
+**Priority**: MEDIUM - tab displays no data
+**Status**: ✅ RESOLVED - Task #4 IPC Alias Implementation (Reviewer approved Session 33)
+
+**Triple Mismatch Identified:**
+1. **Channel names:** Frontend calls `get-performance-stats` / `reset-performance-stats`, backend defines `get-performance` / `reset-performance`
+2. **Response field:** Frontend expects `result.stats`, backend returns `result.agents`
+3. **Missing field:** Frontend expects `successes` field, backend only has `completions` and `errors`
+
+**Files:**
+- Frontend: `ui/modules/tabs.js:996-1009`
+- Backend: `ui/modules/ipc/performance-tracking-handlers.js:86-110`
+
+**Recommended Fix (Backend Normalization):**
+1. Rename channels to `get-performance-stats` and `reset-performance-stats`
+2. Rename response field from `agents` to `stats`
+3. Add `successes` field (can equal `completions` if completion implies success)
+
+---
+
 ## PTY Injection Serialization Race (Jan 28, 2026)
 
 ### [Investigator] - Claude PTY injections collide when triggers fire together
@@ -39,7 +286,7 @@ Write questions here. Lead will resolve and respond.
 ### [Investigator] - lead.txt dropped due to duplicate sequence after agent restart
 **Owner**: Implementer B (triggers/message sequencing) + Architect (workflow decision)
 **Priority**: MEDIUM - blocks Reviewer → Architect direct messages
-**Status**: PENDING VERIFICATION (fix present in code)
+**Status**: ✅ CODE VERIFIED (Reviewer, Jan 29, 2026) - Runtime verification on next agent restart
 **Root cause**:
 - `ui/modules/triggers.js` deduplicates messages by `(sender, seq, recipient)` using `message-state.json`.
 - When an agent restarts, its sequence counter resets to `#1`, but the main app does **not** reset `lastSeen` for that sender unless the **entire app restarts**.
@@ -544,6 +791,17 @@ Line 238 checks BOTH: `if (currentSettings.sdkMode || sdkMode)`
 
 **Risk**: Settings says SDK off, but local variable says on â†’ inconsistent behavior
 
+**Investigator update (Jan 29, 2026)**:
+- Confirmed 4 separate SDK mode flags can drift:
+  - `ui/renderer.js` local `sdkMode` (line ~17), toggled in `markTerminalsReady` (line ~68) and `window.hivemind.sdk.enableMode/disableMode` (lines ~144-157).
+  - `ui/modules/settings.js` `currentSettings.sdkMode` (load/toggle).
+  - `ui/modules/daemon-handlers.js` `sdkModeEnabled` (line ~31, `setSDKMode` line ~88).
+  - `ui/modules/terminal.js` `sdkModeActive` (set via `setSDKMode`, line ~895).
+- `markSettingsLoaded()` sets `daemonHandlers.setSDKMode(true)` and `terminal.setSDKMode(true)` when settings say SDK mode is on (renderer.js lines ~52-55) but does **not** set local `sdkMode`, so `window.hivemind.sdk.isActive()` can still report false.
+- `window.hivemind.sdk.enableMode()` flips local `sdkMode` and initializes SDK UI (renderer.js lines ~144-153) but does **not** update settings or call `daemonHandlers.setSDKMode` / `terminal.setSDKMode`, so PTY guards may remain enabled.
+- Mixed checks: `sendBroadcast()` uses `currentSettings.sdkMode || sdkMode` (renderer.js line ~507), but other call sites check only `sdkMode`, so behavior can diverge depending on entry point.
+**Suggested fix approach**: collapse to a single source of truth (settings + main-process event). Options: (1) remove local `sdkMode` and always read `settings.getSettings().sdkMode` plus daemon-reported `sdkMode`; (2) centralize a `setSDKMode(enabled)` helper in renderer that updates local, settings via IPC, and calls `daemonHandlers.setSDKMode` + `terminal.setSDKMode` in one place (used by `markSettingsLoaded`, `sdk-session-start`, and UI toggles).
+
 ---
 
 ### [Worker A] - SDK V2 AUDIT: window.hivemind.settings Undefined
@@ -911,3 +1169,102 @@ This keeps Claude Code as the engine. We're not replacing it - we're wrapping it
 - `ui/renderer.js:186-223` `applySDKPaneLayout()` no longer hides panes 5/6; it iterates `Object.keys(SDK_PANE_LABELS)` and sets `pane.style.display = ''`.
 **Impact**: If runtime matches code, SDK mode should show panes 5/6 normally.
 **Next**: Verify in a fresh app restart with SDK mode enabled; if panes 5/6 still missing, re-open this blocker.
+
+---
+
+## Codex Exec Respawn Failure (Jan 29, 2026)
+
+### [Investigator] - Restart/unstick kills Codex exec terminal and never recreates it
+**Owner**: Implementer A (renderer/terminal.js) + Implementer B (daemon/client if needed)
+**Priority**: HIGH - pane cannot be respawned without full app restart
+**Status**: ✅ FIXED - Committed `3f93384` (Jan 29, 2026) - Runtime verification pending
+**Problem**:
+- `restartPane()` calls `window.hivemind.pty.kill(id)` then `spawnClaude(id)`.
+- For Codex exec panes, `spawnClaude()` only sends the identity prompt (via `sendToPane`) and does NOT call `pty.create`.
+- `pty.kill` removes the daemon terminal entry; subsequent `codex-exec` calls hit `runCodexExec()` and fail with "Terminal not found or not alive".
+- Same risk applies to unstick escalation step 3 (restart) and any per-pane restart flow.
+
+**Evidence**:
+- `ui/modules/terminal.js` `restartPane()` kills then spawns; no recreate call.
+- `ui/modules/terminal.js` codex exec path in `spawnClaude()` returns early after sending identity.
+- `ui/terminal-daemon.js` `killTerminal()` deletes terminal from map.
+- `ui/modules/codex-exec.js` `runCodexExec()` returns `Terminal not found or not alive` when the daemon map entry is missing.
+
+**Suggested fix approach**:
+1. In `restartPane()`, call `window.hivemind.pty.create(id, cwd)` before `spawnClaude(id)` (for all panes or at least codex exec).
+2. Alternatively, add a `recreateTerminal()` helper that kills + creates + reattaches (mirror `freshStartAll` logic per pane).
+3. Optional: for codex exec, change kill path to only terminate `execProcess` and keep the virtual terminal alive.
+
+**Notes**:
+- Nudge/interrupt are no-ops for codex exec (daemon ignores PTY writes in codex-exec mode), so restart is the first effective action; currently it removes the terminal.
+- Explains Session 30 note: pane 4 died mid-session with no respawn until full restart.
+
+**Files**: `ui/modules/terminal.js`, `ui/terminal-daemon.js`, `ui/modules/codex-exec.js`
+
+## Runtime Verification Findings (Jan 30, 2026)
+
+### [Investigator] - Codex activity indicator not visible (header spinner)
+**Owner**: Implementer A (renderer/CSS)
+**Priority**: HIGH - user-visible regression in Session 45 verification
+**Status**: ✅ REVIEWER APPROVED (Jan 30, 2026) - Ready for restart verification
+**Symptom**: During Codex exec runs, header activity indicator (glyph spinner + status) does not appear. Output styling is confirmed working.
+
+**[Implementer A Fix - Jan 30, 2026]**
+Applied fix #1 from suggested approaches: `updateAgentStatus()` now checks for `activity-*` classes and skips status text/class override when codex activity indicator is active. This prevents `claude-state-changed` from clobbering the activity state.
+- File: `ui/modules/daemon-handlers.js` lines 982-1006
+- Logic: If `statusEl` has any `activity-*` class AND has spinner element, skip text/class update (only badge updates)
+
+**Most likely causes (code trace)**:
+1) **Status clobbering by claude-state-changed**: `ui/modules/daemon-handlers.js:updateAgentStatus()` uses `statusEl.textContent = ...` and removes classes; this wipes out the spinner element and any `activity-*` classes set by the codex-activity handler. If `claude-state-changed` fires after a codex activity update, it overrides the indicator and leaves only "Agent running" (no spinner).  
+   - Affected: `ui/modules/daemon-handlers.js:970-995` (updateAgentStatus), `ui/renderer.js:1395-1434` (codex-activity handler).
+2) **Spinner glyph only set by codex-activity handler**: The `<span class="pane-spinner">` element in HTML is empty by default. If no codex-activity event is received (or it is short-lived and then overwritten), the spinner has no glyph and is invisible even when `.pane-status.working` is applied.  
+   - Affected: `ui/renderer.js:1350-1434` (spinner glyph cycle), `ui/styles/layout.css:333-347` (spinner display).
+3) **Header overcrowding in side panes**: The right header cluster has many icons; `.pane-status` can shrink to near-zero width on narrow panes, effectively hiding the indicator. (No flex constraints/min-width set.)  
+   - Affected: `ui/styles/layout.css` `.pane-header-right`, `.pane-status`.
+
+**Suggested fix approaches**:
+- Preserve spinner & activity classes when updating agent running state (e.g., only update badges in `updateAgentStatus`, or skip status updates if `statusEl` has `activity-*` class / `data-activity="true"`).
+- Set a default glyph via CSS (`.pane-spinner::before { content: '◐'; }`) or initialize glyph text in HTML so the spinner is visible even without codex-activity events.
+- Ensure `.pane-status` stays visible in side panes (e.g., `flex: 1 1 auto; min-width: 60px;` or move indicator to a dedicated inline element).
+
+**Note**: Codex activity events are emitted in `ui/modules/codex-exec.js` via `broadcast({ event: 'codex-activity', ... })` and forwarded by `ui/main.js` to renderer. If UI still doesn't show, confirm event arrival (add temporary log in renderer handler).
+
+---
+
+## Sprint Code Review Findings (Jan 30, 2026)
+
+### [Reviewer] - CRITICAL BUG: Task #18 review-staged handler broken
+**Owner**: Implementer A (code-review-handlers.js)
+**Priority**: HIGH - IPC channel completely non-functional
+**Status**: NEW - Needs fix
+**File**: `ui/modules/ipc/code-review-handlers.js:159-161`
+
+**Code:**
+```javascript
+ipcMain.handle('review-staged', async (event, payload = {}) => {
+  return ipcMain.handle('review-diff', event, { ...payload, mode: 'staged' });
+});
+```
+
+**Problem:** `ipcMain.handle()` registers a handler and returns the handler function itself. It does NOT invoke the handler. This code is calling the registration function, not executing the review logic.
+
+**Result:** The `review-staged` IPC channel returns the handler function object instead of review results. The channel is **completely broken**.
+
+**Fix Required:** Extract shared logic into a helper function that both handlers call, or duplicate the review-diff logic for staged mode.
+
+**Example Fix:**
+```javascript
+// Option 1: Helper function
+async function performReview(projectPath, mode) {
+  const cwd = projectPath || path.join(WORKSPACE_PATH, '..');
+  // ... existing review-diff logic ...
+}
+
+ipcMain.handle('review-diff', async (event, payload = {}) => {
+  return performReview(payload.projectPath, payload.mode || 'all');
+});
+
+ipcMain.handle('review-staged', async (event, payload = {}) => {
+  return performReview(payload.projectPath, 'staged');
+});
+```
