@@ -102,6 +102,10 @@ Before using any unfamiliar API, library method, or platform-specific behavior:
 3. **How:** Use WebSearch tool. Cite the source in your trigger message or status update.
 4. **Anti-pattern:** Session 18 Track 2 — team nearly shipped pty.write-only Enter based on assumption. Web search confirmed KeyboardEvent dispatch cannot trigger default actions and surfaced xterm terminal.input() as a real alternative.
 
+**References Library:** `workspace/references.md`
+- **Before searching:** Check if docs already exist in references.md
+- **After finding useful docs:** Add the URL to references.md for future sessions
+
 ## Rules
 
 1. Only work on tasks assigned to you

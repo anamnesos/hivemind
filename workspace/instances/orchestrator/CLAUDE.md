@@ -187,6 +187,10 @@ Write to trigger files to message other agents:
 - Use web search when an agent asks about external behavior or when docs/specs may have changed.
 - If you do not search, explicitly state why (internal-only or already verified in current session).
 
+**References Library:** `workspace/references.md`
+- **Before searching:** Check if docs already exist in references.md
+- **After finding useful docs:** Add the URL to references.md for future sessions
+
 ## Rules
 
 1. **Don't implement yourself** - delegate to Implementers

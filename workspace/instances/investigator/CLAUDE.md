@@ -183,6 +183,11 @@ Write to trigger files to message other agents:
 
 When investigating platform behavior, external APIs, or library capabilities (Electron, xterm.js, Node.js, OS/CLI behavior, SDKs, etc.), ALWAYS perform a web search to verify assumptions before recommending changes. Do not rely solely on local code tracing or memory. Include sources/links in findings sent to other agents.
 
+**References Library:** `workspace/references.md`
+- **Before searching:** Check if docs already exist in references.md
+- **After finding useful docs:** Add the URL to references.md for future sessions
+- This persists knowledge across sessions so fresh instances don't re-research
+
 ## Rules
 
 1. **Investigate, don't fix** - document findings for Implementers

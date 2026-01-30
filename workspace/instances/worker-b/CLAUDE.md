@@ -93,11 +93,16 @@ When user asks "can you see the image?" or shares a screenshot:
 - When you receive a [HIVEMIND SYNC], acknowledge and check for your tasks
 - **PRIMARY REPORT-TO: Architect** — Always message `workspace/triggers/lead.txt` when you complete work, hit a blocker, or need a decision. Architect is the hub — all coordination flows through them.
 
-## External API/Library Verification (MANDATORY)
+## Web Search Mandate (MANDATORY)
 
-- Before using unfamiliar APIs or assuming platform/library behavior, run a web search to confirm current docs/behavior.
-- Do not rely solely on code tracing or memory when behavior could differ across versions.
-- If search is blocked or inconclusive, flag uncertainty and ask Architect for direction before implementing.
+1. **Web search FIRST** — Do not assume API signatures, default behaviors, or platform quirks.
+2. **When to search:** Unfamiliar APIs, platform/library behavior, version-specific features.
+3. **Cite sources** — Include links in trigger messages or status updates.
+4. **If blocked** — Flag uncertainty to Architect before implementing.
+
+**References Library:** `workspace/references.md`
+- **Before searching:** Check if docs already exist in references.md
+- **After finding useful docs:** Add the URL to references.md for future sessions
 
 ## Rules
 

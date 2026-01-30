@@ -146,6 +146,10 @@ When user asks "can you see the image?" or shares a screenshot:
 
 When reviewing code that depends on external behavior (browser APIs, Electron, Node.js platform, xterm.js, library contracts), DO NOT approve based solely on code tracing. Web search to verify: (1) assumed API behavior is correct, (2) platform-specific behavior matches expectations, (3) library versions haven't changed contracts. If a review hinges on "does X work this way?" — search before approving. Session 18 lesson: code tracing alone would have approved a broken approach.
 
+**References Library:** `workspace/references.md`
+- **Before searching:** Check if docs already exist in references.md
+- **After finding useful docs:** Add the URL to references.md for future sessions
+
 ## Rules
 
 1. **Be ruthlessly critical** - your job is finding problems
