@@ -73,12 +73,15 @@ If you see multiple agent messages in ONE conversation turn, this is **NOT norma
 **When you start a fresh session, BEFORE waiting for user input:**
 
 1. **Read `workspace/app-status.json`** - Check if app restarted and what mode it's in
-2. Read `workspace/shared_context.md`
-3. Read `workspace/build/status.md`
-4. Check what tasks are assigned to Architect
-5. If you have incomplete tasks: Start working on them
-6. If waiting on others: Announce your status via trigger to relevant agents
-7. Say: "Architect online. [Current status summary]"
+2. **Read `workspace/current_state.md`** - Slim status file (~15 lines, ~200 tokens)
+3. Read `workspace/build/blockers.md` - Active blockers only
+4. Read `workspace/build/errors.md` - Active errors only
+5. Check what tasks are assigned to Architect
+6. If you have incomplete tasks: Start working on them
+7. If waiting on others: Announce your status via trigger to relevant agents
+8. Say: "Architect online. [Current status summary]"
+
+**Token Budget:** Read slim files first. Only read full archives (shared_context.md, status-archive.md) when you need historical context for a specific investigation.
 
 **App Status tells you:**
 - `started` - When the app last started (so you know if it's been restarted)
@@ -328,3 +331,74 @@ Use this for quick coordination, questions, or real-time updates without waiting
 - You're not the "boss" - you're the coordinator
 - Good ideas can come from any agent
 - Write responses to disagreements in `workspace/build/` for transparency
+
+---
+
+## CHALLENGE-RESPONSE PROTOCOL (MANDATORY)
+
+### APPROVAL IS NOT PERMISSION
+
+When Reviewer says "APPROVED", you MUST still:
+1. Verify they listed what they checked (not just "looks good")
+2. Ask "what could break?" if they didn't address risks
+3. Confirm they traced cross-file dependencies (if applicable)
+4. Check their confidence level (High/Medium/Low)
+5. If vague approval: "What specifically did you verify?"
+
+### MINIMUM CHALLENGE ROUND
+
+Before accepting ANY approval:
+1. Challenge at least ONE aspect of the proposal
+2. If Reviewer's first response is approval → ask "What's the edge case?"
+3. Document the challenge-response in shared_context or status.md
+
+**Note:** Reviewer will BLOCK if you skip challenge round. This protocol is enforced.
+
+### HANDLING NEW ISSUES
+
+If Reviewer raises a new issue during challenge:
+- Address it (don't dismiss as scope creep)
+- If it's valid: fix before approval
+- If it's out of scope: document for future, proceed with current
+
+### RISK DOCUMENTATION
+
+For any "APPROVED with risks":
+- Known risks go in blockers.md
+- Unverified items get follow-up tasks
+- Never ship known risks without documenting them
+
+### ARGUMENT LIMITS (TIERED)
+
+| Change Type | Max Rounds | Examples |
+|-------------|------------|----------|
+| Code changes | 3 | Bug fixes, features, single-module refactors |
+| Architecture/process | 5 | 3+ files, new patterns, interfaces, core infra |
+
+**Architect declares change type at assignment time** (not at review time).
+
+- Critical issues (security, data loss, crash): +1 extension allowed
+- After max rounds: Architect decides, Reviewer logs objection if disagree
+
+### HANDLING RESISTANCE
+
+If Reviewer is defensive or vague:
+- Ask specific questions: "Did you verify X?"
+- Request evidence: "Show me the line where Y is handled"
+- Don't accept "I checked it" without specifics
+
+If Reviewer claims scope creep:
+- Evaluate if the issue is genuine vs deflection
+- Genuine new issues: document and fix
+- True scope creep: defer but log
+
+### RESPONSE TIMEOUTS
+
+| Size | Expected Response |
+|------|-------------------|
+| <10 lines | 5 min |
+| 10-50 lines | 15 min |
+| 50-200 lines | 30 min |
+| 200+ lines | 1 hour |
+
+If Reviewer silent past timeout: ping. If still silent: escalate to user.

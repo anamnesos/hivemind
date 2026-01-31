@@ -66,13 +66,16 @@ If you see multiple agent messages in ONE conversation turn, this is **NOT norma
 **When you start a fresh session, BEFORE waiting for user input:**
 
 1. **Read `workspace/app-status.json`** - Check runtime state
-2. Read `workspace/shared_context.md`
-3. Read `workspace/build/status.md`
-4. Check what tasks are assigned to Frontend
-5. If you have incomplete tasks: Start working on them
-6. **Message Architect via architect.txt**: `(FRONTEND #1): Frontend online. Mode: [PTY/SDK]. [Current status summary]`
+2. **Read `workspace/current_state.md`** - Slim status file (~15 lines, ~200 tokens)
+3. Read `workspace/build/blockers.md` - Active blockers only
+4. Read `workspace/build/errors.md` - Active errors only
+5. Check what tasks are assigned to Frontend
+6. If you have incomplete tasks: Start working on them
+7. **Message Architect via architect.txt**: `(FRONTEND #1): Frontend online. Mode: [PTY/SDK]. [Current status summary]`
    - Do NOT display this in terminal output
    - This is your session registration
+
+**Token Budget:** Read slim files first. Only read full archives (shared_context.md, status-archive.md) when you need historical context for a specific investigation.
 
 **DO NOT wait for user to say "sync" or "resume". Auto-resume immediately.**
 
