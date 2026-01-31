@@ -222,11 +222,12 @@ This prevents broken code from wasting user's time with restarts.
 
 Before EVER telling the user to restart, you MUST:
 
-1. **Update `workspace/shared_context.md`** — What was fixed, what to verify, current state
-2. **Update `workspace/build/status.md`** — Mark completed tasks, add new entries
-3. **Update any other persistence files** as needed (blockers.md, etc.)
-4. **Run the RESTART HANDOFF CHECKLIST below**
-5. ONLY THEN tell the user "ready to restart"
+1. **Update `workspace/session-handoff.json`** — Structured handoff (tasks, team status, blockers)
+2. **Update `workspace/current_state.md`** — Human-readable summary
+3. **Update `workspace/build/status.md`** — Mark completed tasks
+4. **Update any other persistence files** as needed (blockers.md, etc.)
+5. **Run the RESTART HANDOFF CHECKLIST below**
+6. ONLY THEN tell the user "ready to restart"
 
 **Why:** Fresh instances read shared_context.md on auto-start. If you don't update it before restart, the new you has no idea what happened and the user has to manually re-explain everything. This has happened repeatedly and wastes the user's time.
 

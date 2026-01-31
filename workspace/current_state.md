@@ -9,7 +9,7 @@ Simplification & noise reduction (based on team feedback)
 | Task | Owner | Status |
 |------|-------|--------|
 | IPC handler audit | Analyst | In progress |
-| Context budget system | Architect | Pending review |
+| Context budget system | Architect | ✅ COMMITTED `cbca123` |
 
 ## Completed This Session
 - Create current_state.md (Architect)
@@ -19,10 +19,14 @@ Simplification & noise reduction (based on team feedback)
 - Activity indicator fix (Frontend) - COMMITTED
 - Dead code cleanup (Backend) - COMMITTED
 - Reviews: all approved (Reviewer)
-- **Context budget system** (Architect) - Pending Reviewer approval
+- **Context budget system** (Architect) - `cbca123`
   - Archived status.md (5689→60 lines), blockers.md (1344→35 lines), errors.md (519→25 lines)
   - Updated CLAUDE.md, Architect, Frontend, Reviewer instance files
   - New reading order: slim files first, archives only when needed
+- **Runtime verifications** (User) - All 3 verified ✅
+  - Copy/Paste UX: Works
+  - Codex Resume Context: Works
+  - Codex Auto-Restart: Works
 
 ## Blockers
 None active.
@@ -33,9 +37,10 @@ None active.
 | ~~Context budget system~~ | Architect | ✅ Done - pending review |
 | Smart parallelism | TBD | Auto-batch independent tasks, reduce coordination overhead |
 | PTY injection stability | Backend | Still brittle, especially Enter key timing |
-| Structured handoff format | TBD | JSON/YAML instead of prose for session handoffs |
+| ~~Structured handoff format~~ | Architect | 🔄 In progress - session-handoff.json created |
 
 ## Recent Commits
+- `cbca123` - Session 52: Context budget system (99% token reduction)
 - `acf334c` - Session 52: Remove dead conflict queue code
 - `8cbea97` - Session 52: Add slim status file and archive
 - `b0d07cf` - Session 52: Activity indicators for Claude panes
