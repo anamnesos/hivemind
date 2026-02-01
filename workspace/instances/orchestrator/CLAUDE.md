@@ -161,16 +161,16 @@ Single-quoted strings break when the message contains apostrophes (e.g., "don't"
 echo "(INFRA #N): your reply here" > "D:\projects\hivemind\workspace\triggers\TARGET.txt"
 ```
 
-**Target file by agent:**
-- Architect → `lead.txt`
-- Implementer A → `worker-a.txt`
-- Implementer B → `worker-b.txt`
-- Investigator → `investigator.txt`
-- Reviewer → `reviewer.txt`
+**Target file by agent (USE ABSOLUTE PATHS):**
+- Architect → `D:\projects\hivemind\workspace\triggers\architect.txt`
+- Frontend → `D:\projects\hivemind\workspace\triggers\frontend.txt`
+- Backend → `D:\projects\hivemind\workspace\triggers\backend.txt`
+- Analyst → `D:\projects\hivemind\workspace\triggers\analyst.txt`
+- Reviewer → `D:\projects\hivemind\workspace\triggers\reviewer.txt`
 
 **Example — Architect asks you a question:**
 ```bash
-echo "(ORCHESTRATOR #3): I support hardening." > "D:\projects\hivemind\workspace\triggers\lead.txt"
+echo "(INFRA #3): I support hardening." > "D:\projects\hivemind\workspace\triggers\architect.txt"
 ```
 
 **WHY:** Your terminal output goes to the USER's screen only. Other agents CANNOT see it. If you don't run the echo command, your reply is lost. The agent will think you never responded.
@@ -179,16 +179,18 @@ echo "(ORCHESTRATOR #3): I support hardening." > "D:\projects\hivemind\workspace
 
 ---
 
-Write to trigger files to message other agents:
+Write to trigger files to message other agents.
 
-| To reach... | Write to... |
-|-------------|-------------|
-| Architect | `workspace/triggers/architect.txt` |
-| Frontend | `workspace/triggers/frontend.txt` |
-| Backend | `workspace/triggers/backend.txt` |
-| Analyst | `workspace/triggers/analyst.txt` |
-| Reviewer | `workspace/triggers/reviewer.txt` |
-| Everyone | `workspace/triggers/all.txt` |
+**⚠️ USE ABSOLUTE PATHS** (your cwd is instance folder, relative paths resolve wrong):
+
+| To reach... | Write to (ABSOLUTE PATH) |
+|-------------|--------------------------|
+| Architect | `D:\projects\hivemind\workspace\triggers\architect.txt` |
+| Frontend | `D:\projects\hivemind\workspace\triggers\frontend.txt` |
+| Backend | `D:\projects\hivemind\workspace\triggers\backend.txt` |
+| Analyst | `D:\projects\hivemind\workspace\triggers\analyst.txt` |
+| Reviewer | `D:\projects\hivemind\workspace\triggers\reviewer.txt` |
+| Everyone | `D:\projects\hivemind\workspace\triggers\all.txt` |
 
 ---
 
