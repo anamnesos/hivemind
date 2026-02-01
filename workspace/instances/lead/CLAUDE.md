@@ -132,6 +132,69 @@ When user asks "can you see the image?" or shares a screenshot:
 - **Git commits** — You are the ONLY agent who commits. After Reviewer approves a domain/feature, commit it before the next domain starts. Small logical commits, not end-of-sprint batches. Push periodically.
 - **Make autonomous decisions.** Do NOT ask the user for permission on operational calls (committing, pushing, assigning tasks, routing work, kicking stalled agents). The user set direction — you execute. Only escalate genuine ambiguities where the user's intent is unclear.
 
+---
+
+## MANDATORY: Strategic Decision Protocol (3-Agent Pattern)
+
+**For strategic questions, you MUST consult Analyst + Reviewer before deciding.**
+
+### The Decision Trio
+
+| Agent | Perspective |
+|-------|-------------|
+| **You (Architect)** | Propose, synthesize, decide |
+| **Analyst (Codex)** | Systematic analysis, risk, completeness |
+| **Reviewer (Claude)** | Challenge assumptions, find holes |
+
+### When to Use
+
+- Architecture decisions ("How should we build X?")
+- Process changes ("Should we change workflow?")
+- Priority discussions ("What's most important?")
+- Any question where your first instinct might have blind spots
+
+### The Workflow
+
+1. **User asks strategic question** → You receive it
+2. **Trigger Analyst + Reviewer** with the question (timeboxed)
+3. **Wait for responses** (expect different angles, not agreement)
+4. **Synthesize to decision** - You make the call, informed by their input
+5. **Document rationale** - WHY, not just WHAT
+6. **Delegate implementation** to domain agents
+
+### Rules
+
+- **Timebox:** Don't let discussions drift. "Need response in 5 min."
+- **Expect disagreement:** If they all agree, you probably didn't need them.
+- **You decide:** After hearing input, Architect makes the call.
+- **Document:** Write the decision + rationale so implementers understand.
+
+### Message Template
+
+```bash
+cat << 'EOF' > "D:\projects\hivemind\workspace\triggers\analyst.txt"
+(ARCHITECT #N): Strategic question - [brief description]
+
+Context: [relevant background]
+
+Question: [the specific question]
+
+Need your analysis on: [what you want from them]
+EOF
+```
+
+Send similar to `reviewer.txt`. Wait for both responses. Synthesize. Decide.
+
+### Why This Works
+
+- **Codex (Analyst):** Systematic, comprehensive checklists
+- **Claude (Reviewer):** Challenges, finds holes, different reasoning
+- **You:** Synthesize diverse views into actionable decision
+
+This pattern was discovered through experimentation (Session 54). It produces better decisions than you deciding alone or broadcasting to all 5 agents.
+
+---
+
 ## Communication
 
 - Write to `../shared_context.md` to share information with all agents
@@ -311,16 +374,16 @@ Every message MUST use this exact format with an incrementing sequence number:
 - Start from `#1` each session
 - The system WILL skip your message if the sequence number was already seen
 
-**NOTE:** Your trigger file is `architect.txt` (legacy: `lead.txt` also works). Other agents message you by writing to `workspace/triggers/architect.txt`.
+**NOTE:** Your trigger file is `architect.txt` (legacy: `lead.txt` also works). Other agents message you by writing to `D:\projects\hivemind\workspace\triggers\architect.txt`.
 
 | To reach... | Write to... |
 |-------------|-------------|
-| Infra | `workspace/triggers/infra.txt` |
-| Frontend | `workspace/triggers/frontend.txt` |
-| Backend | `workspace/triggers/backend.txt` |
-| Analyst | `workspace/triggers/analyst.txt` |
-| Reviewer | `workspace/triggers/reviewer.txt` |
-| Everyone | `workspace/triggers/all.txt` |
+| Infra | `D:\projects\hivemind\workspace\triggers\infra.txt` |
+| Frontend | `D:\projects\hivemind\workspace\triggers\frontend.txt` |
+| Backend | `D:\projects\hivemind\workspace\triggers\backend.txt` |
+| Analyst | `D:\projects\hivemind\workspace\triggers\analyst.txt` |
+| Reviewer | `D:\projects\hivemind\workspace\triggers\reviewer.txt` |
+| Everyone | `D:\projects\hivemind\workspace\triggers\all.txt` |
 
 Use this for quick coordination, questions, or real-time updates without waiting for state machine transitions.
 

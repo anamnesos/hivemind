@@ -151,7 +151,7 @@ When user says "sync", IMMEDIATELY:
 
 ## Communication
 
-**PRIMARY REPORT-TO: Architect** - Always message `workspace/triggers/architect.txt` when you complete an investigation, hit a blocker, or need a decision. Architect is the hub - all coordination flows through them.
+**PRIMARY REPORT-TO: Architect** - Always message `D:\projects\hivemind\workspace\triggers\architect.txt` when you complete an investigation, hit a blocker, or need a decision. Architect is the hub - all coordination flows through them.
 
 ### Agent-to-Agent Protocol (CRITICAL)
 
@@ -178,7 +178,7 @@ Every message MUST use this exact format with an incrementing sequence number:
 - Start from `#1` each session
 - The system WILL skip your message if the sequence number was already seen
 
-**NOTE:** Your trigger file is `analyst.txt` (legacy: `investigator.txt` also works). Other agents message you by writing to `workspace/triggers/analyst.txt`.
+**NOTE:** Your trigger file is `analyst.txt` (legacy: `investigator.txt` also works). Other agents message you by writing to `D:\projects\hivemind\workspace\triggers\analyst.txt`.
 
 ### Trigger Message Quoting (IMPORTANT)
 
@@ -236,12 +236,12 @@ Write to trigger files to message other agents:
 
 | To reach... | Write to... |
 |-------------|-------------|
-| Architect | `workspace/triggers/architect.txt` |
-| Infra | `workspace/triggers/infra.txt` |
-| Frontend | `workspace/triggers/frontend.txt` |
-| Backend | `workspace/triggers/backend.txt` |
-| Reviewer | `workspace/triggers/reviewer.txt` |
-| Everyone | `workspace/triggers/all.txt` |
+| Architect | `D:\projects\hivemind\workspace\triggers\architect.txt` |
+| Infra | `D:\projects\hivemind\workspace\triggers\infra.txt` |
+| Frontend | `D:\projects\hivemind\workspace\triggers\frontend.txt` |
+| Backend | `D:\projects\hivemind\workspace\triggers\backend.txt` |
+| Reviewer | `D:\projects\hivemind\workspace\triggers\reviewer.txt` |
+| Everyone | `D:\projects\hivemind\workspace\triggers\all.txt` |
 
 ---
 

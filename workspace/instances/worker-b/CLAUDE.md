@@ -40,7 +40,7 @@ Your output appears in pane 4 of the Hivemind UI.
 3. Read `workspace/build/status.md`
 4. Check what tasks are assigned to Backend
 5. If you have incomplete tasks: Start working on them
-6. **ALWAYS message Architect on startup** via trigger (`workspace/triggers/architect.txt`):
+6. **ALWAYS message Architect on startup** via trigger (`D:\projects\hivemind\workspace\triggers\architect.txt`):
    ```bash
    echo "(BACKEND #1): # HIVEMIND SESSION: Backend online. [status summary]" > "D:\projects\hivemind\workspace\triggers\architect.txt"
    ```
@@ -91,7 +91,7 @@ When user asks "can you see the image?" or shares a screenshot:
 - Read `../shared_context.md` for task assignments
 - Update status when you complete work
 - When you receive a [HIVEMIND SYNC], acknowledge and check for your tasks
-- **PRIMARY REPORT-TO: Architect** - Always message `workspace/triggers/architect.txt` when you complete work, hit a blocker, or need a decision. Architect is the hub - all coordination flows through them.
+- **PRIMARY REPORT-TO: Architect** - Always message `D:\projects\hivemind\workspace\triggers\architect.txt` when you complete work, hit a blocker, or need a decision. Architect is the hub - all coordination flows through them.
 
 ### Agent-to-Agent Protocol (CRITICAL)
 
@@ -147,7 +147,7 @@ When you finish a task, you MUST do ALL of these:
    - What they need to do next
    - Any gotchas or context they need
 
-**NEVER "wait for Reviewer" without first messaging Reviewer.** Reviewer does not monitor your work - you must notify them. Write to `workspace/triggers/reviewer.txt` with your completion summary and review request.
+**NEVER "wait for Reviewer" without first messaging Reviewer.** Reviewer does not monitor your work - you must notify them. Write to `D:\projects\hivemind\workspace\triggers\reviewer.txt` with your completion summary and review request.
 
 This prevents the user from having to manually coordinate between agents.
 
@@ -169,16 +169,16 @@ Every message MUST use this exact format with an incrementing sequence number:
 - Start from `#1` each session
 - The system WILL skip your message if the sequence number was already seen
 
-**NOTE:** Your trigger file is `backend.txt` (legacy: `worker-b.txt` also works). Other agents message you by writing to `workspace/triggers/backend.txt`.
+**NOTE:** Your trigger file is `backend.txt` (legacy: `worker-b.txt` also works). Other agents message you by writing to `D:\projects\hivemind\workspace\triggers\backend.txt`.
 
 | To reach... | Write to... |
 |-------------|-------------|
-| Architect | `workspace/triggers/architect.txt` |
-| Infra | `workspace/triggers/infra.txt` |
-| Frontend | `workspace/triggers/frontend.txt` |
-| Analyst | `workspace/triggers/analyst.txt` |
-| Reviewer | `workspace/triggers/reviewer.txt` |
-| Everyone | `workspace/triggers/all.txt` |
+| Architect | `D:\projects\hivemind\workspace\triggers\architect.txt` |
+| Infra | `D:\projects\hivemind\workspace\triggers\infra.txt` |
+| Frontend | `D:\projects\hivemind\workspace\triggers\frontend.txt` |
+| Analyst | `D:\projects\hivemind\workspace\triggers\analyst.txt` |
+| Reviewer | `D:\projects\hivemind\workspace\triggers\reviewer.txt` |
+| Everyone | `D:\projects\hivemind\workspace\triggers\all.txt` |
 
 ### Trigger Message Quoting (IMPORTANT)
 

@@ -123,7 +123,7 @@ When user asks "can you see the image?" or shares a screenshot:
 - Read `../shared_context.md` for task assignments
 - Update status when you complete work
 - When you receive a [HIVEMIND SYNC], acknowledge and check for your tasks
-- **PRIMARY REPORT-TO: Architect** — Always message `workspace/triggers/architect.txt` when you complete work, hit a blocker, or need a decision. Architect is the hub — all coordination flows through them.
+- **PRIMARY REPORT-TO: Architect** — Always message `D:\projects\hivemind\workspace\triggers\architect.txt` when you complete work, hit a blocker, or need a decision. Architect is the hub — all coordination flows through them.
 
 ### Agent-to-Agent Protocol (CRITICAL)
 
@@ -185,7 +185,7 @@ When you finish a task, you MUST do ALL of these:
    - What they need to do next
    - Any gotchas or context they need
 
-**NEVER "wait for Reviewer" without first messaging Reviewer.** Reviewer does not monitor your work — you must notify them. Write to `workspace/triggers/reviewer.txt` with your completion summary and review request.
+**NEVER "wait for Reviewer" without first messaging Reviewer.** Reviewer does not monitor your work — you must notify them. Write to `D:\projects\hivemind\workspace\triggers\reviewer.txt` with your completion summary and review request.
 
 This prevents the user from having to manually coordinate between agents.
 
@@ -234,15 +234,15 @@ Every message MUST use this exact format with an incrementing sequence number:
 - Start from `#1` each session
 - The system WILL skip your message if the sequence number was already seen
 
-**NOTE:** Your trigger file is `frontend.txt` (legacy: `worker-a.txt` also works). Other agents message you by writing to `workspace/triggers/frontend.txt`.
+**NOTE:** Your trigger file is `frontend.txt` (legacy: `worker-a.txt` also works). Other agents message you by writing to `D:\projects\hivemind\workspace\triggers\frontend.txt`.
 
 | To reach... | Write to... |
 |-------------|-------------|
-| Architect | `workspace/triggers/architect.txt` |
-| Infra | `workspace/triggers/infra.txt` |
-| Backend | `workspace/triggers/backend.txt` |
-| Analyst | `workspace/triggers/analyst.txt` |
-| Reviewer | `workspace/triggers/reviewer.txt` |
-| Everyone | `workspace/triggers/all.txt` |
+| Architect | `D:\projects\hivemind\workspace\triggers\architect.txt` |
+| Infra | `D:\projects\hivemind\workspace\triggers\infra.txt` |
+| Backend | `D:\projects\hivemind\workspace\triggers\backend.txt` |
+| Analyst | `D:\projects\hivemind\workspace\triggers\analyst.txt` |
+| Reviewer | `D:\projects\hivemind\workspace\triggers\reviewer.txt` |
+| Everyone | `D:\projects\hivemind\workspace\triggers\all.txt` |
 
 Use this for quick coordination, questions, or real-time updates without waiting for state machine transitions.
