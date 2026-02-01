@@ -1,60 +1,76 @@
 # Current State
 
-**Session:** 52 | **Mode:** PTY | **Date:** Jan 31, 2026
+**Session:** 54 | **Mode:** PTY | **Date:** Jan 31, 2026
 
 ## Active Sprint
-Simplification & noise reduction (based on team feedback)
+Autonomous Operation + Process Improvements
 
-## Current Tasks
-| Task | Owner | Status |
-|------|-------|--------|
-| IPC handler audit | Analyst | In progress |
-| Context budget system | Architect | ✅ COMMITTED `cbca123` |
+## Session 54 Discoveries
 
-## Completed This Session
-- Create current_state.md (Architect)
-- Archive old shared_context (Architect)
-- Audit pending verifications (Analyst)
-- Consolidate trigger docs (Infra) - COMMITTED
-- Activity indicator fix (Frontend) - COMMITTED
-- Dead code cleanup (Backend) - COMMITTED
-- Reviews: all approved (Reviewer)
-- **Context budget system** (Architect) - `cbca123`
-  - Archived status.md (5689→60 lines), blockers.md (1344→35 lines), errors.md (519→25 lines)
-  - Updated CLAUDE.md, Architect, Frontend, Reviewer instance files
-  - New reading order: slim files first, archives only when needed
-- **Runtime verifications** (User) - All 3 verified ✅
-  - Copy/Paste UX: Works
-  - Codex Resume Context: Works
-  - Codex Auto-Restart: Works
+### 3-Agent Decision Pattern (NEW)
+For strategic decisions, use: **Architect + Analyst + Reviewer**
+- Architect: Proposes, synthesizes, decides
+- Analyst (Codex): Systematic analysis, completeness
+- Reviewer (Claude): Challenge assumptions, find holes
 
-## Blockers
-None active.
+**Why:** Team discussion discovered 5 agents = redundant. 3 distinct perspectives = optimal.
 
-## Backlog (from Session 52 team feedback)
-| Item | Owner | Notes |
-|------|-------|-------|
-| ~~Context budget system~~ | Architect | ✅ Done - pending review |
-| Smart parallelism | TBD | Auto-batch independent tasks, reduce coordination overhead |
-| PTY injection stability | Backend | Still brittle, especially Enter key timing |
-| ~~Structured handoff format~~ | Architect | 🔄 In progress - session-handoff.json created |
+**Documented in:**
+- `CLAUDE.md` (main) - Strategic Decision Protocol section
+- `instances/lead/CLAUDE.md` - Architect workflow
+- `instances/investigator/CLAUDE.md` - Analyst role
+- `instances/reviewer/CLAUDE.md` - Reviewer role
 
-## Recent Commits
-- `cbca123` - Session 52: Context budget system (99% token reduction)
-- `acf334c` - Session 52: Remove dead conflict queue code
-- `8cbea97` - Session 52: Add slim status file and archive
-- `b0d07cf` - Session 52: Activity indicators for Claude panes
-- `fbf7334` - Session 52: Canonical trigger file reference
+### Quality Gate (NEW)
+Reviewer must run tests before approval:
+1. `npm test` - must pass
+2. `npm start` - app must launch
+3. Document verification method
+
+**Why:** Reviewer was rubber-stamping code by reading, not executing.
+
+### New Protocols Documented (Session 54)
+
+**Added to CLAUDE.md - Strategic Decision Protocol:**
+
+1. **Assignment Declaration** - Architect states STRATEGIC/CODE REVIEW/IMPLEMENTATION at task assignment
+2. **Disagreement Protocol** - Rules for productive conflict when trio disagrees
+3. **Direction Gate** - Verify user intent before building (catch wrong direction, not just wrong code)
+4. **Human in the Loop** - User is ultimate quality gate; trust is earned, not assumed
+
+**Why:** 3-agent discussion (Analyst + Reviewer) surfaced these gaps. Both agents confirmed role clarity and mission alignment.
+
+## Session 54 Commits (9 total, all pushed)
+| Commit | Description |
+|--------|-------------|
+| `4fa7ec4` | PTY stuck detection proper fix (trigger on stalled, not thinking) |
+| `adae291` | Status strip UI (30px task count display) |
+| `ef3970f` | Disable PTY stuck detection (workaround - superseded by 4fa7ec4) |
+| `4f7629a` | Task-pool status expansion (in_progress/completed/failed/needs_input) |
+| `dd10276` | Codex reasoning styling (dim+italic for thinking) |
+| `5da9189` | Constants consolidation + dead code cleanup |
+| `134d231` | UI button debounce (spawn, kill, nudge, freshStart) |
+| `61df70e` | Stuck Claude detection (PTY token/timer parsing) - fixed in 4fa7ec4 |
+| `83a259e` | Task-pool file watcher (addWatch/removeWatch) |
+
+## Pending
+1. **Runtime verification** - Status strip, task-pool expansion, PTY stuck fix need visual testing
+
+## Bug: PTY Stuck Detection (FIXED)
+- **Issue:** Claude panes got ESC'd after 15s of thinking
+- **Cause:** Code interpreted "0 tokens + timer advancing" as stuck
+- **Fix (`4fa7ec4`):** Now triggers on timer STALLED (not changing), not on thinking
+- **Detection re-enabled:** `ptyStuckDetection: true`
 
 ## Team Status
 | Role | Pane | Status |
 |------|------|--------|
-| Architect | 1 | Session 52 complete - 4 commits |
-| Infra | 2 | Done |
-| Frontend | 3 | Done |
-| Backend | 4 | Done |
-| Analyst | 5 | IPC audit in progress |
-| Reviewer | 6 | Done |
+| Architect | 1 | Complete - All work committed |
+| Infra | 2 | Standby |
+| Frontend | 3 | Complete - Status strip committed |
+| Backend | 4 | Complete - PTY fix committed |
+| Analyst | 5 | Complete - Provided fix design |
+| Reviewer | 6 | Complete - All reviews done |
 
 ## Quick Links
 - Full history: `shared_context.md`
