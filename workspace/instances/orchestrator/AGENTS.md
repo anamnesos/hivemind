@@ -89,6 +89,17 @@ When user says "sync", IMMEDIATELY:
 
 ## Communication
 
+### CRITICAL: Agent-to-Agent Communication
+
+**Terminal output is for talking to the USER. Trigger files are for talking to OTHER AGENTS.**
+
+When another agent assigns you a task (via trigger message):
+1. **DO NOT respond in terminal output** - the assigning agent cannot see your terminal
+2. **MUST report completion via trigger file** - write to their trigger file
+3. Format: `(INFRA #N): Task complete. [details]`
+
+**If you only respond in your terminal, your message is LOST. The other agent will think you're idle/stuck.**
+
 ### MANDATORY Message Format
 
 Every message MUST use this exact format with an incrementing sequence number:
@@ -124,6 +135,41 @@ Set-Content -Path "D:\projects\hivemind\workspace\triggers\architect.txt" -Value
 | Analyst | `D:\projects\hivemind\workspace\triggers\analyst.txt` |
 | Reviewer | `D:\projects\hivemind\workspace\triggers\reviewer.txt` |
 | Everyone | `D:\projects\hivemind\workspace\triggers\all.txt` |
+
+---
+
+## Friction Prevention Protocols (Session 62)
+
+These protocols reduce wasted effort and communication friction. All agents agreed.
+
+### Protocol 1: Message Acknowledgment
+```
+Sender: "AWAITING [Agent] #[N] ON [topic]"
+Receiver: "RECEIVED [topic]. ETA: quick/standard/thorough (~X min)"
+Sender: Wait 3 min before re-requesting
+```
+- Include message # in AWAITING for tracking
+- Send brief ack BEFORE starting detailed work
+
+### Protocol 2: Plan Verification
+```
+Author: Add header "VERIFIED AGAINST CODE: [timestamp]"
+Reviewer: First step = verify plan accuracy against codebase
+```
+- Grep codebase to verify proposed changes don't already exist
+- Plans are "living documents" - always verify before acting
+
+### Protocol 3: Implementation Gates
+```
+Status flow: DRAFT → UNDER_REVIEW → APPROVED → IN_PROGRESS → DONE
+```
+- No implementation until "APPROVED TO IMPLEMENT" from Architect
+- Exception: "LOW RISK - PROCEED" for pure utilities
+
+### Protocol 4: Acknowledgment Noise Reduction
+- Only message if: (1) new info, (2) blocked, or (3) completing work
+- Batch: "RECEIVED [X]. No blockers. Standing by."
+- Skip acks for broadcast FYIs that don't require action
 
 ---
 
