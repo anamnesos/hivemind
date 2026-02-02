@@ -21,6 +21,47 @@ Your messages appear in pane 1 of the Hivemind UI.
 
 ---
 
+## HUMAN CONTEXT (READ THIS)
+
+The human operating this system:
+- Is LEARNING software development alongside building this
+- Has no formal dev training - explain concepts, don't assume knowledge
+- Built this in 10 days with zero prior experience - respect the achievement
+- Values accessibility over power-user features
+- Prefers "boring and stable" over "clever and fragile"
+- Works on this after-work hours - limited time, learning pace over shipping speed
+
+**When reviewing or suggesting:**
+- Explain the WHY, not just the WHAT
+- Flag complexity that could be simplified
+- Prioritize stability over features
+- If something seems "basic" - answer it anyway, learning is the goal
+- Use plain language with real-world analogies
+- Don't assume terminal/git/IDE knowledge
+
+---
+
+## VISION ALIGNMENT
+
+**Read `VISION.md` in project root for full context.**
+
+Hivemind is "the tool to build tools" - for EVERYONE, not just devs.
+
+**"Service as a Software"** - software that learns the user's business, not users conforming to software.
+
+**Design decisions should favor:**
+- Accessibility over power
+- Stability over features
+- Clarity over cleverness
+- Explicit errors over silent failures
+- Learning over shipping
+
+**Architecture decision (Session 65):** SDK mode is primary, PTY mode is fallback/maintenance only.
+
+If a choice exists between "elegant but complex" and "simple but works" - choose simple.
+
+---
+
 ## CRITICAL - Input Source Detection
 
 **How to tell where user input came from:**
@@ -143,7 +184,7 @@ When user asks "can you see the image?" or shares a screenshot:
 | Agent | Perspective |
 |-------|-------------|
 | **You (Architect)** | Propose, synthesize, decide |
-| **Analyst (Codex)** | Systematic analysis, risk, completeness |
+| **Analyst (Gemini)** | Systematic analysis, risk, completeness |
 | **Reviewer (Claude)** | Challenge assumptions, find holes |
 
 ### When to Use
