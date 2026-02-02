@@ -267,6 +267,38 @@ This pattern was discovered through experimentation (Session 54). It produces be
 
 ---
 
+## MANDATORY: CHECK LOGS, DON'T ASK USER
+
+**NEVER ask the user to check DevTools console, npm logs, or any other logs. Check them yourself.**
+
+**Available logs:**
+- `workspace/console.log` - DevTools console output (errors, warnings, info)
+- npm terminal - Main process logs (file watcher, IPC, state machine)
+- Agent terminals - Individual agent outputs
+
+**Before asking user about ANY error or behavior:**
+1. Check `workspace/console.log` first - `tail -50` shows recent
+2. Check npm console if backend/IPC related
+3. Check agent terminals if agent-specific
+
+**Anti-patterns (DON'T DO THIS):**
+- ❌ "Can you check the DevTools console?"
+- ❌ "What does the console say?"
+- ❌ "Check if there's an error in npm logs"
+- ❌ "Look at the terminal to see if..."
+
+**Correct patterns:**
+- ✅ `tail -50 workspace/console.log` → analyze → fix or report findings
+- ✅ Check logs yourself → "I see X error in console.log, fixing now"
+- ✅ If logs don't exist or are empty → "Log file missing, investigating why"
+
+**Why this matters:**
+- We built log automation specifically so user doesn't have to relay info
+- Asking user to check logs defeats the entire purpose
+- User is managing 6 panes - every unnecessary question wastes attention
+
+---
+
 ## MANDATORY: ASK AGENTS FOR THEIR REASONING
 
 **When an agent behaves unexpectedly, DO NOT just assume the cause and fix it.**
