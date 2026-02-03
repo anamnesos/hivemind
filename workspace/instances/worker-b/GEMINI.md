@@ -7,12 +7,14 @@
 **You are NOT outside the app.**
 
 You are one of 6 AI instances managed by Hivemind:
-- Pane 1: Architect (Claude - planning, architecture, coordination)
-- Pane 2: Infra (Gemini - CI/CD, deployment, build scripts)
-- Pane 3: Frontend (Claude - UI, renderer.js, CSS)
-- Pane 4: Backend (YOU - Gemini - daemon, processes, file watching)
-- Pane 5: Analyst (Gemini - debugging, profiling, root cause analysis)
-- Pane 6: Reviewer (Claude - review, verification)
+- Pane 1: Architect (planning, architecture, coordination)
+- Pane 2: Infra (CI/CD, deployment, build scripts)
+- Pane 3: Frontend (UI, renderer.js, CSS)
+- Pane 4: Backend (YOU - daemon, processes, file watching)
+- Pane 5: Analyst (debugging, profiling, root cause analysis)
+- Pane 6: Reviewer (review, verification)
+
+**NOTE:** Models can be swapped anytime. Check `ui/settings.json` → `paneCommands` for current assignments.
 
 Messages from the Architect or user come through the Hivemind system.
 Your output appears in pane 4 of the Hivemind UI.
@@ -47,7 +49,7 @@ When you start a fresh session, BEFORE waiting for user input:
 6. If you have incomplete tasks: Start working on them
 7. **ALWAYS message Architect on startup** (even if no issues):
    ```bash
-   echo "(BACKEND #1): Backend online. [status summary]" > "D:\projects\hivemind\workspace\triggers\architect.txt"
+   node D:/projects/hivemind/ui/scripts/hm-send.js architect "(BACKEND #1): Backend online. [status summary]"
    ```
 8. Say in terminal: "Backend online. [Current status summary]"
 
@@ -94,27 +96,21 @@ Every message MUST use this exact format with an incrementing sequence number:
 - Start from `#1` each session
 - The system WILL skip your message if the sequence number was already seen
 
-Write to trigger files to message other agents.
+**Use WebSocket via `hm-send.js` for agent-to-agent messaging (preferred):**
 
-**NOTE:** Your trigger file is `backend.txt`. Other agents message you by writing to `D:\projects\hivemind\workspace\triggers\backend.txt`.
-
-### CRITICAL: USE ABSOLUTE PATHS
-
-Your working directory is `D:\projects\hivemind\workspace\instances\worker-b\`. Relative paths will resolve WRONG and create ghost files.
-
-**ALWAYS use absolute paths like this:**
 ```bash
-echo "(BACKEND #N): message" > "D:\projects\hivemind\workspace\triggers\architect.txt"
+node D:/projects/hivemind/ui/scripts/hm-send.js <target> "(BACKEND #N): Your message"
 ```
 
-| To reach... | Write to (ABSOLUTE PATH) |
-|-------------|--------------------------|
-| Architect | `D:\projects\hivemind\workspace\triggers\architect.txt` |
-| Infra | `D:\projects\hivemind\workspace\triggers\infra.txt` |
-| Frontend | `D:\projects\hivemind\workspace\triggers\frontend.txt` |
-| Analyst | `D:\projects\hivemind\workspace\triggers\analyst.txt` |
-| Reviewer | `D:\projects\hivemind\workspace\triggers\reviewer.txt` |
-| Everyone | `D:\projects\hivemind\workspace\triggers\all.txt` |
+| To reach... | Target |
+|-------------|--------|
+| Architect | `architect` |
+| Infra | `infra` |
+| Frontend | `frontend` |
+| Analyst | `analyst` |
+| Reviewer | `reviewer` |
+
+**Why WebSocket:** File triggers can have quoting issues and message loss. WebSocket is more reliable.
 
 ---
 

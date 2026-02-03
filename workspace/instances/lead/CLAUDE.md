@@ -213,18 +213,10 @@ When user asks "can you see the image?" or shares a screenshot:
 ### Message Template
 
 ```bash
-cat << 'EOF' > "D:\projects\hivemind\workspace\triggers\analyst.txt"
-(ARCHITECT #N): Strategic question - [brief description]
-
-Context: [relevant background]
-
-Question: [the specific question]
-
-Need your analysis on: [what you want from them]
-EOF
+node D:/projects/hivemind/ui/scripts/hm-send.js analyst "(ARCHITECT #N): Strategic question - [brief description]. Context: [background]. Question: [specific question]"
 ```
 
-Send similar to `reviewer.txt`. Wait for both responses. Synthesize. Decide.
+Send similar to `reviewer`. Wait for both responses. Synthesize. Decide.
 
 ### Why This Works
 
@@ -404,61 +396,28 @@ If the answer is NO, fix the context before announcing restart.
 
 ## Direct Messaging
 
-### Trigger Message Quoting (IMPORTANT)
+**Use WebSocket via `hm-send.js` for agent-to-agent messaging:**
 
-When writing trigger messages via bash:
-
-**DO use double quotes:**
 ```bash
-echo "(ARCHITECT #N): Your message here" > "D:\projects\hivemind\workspace\triggers\target.txt"
+node D:/projects/hivemind/ui/scripts/hm-send.js <target> "(ARCHITECT #N): Your message"
 ```
 
-**DO use heredoc for complex/multi-line messages:**
-```bash
-cat << 'EOF' > "D:\projects\hivemind\workspace\triggers\target.txt"
-(ARCHITECT #N): This message has apostrophes like "don't" and special chars.
-It can span multiple lines too.
-EOF
-```
+| To reach... | Target |
+|-------------|--------|
+| Infra | `infra` |
+| Frontend | `frontend` |
+| Backend | `backend` |
+| Analyst | `analyst` |
+| Reviewer | `reviewer` |
 
-**DON'T use single quotes with apostrophes:**
-```bash
-# WRONG - breaks on apostrophe:
-echo '(ARCHITECT #N): Don't do this' > target.txt
-```
+**Why WebSocket:** File triggers lose 40%+ messages under rapid communication. WebSocket has zero message loss.
 
-Single-quoted strings break when the message contains apostrophes (e.g., "don't", "it's", "won't").
+### Message Format
 
----
+Always use sequence numbers: `(ARCHITECT #1):`, `(ARCHITECT #2):`, etc.
+Start from `#1` each session.
 
-### MANDATORY Message Format
-
-Every message MUST use this exact format with an incrementing sequence number:
-
-```
-(ARCHITECT #1): your message here
-(ARCHITECT #2): next message
-(ARCHITECT #3): and so on
-```
-
-**Rules:**
-- Always include `#N` where N increments with each message you send
-- Never reuse a sequence number - duplicates are silently dropped
-- Start from `#1` each session
-- The system WILL skip your message if the sequence number was already seen
-
-**NOTE:** Your trigger file is `architect.txt` (legacy: `lead.txt` also works). Other agents message you by writing to `D:\projects\hivemind\workspace\triggers\architect.txt`.
-
-| To reach... | Write to... |
-|-------------|-------------|
-| Infra | `D:\projects\hivemind\workspace\triggers\infra.txt` |
-| Frontend | `D:\projects\hivemind\workspace\triggers\frontend.txt` |
-| Backend | `D:\projects\hivemind\workspace\triggers\backend.txt` |
-| Analyst | `D:\projects\hivemind\workspace\triggers\analyst.txt` |
-| Reviewer | `D:\projects\hivemind\workspace\triggers\reviewer.txt` |
-| Everyone | `D:\projects\hivemind\workspace\triggers\all.txt` |
-
-Use this for quick coordination, questions, or real-time updates without waiting for state machine transitions.
+**File triggers still work as fallback** - write to `workspace/triggers/{role}.txt`
 
 ## Disagreement Protocol
 

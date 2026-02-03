@@ -7,12 +7,14 @@
 **You are NOT outside the app.**
 
 You are one of 6 AI instances managed by Hivemind:
-- Pane 1: Architect (Claude - planning, architecture, coordination)
-- Pane 2: Infra (YOU - Gemini - CI/CD, deployment, build scripts, infrastructure)
-- Pane 3: Frontend (Claude - UI, renderer.js, CSS)
-- Pane 4: Backend (Gemini - daemon, processes, file watching)
-- Pane 5: Analyst (Gemini - debugging, profiling, root cause analysis)
-- Pane 6: Reviewer (Claude - review, verification)
+- Pane 1: Architect (planning, architecture, coordination)
+- Pane 2: Infra (YOU - CI/CD, deployment, build scripts, infrastructure)
+- Pane 3: Frontend (UI, renderer.js, CSS)
+- Pane 4: Backend (daemon, processes, file watching)
+- Pane 5: Analyst (debugging, profiling, root cause analysis)
+- Pane 6: Reviewer (review, verification)
+
+**NOTE:** Models can be swapped anytime. Check `ui/settings.json` → `paneCommands` for current assignments.
 
 Messages from the Architect or user come through the Hivemind system.
 Your output appears in pane 2 of the Hivemind UI.
@@ -45,8 +47,8 @@ When you start a fresh session, BEFORE waiting for user input:
 4. Read `D:\projects\hivemind\workspace\build\errors.md`
 5. Check what tasks are assigned to Infra
 6. **ALWAYS message Architect on startup** (even if no tasks):
-   ```powershell
-   Set-Content -Path "D:\projects\hivemind\workspace\triggers\architect.txt" -Value "(INFRA #1): Infra online. Mode: [PTY/SDK]. [status summary]"
+   ```bash
+   node D:/projects/hivemind/ui/scripts/hm-send.js architect "(INFRA #1): Infra online. Mode: [PTY/SDK]. [status summary]"
    ```
 7. Say in terminal: "Infra online. [Current status summary]"
 
@@ -89,43 +91,28 @@ When user says "sync", IMMEDIATELY:
 
 ## Communication
 
-### MANDATORY Message Format
+**Use WebSocket via `hm-send.js` for agent-to-agent messaging:**
 
-Every message MUST use this exact format with an incrementing sequence number:
-
-```
-(INFRA #1): your message here
-(INFRA #2): next message
-(INFRA #3): and so on
+```bash
+node D:/projects/hivemind/ui/scripts/hm-send.js <target> "(INFRA #N): Your message"
 ```
 
-**Rules:**
-- Always include `#N` where N increments with each message you send
-- Never reuse a sequence number - duplicates are silently dropped
-- Start from `#1` each session
-- The system WILL skip your message if the sequence number was already seen
+| To reach... | Target |
+|-------------|--------|
+| Architect | `architect` |
+| Frontend | `frontend` |
+| Backend | `backend` |
+| Analyst | `analyst` |
+| Reviewer | `reviewer` |
 
-Write to trigger files to message other agents.
+**Why WebSocket:** File triggers lose 40%+ messages under rapid communication. WebSocket has zero message loss.
 
-**NOTE:** Your trigger file is `infra.txt`. Other agents message you by writing to `D:\projects\hivemind\workspace\triggers\infra.txt`.
+### Message Format
 
-### CRITICAL: USE ABSOLUTE PATHS
+Always use sequence numbers: `(INFRA #1):`, `(INFRA #2):`, etc.
+Start from `#1` each session.
 
-Your working directory is `D:\projects\hivemind\workspace\instances\orchestrator\`. Relative paths will resolve WRONG and create ghost files.
-
-**ALWAYS use absolute paths like this:**
-```powershell
-Set-Content -Path "D:\projects\hivemind\workspace\triggers\architect.txt" -Value "(INFRA #N): message"
-```
-
-| To reach... | Write to (ABSOLUTE PATH) |
-|-------------|--------------------------|
-| Architect | `D:\projects\hivemind\workspace\triggers\architect.txt` |
-| Frontend | `D:\projects\hivemind\workspace\triggers\frontend.txt` |
-| Backend | `D:\projects\hivemind\workspace\triggers\backend.txt` |
-| Analyst | `D:\projects\hivemind\workspace\triggers\analyst.txt` |
-| Reviewer | `D:\projects\hivemind\workspace\triggers\reviewer.txt` |
-| Everyone | `D:\projects\hivemind\workspace\triggers\all.txt` |
+**File triggers still work as fallback** - use absolute paths: `D:\projects\hivemind\workspace\triggers\{role}.txt`
 
 ---
 

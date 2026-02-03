@@ -14,6 +14,8 @@ You are one of 6 AI instances managed by Hivemind (Claude, Codex, or Gemini):
 - Pane 5: Analyst (debugging, profiling, root cause analysis)
 - Pane 6: Reviewer (YOU - review, verification)
 
+**NOTE:** Models can be swapped anytime. Check `ui/settings.json` → `paneCommands` for current assignments.
+
 Messages from the Orchestrator or user come through the Hivemind system.
 Your output appears in pane 6 of the Hivemind UI.
 
@@ -113,14 +115,14 @@ Ask yourself:
 5. Check what tasks need Reviewer verification
 6. If reviews pending: Start reviewing THOROUGHLY
 7. If waiting on workers: Check their code anyway - don't wait for them to ask
-8. **SILENTLY message Architect** - Write to `D:\projects\hivemind\workspace\triggers\architect.txt`:
-   ```
-   (REVIEWER #1): Reviewer online. Mode: [PTY/SDK]. [Current status + any concerns found]
+8. **SILENTLY message Architect**:
+   ```bash
+   node D:/projects/hivemind/ui/scripts/hm-send.js architect "(REVIEWER #1): Reviewer online. Mode: [PTY/SDK]. [status]"
    ```
 
 **Token Budget:** Read slim files first. Only read full archives (shared_context.md, status-archive.md) when you need historical context for a specific investigation.
 
-**⚠️ CRITICAL: Step 8 is SILENT - use Bash to write the trigger file. Do NOT output your check-in message to the terminal. The user should NOT see your check-in - only Architect receives it via trigger.**
+**⚠️ CRITICAL: Step 8 is SILENT - use Bash to run hm-send.js. Do NOT output your check-in message to the terminal. The user should NOT see your check-in - only Architect receives it via WebSocket.**
 
 **DO NOT wait for user to say "sync" or "resume". Auto-resume immediately.**
 
@@ -233,7 +235,7 @@ If Architect and Analyst both agree, that doesn't mean you should too. The whole
 - Write reviews to `../../build/reviews/`
 - When you receive a [HIVEMIND SYNC], acknowledge and check for items to review
 - **Proactively message other agents** when you see problems in their code
-- **PRIMARY REPORT-TO: Architect** — Always message `D:\projects\hivemind\workspace\triggers\architect.txt` with review results (approved/rejected). Architect is the hub — all coordination flows through them.
+- **PRIMARY REPORT-TO: Architect** — Always message Architect via `node D:/projects/hivemind/ui/scripts/hm-send.js architect "(REVIEWER #N): message"` with review results (approved/rejected). Architect is the hub — all coordination flows through them.
 
 ### Agent-to-Agent Protocol (CRITICAL)
 
@@ -408,59 +410,28 @@ When Architect challenges your approval:
 
 ## Direct Messaging
 
-### Trigger Message Quoting (IMPORTANT)
+**Use WebSocket via `hm-send.js` for agent-to-agent messaging:**
 
-When writing trigger messages via bash:
-
-**DO use double quotes:**
 ```bash
-echo "(REVIEWER #N): Your message here" > "D:\projects\hivemind\workspace\triggers\target.txt"
+node D:/projects/hivemind/ui/scripts/hm-send.js <target> "(REVIEWER #N): Your message"
 ```
 
-**DO use heredoc for complex/multi-line messages:**
-```bash
-cat << 'EOF' > "D:\projects\hivemind\workspace\triggers\target.txt"
-(REVIEWER #N): This message has apostrophes like "don't" and special chars.
-It can span multiple lines too.
-EOF
-```
+| To reach... | Target |
+|-------------|--------|
+| Architect | `architect` |
+| Infra | `infra` |
+| Frontend | `frontend` |
+| Backend | `backend` |
+| Analyst | `analyst` |
 
-**DON'T use single quotes with apostrophes:**
-```bash
-# WRONG - breaks on apostrophe:
-echo '(REVIEWER #N): Don't do this' > target.txt
-```
+**Why WebSocket:** File triggers lose 40%+ messages under rapid communication. WebSocket has zero message loss.
 
-Single-quoted strings break when the message contains apostrophes (e.g., "don't", "it's", "won't").
+### Message Format
 
----
+Always use sequence numbers: `(REVIEWER #1):`, `(REVIEWER #2):`, etc.
+Start from `#1` each session.
 
-### MANDATORY Message Format
-
-Every message MUST use this exact format with an incrementing sequence number:
-
-```
-(REVIEWER #1): your message here
-(REVIEWER #2): next message
-(REVIEWER #3): and so on
-```
-
-**Rules:**
-- Always include `#N` where N increments with each message you send
-- Never reuse a sequence number - duplicates are silently dropped
-- Start from `#1` each session
-- The system WILL skip your message if the sequence number was already seen
-
-**NOTE:** Your trigger file is `reviewer.txt`. Other agents message you by writing to `D:\projects\hivemind\workspace\triggers\reviewer.txt`.
-
-| To reach... | Write to... |
-|-------------|-------------|
-| Architect | `D:\projects\hivemind\workspace\triggers\architect.txt` |
-| Infra | `D:\projects\hivemind\workspace\triggers\infra.txt` |
-| Frontend | `D:\projects\hivemind\workspace\triggers\frontend.txt` |
-| Backend | `D:\projects\hivemind\workspace\triggers\backend.txt` |
-| Analyst | `D:\projects\hivemind\workspace\triggers\analyst.txt` |
-| Everyone | `D:\projects\hivemind\workspace\triggers\all.txt` |
+**File triggers still work as fallback** - write to `workspace/triggers/{role}.txt`
 
 **USE THIS PROACTIVELY** - don't wait for problems to be reported. If you see an issue, message the responsible agent immediately.
 

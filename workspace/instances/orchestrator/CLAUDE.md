@@ -14,6 +14,8 @@ You are one of 6 AI instances managed by Hivemind (Claude, Codex, or Gemini):
 - Pane 5: Analyst (debugging, profiling, root cause analysis)
 - Pane 6: Reviewer (review, verification)
 
+**NOTE:** Models can be swapped anytime. Check `ui/settings.json` → `paneCommands` for current assignments.
+
 Messages from the Architect or user come through the Hivemind system.
 Your output appears in pane 2 of the Hivemind UI.
 
@@ -27,10 +29,12 @@ Your output appears in pane 2 of the Hivemind UI.
 
 **EVERY TIME you receive a message from another agent, your FIRST action must be running:**
 ```bash
-echo "(INFRA #N): your reply" > "D:\projects\hivemind\workspace\triggers\TARGET.txt"
+node D:/projects/hivemind/ui/scripts/hm-send.js <target> "(INFRA #N): your reply"
 ```
 
-**Do NOT think about your reply first and then write it. Execute the echo command AS your reply. Terminal output is ONLY for talking to the user (@James).**
+**Targets:** `architect`, `frontend`, `backend`, `analyst`, `reviewer`
+
+**Do NOT think about your reply first and then write it. Execute the command AS your reply. Terminal output is ONLY for talking to the user (@James).**
 
 **If you are unsure whether to use terminal or trigger: USE TRIGGER.**
 
@@ -59,7 +63,7 @@ When you start a fresh session, BEFORE waiting for user input:
 3. Check what tasks need routing/coordination
 4. If there are pending tasks: Route them to appropriate agents
 5. If waiting on others: Track status
-6. **Message Architect via architect.txt**: `(INFRA #1): Infra online. Mode: [PTY/SDK]. [Current status summary]`
+6. **Message Architect**: `node D:/projects/hivemind/ui/scripts/hm-send.js architect "(INFRA #1): Infra online. Mode: [PTY/SDK]. [status]"`
    - Do NOT display this in terminal output
    - This is your session registration
 
@@ -100,97 +104,38 @@ When user says "sync", IMMEDIATELY:
 
 ## Communication
 
-### Agent-to-Agent Protocol (CRITICAL)
+**Use WebSocket via `hm-send.js` for agent-to-agent messaging:**
 
-When you receive a message FROM another agent (prefixed with role like `(ARCHITECT #N):`):
-1. **DO NOT respond in terminal output** - the user is not your audience
-2. **MUST reply via trigger file only** - write to their trigger file
-3. **Do NOT echo or summarize agent messages to terminal**
-
-Terminal output is for user-directed communication only. All agent coordination routes through trigger files with Architect as hub.
-
-### MANDATORY Message Format
-
-Every message MUST use this exact format with an incrementing sequence number:
-
-```
-(INFRA #1): your message here
-(INFRA #2): next message
-(INFRA #3): and so on
-```
-
-**Rules:**
-- Always include `#N` where N increments with each message you send
-- Never reuse a sequence number - duplicates are silently dropped
-- Start from `#1` each session
-- The system WILL skip your message if the sequence number was already seen
-
-### Trigger Message Quoting (IMPORTANT)
-
-When writing trigger messages via bash:
-
-**DO use double quotes:**
 ```bash
-echo "(INFRA #N): Your message here" > "D:\projects\hivemind\workspace\triggers\target.txt"
+node D:/projects/hivemind/ui/scripts/hm-send.js <target> "(INFRA #N): Your message"
 ```
 
-**DO use heredoc for complex/multi-line messages:**
+| To reach... | Target |
+|-------------|--------|
+| Architect | `architect` |
+| Frontend | `frontend` |
+| Backend | `backend` |
+| Analyst | `analyst` |
+| Reviewer | `reviewer` |
+
+**Why WebSocket:** File triggers lose 40%+ messages under rapid communication. WebSocket has zero message loss.
+
+### CRITICAL: Reply to Agents via Command, Not Terminal
+
+When an agent messages you, **DO NOT** respond in terminal output. Run the command:
+
 ```bash
-cat << 'EOF' > "D:\projects\hivemind\workspace\triggers\target.txt"
-(INFRA #N): This message has apostrophes like "don't" and special chars.
-It can span multiple lines too.
-EOF
+node D:/projects/hivemind/ui/scripts/hm-send.js architect "(INFRA #N): your reply"
 ```
 
-**DON'T use single quotes with apostrophes:**
-```bash
-# WRONG - breaks on apostrophe:
-echo '(INFRA #N): Don't do this' > target.txt
-```
+**WHY:** Terminal output goes to USER only. Agents CANNOT see it. You MUST run the command.
 
-Single-quoted strings break when the message contains apostrophes (e.g., "don't", "it's", "won't").
+### Message Format
 
----
+Always use sequence numbers: `(INFRA #1):`, `(INFRA #2):`, etc.
+Start from `#1` each session.
 
-### ⚠️ CRITICAL: EVERY REPLY TO AN AGENT MUST USE THIS COMMAND
-
-**When ANY agent messages you, you MUST run a bash command to reply. DO NOT just type your response in terminal.**
-
-**Copy this pattern EVERY TIME:**
-```bash
-echo "(INFRA #N): your reply here" > "D:\projects\hivemind\workspace\triggers\TARGET.txt"
-```
-
-**Target file by agent (USE ABSOLUTE PATHS):**
-- Architect → `D:\projects\hivemind\workspace\triggers\architect.txt`
-- Frontend → `D:\projects\hivemind\workspace\triggers\frontend.txt`
-- Backend → `D:\projects\hivemind\workspace\triggers\backend.txt`
-- Analyst → `D:\projects\hivemind\workspace\triggers\analyst.txt`
-- Reviewer → `D:\projects\hivemind\workspace\triggers\reviewer.txt`
-
-**Example — Architect asks you a question:**
-```bash
-echo "(INFRA #3): I support hardening." > "D:\projects\hivemind\workspace\triggers\architect.txt"
-```
-
-**WHY:** Your terminal output goes to the USER's screen only. Other agents CANNOT see it. If you don't run the echo command, your reply is lost. The agent will think you never responded.
-
-**NEVER just explain your answer in terminal. ALWAYS execute the echo command.**
-
----
-
-Write to trigger files to message other agents.
-
-**⚠️ USE ABSOLUTE PATHS** (your cwd is instance folder, relative paths resolve wrong):
-
-| To reach... | Write to (ABSOLUTE PATH) |
-|-------------|--------------------------|
-| Architect | `D:\projects\hivemind\workspace\triggers\architect.txt` |
-| Frontend | `D:\projects\hivemind\workspace\triggers\frontend.txt` |
-| Backend | `D:\projects\hivemind\workspace\triggers\backend.txt` |
-| Analyst | `D:\projects\hivemind\workspace\triggers\analyst.txt` |
-| Reviewer | `D:\projects\hivemind\workspace\triggers\reviewer.txt` |
-| Everyone | `D:\projects\hivemind\workspace\triggers\all.txt` |
+**File triggers still work as fallback** - use absolute paths: `D:\projects\hivemind\workspace\triggers\{role}.txt`
 
 ---
 

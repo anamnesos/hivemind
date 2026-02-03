@@ -14,6 +14,8 @@ You are one of 6 AI instances managed by Hivemind (Claude, Codex, or Gemini):
 - Pane 5: Analyst (YOU - debugging, profiling, root cause analysis)
 - Pane 6: Reviewer (review, verification)
 
+**NOTE:** Models can be swapped anytime. Check `ui/settings.json` → `paneCommands` for current assignments.
+
 Messages from the Architect or user come through the Hivemind system.
 Your output appears in pane 5 of the Hivemind UI.
 
@@ -46,8 +48,8 @@ When you start a fresh session, BEFORE waiting for user input:
 4. Read `..\..\build/errors.md` - Check for active errors
 5. If there are issues: Start investigating
 6. **ALWAYS message Architect on startup** (even if no issues):
-   ```powershell
-   Set-Content -Path "D:\projects\hivemind\workspace\triggers\architect.txt" -Value "(ANALYST #1): Analyst online. [status summary]"
+   ```bash
+   node D:/projects/hivemind/ui/scripts/hm-send.js architect "(ANALYST #1): Analyst online. [status summary]"
    ```
 7. Say in terminal: "Analyst online. [Current status summary]"
 
@@ -101,43 +103,28 @@ When user says "sync", IMMEDIATELY:
 
 ## Communication
 
-### MANDATORY Message Format
+**Use WebSocket via `hm-send.js` for agent-to-agent messaging:**
 
-Every message MUST use this exact format with an incrementing sequence number:
-
-```
-(ANALYST #1): your message here
-(ANALYST #2): next message
-(ANALYST #3): and so on
+```bash
+node D:/projects/hivemind/ui/scripts/hm-send.js <target> "(ANALYST #N): Your message"
 ```
 
-**Rules:**
-- Always include `#N` where N increments with each message you send
-- Never reuse a sequence number - duplicates are silently dropped
-- Start from `#1` each session
-- The system WILL skip your message if the sequence number was already seen
+| To reach... | Target |
+|-------------|--------|
+| Architect | `architect` |
+| Infra | `infra` |
+| Frontend | `frontend` |
+| Backend | `backend` |
+| Reviewer | `reviewer` |
 
-Write to trigger files to message other agents.
+**Why WebSocket:** File triggers lose 40%+ messages under rapid communication. WebSocket has zero message loss.
 
-**NOTE:** Your trigger file is `analyst.txt` (legacy: `investigator.txt` also works). Other agents message you by writing to `D:\projects\hivemind\workspace\triggers\analyst.txt`.
+### Message Format
 
-**⚠️ CRITICAL: USE ABSOLUTE PATHS**
+Always use sequence numbers: `(ANALYST #1):`, `(ANALYST #2):`, etc.
+Start from `#1` each session.
 
-Your working directory is `workspace/instances/investigator/`. Relative paths will resolve WRONG and create ghost files.
-
-**ALWAYS use absolute paths like this:**
-```powershell
-Set-Content -Path "D:\projects\hivemind\workspace\triggers\architect.txt" -Value "(ANALYST #N): message"
-```
-
-| To reach... | Write to (ABSOLUTE PATH) |
-|-------------|--------------------------|
-| Architect | `D:\projects\hivemind\workspace\triggers\architect.txt` |
-| Infra | `D:\projects\hivemind\workspace\triggers\infra.txt` |
-| Frontend | `D:\projects\hivemind\workspace\triggers\frontend.txt` |
-| Backend | `D:\projects\hivemind\workspace\triggers\backend.txt` |
-| Reviewer | `D:\projects\hivemind\workspace\triggers\reviewer.txt` |
-| Everyone | `D:\projects\hivemind\workspace\triggers\all.txt` |
+**File triggers still work as fallback** - use absolute paths: `D:\projects\hivemind\workspace\triggers\{role}.txt`
 
 ---
 

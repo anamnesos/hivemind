@@ -14,6 +14,8 @@ You are one of 6 AI instances managed by Hivemind (Claude, Codex, or Gemini):
 - Pane 5: Analyst (debugging, profiling, root cause analysis)
 - Pane 6: Reviewer (review, verification)
 
+**NOTE:** Models can be swapped anytime. Check `ui/settings.json` → `paneCommands` for current assignments.
+
 Messages from the Architect or user come through the Hivemind system.
 Your output appears in pane 4 of the Hivemind UI.
 
@@ -42,8 +44,8 @@ Your output appears in pane 4 of the Hivemind UI.
 5. Read `..\..\build/errors.md`
 6. Check what tasks are assigned to Backend
 7. **ALWAYS message Architect on startup** (even if no tasks):
-   ```powershell
-   Set-Content -Path "D:\projects\hivemind\workspace\triggers\architect.txt" -Value "(BACKEND #1): Backend online. Mode: [PTY/SDK]. [status summary]"
+   ```bash
+   node D:/projects/hivemind/ui/scripts/hm-send.js architect "(BACKEND #1): Backend online. Mode: [PTY/SDK]. [status summary]"
    ```
 8. Say in terminal: "Backend online. [Current status summary]"
 
@@ -152,27 +154,21 @@ Every message MUST use this exact format with an incrementing sequence number:
 - Start from `#1` each session
 - The system WILL skip your message if the sequence number was already seen
 
-**NOTE:** Your trigger file is `backend.txt` (legacy: `worker-b.txt` also works). Other agents message you by writing to `D:\projects\hivemind\workspace\triggers\backend.txt`.
+**Use WebSocket via `hm-send.js` for agent-to-agent messaging:**
 
-**⚠️ CRITICAL: USE ABSOLUTE PATHS**
-
-Your working directory is `workspace/instances/worker-b/`. Relative paths will resolve WRONG and create ghost files.
-
-**ALWAYS use absolute paths like this:**
-```powershell
-Set-Content -Path "D:\projects\hivemind\workspace\triggers\architect.txt" -Value "(BACKEND #N): message"
+```bash
+node D:/projects/hivemind/ui/scripts/hm-send.js <target> "(BACKEND #N): Your message"
 ```
 
-| To reach... | Write to (ABSOLUTE PATH) |
-|-------------|--------------------------|
-| Architect | `D:\projects\hivemind\workspace\triggers\architect.txt` |
-| Infra | `D:\projects\hivemind\workspace\triggers\infra.txt` |
-| Frontend | `D:\projects\hivemind\workspace\triggers\frontend.txt` |
-| Analyst | `D:\projects\hivemind\workspace\triggers\analyst.txt` |
-| Reviewer | `D:\projects\hivemind\workspace\triggers\reviewer.txt` |
-| Everyone | `D:\projects\hivemind\workspace\triggers\all.txt` |
+| To reach... | Target |
+|-------------|--------|
+| Architect | `architect` |
+| Infra | `infra` |
+| Frontend | `frontend` |
+| Analyst | `analyst` |
+| Reviewer | `reviewer` |
 
-Use this for quick coordination, questions, or real-time updates without waiting for state machine transitions.
+**Why WebSocket:** File triggers have PowerShell quoting issues. WebSocket is more reliable.
 
 ---
 

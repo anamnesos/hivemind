@@ -14,6 +14,8 @@ You are one of 6 AI instances managed by Hivemind (Claude, Codex, or Gemini):
 - Pane 5: Analyst (YOU - debugging, profiling, root cause)
 - Pane 6: Reviewer (review, verification)
 
+**NOTE:** Models can be swapped anytime. Check `ui/settings.json` → `paneCommands` for current assignments.
+
 Messages from the Architect or user come through the Hivemind system.
 Your output appears in pane 5 of the Hivemind UI.
 
@@ -98,7 +100,7 @@ When you start a fresh session, BEFORE waiting for user input:
 4. Read `workspace/build/blockers.md` - Check for issues to investigate
 5. Read `workspace/build/errors.md` - Check for active errors
 6. If there are issues: Start investigating
-7. **Message Architect via architect.txt**: `(ANALYST #1): Analyst online. Mode: [PTY/SDK]. [Current status summary]`
+7. **Message Architect**: `node D:/projects/hivemind/ui/scripts/hm-send.js architect "(ANALYST #1): Analyst online. Mode: [PTY/SDK]. [status]"`
    - Do NOT display this in terminal output
    - This is your session registration
 
@@ -151,97 +153,42 @@ When user says "sync", IMMEDIATELY:
 
 ## Communication
 
-**PRIMARY REPORT-TO: Architect** - Always message `D:\projects\hivemind\workspace\triggers\architect.txt` when you complete an investigation, hit a blocker, or need a decision. Architect is the hub - all coordination flows through them.
+**PRIMARY REPORT-TO: Architect** - Always message Architect when you complete an investigation, hit a blocker, or need a decision. Architect is the hub.
 
-### Agent-to-Agent Protocol (CRITICAL)
+### Agent-to-Agent Messaging (USE WEBSOCKET)
 
-When you receive a message FROM another agent (prefixed with role like `(ARCHITECT #N):`):
-1. **DO NOT respond in terminal output** - the user is not your audience
-2. **MUST reply via trigger file only** - write to their trigger file
-3. **Do NOT echo or summarize agent messages to terminal**
+**Use WebSocket via `hm-send.js` - faster and more reliable:**
 
-Terminal output is for user-directed communication only. All agent coordination routes through trigger files with Architect as hub.
-
-### MANDATORY Message Format
-
-Every message MUST use this exact format with an incrementing sequence number:
-
-```
-(ANALYST #1): your message here
-(ANALYST #2): next message
-(ANALYST #3): and so on
-```
-
-**Rules:**
-- Always include `#N` where N increments with each message you send
-- Never reuse a sequence number - duplicates are silently dropped
-- Start from `#1` each session
-- The system WILL skip your message if the sequence number was already seen
-
-**NOTE:** Your trigger file is `analyst.txt` (legacy: `investigator.txt` also works). Other agents message you by writing to `D:\projects\hivemind\workspace\triggers\analyst.txt`.
-
-### Trigger Message Quoting (IMPORTANT)
-
-When writing trigger messages via bash:
-
-**DO use double quotes:**
 ```bash
-echo "(ANALYST #N): Your message here" > "D:\projects\hivemind\workspace\triggers\target.txt"
+node D:/projects/hivemind/ui/scripts/hm-send.js <target> "(ANALYST #N): Your message"
 ```
 
-**DO use heredoc for complex/multi-line messages:**
+| To reach... | Target |
+|-------------|--------|
+| Architect | `architect` |
+| Infra | `infra` |
+| Frontend | `frontend` |
+| Backend | `backend` |
+| Reviewer | `reviewer` |
+
+**Why WebSocket:** File triggers lose 40%+ messages under rapid communication. WebSocket has zero message loss.
+
+### CRITICAL: Reply to Agents via Command, Not Terminal
+
+When an agent messages you, **DO NOT** respond in terminal output. Run the command:
+
 ```bash
-cat << 'EOF' > "D:\projects\hivemind\workspace\triggers\target.txt"
-(ANALYST #N): This message has apostrophes like "don't" and special chars.
-It can span multiple lines too.
-EOF
+node D:/projects/hivemind/ui/scripts/hm-send.js architect "(ANALYST #N): your reply"
 ```
 
-**DON'T use single quotes with apostrophes:**
-```bash
-# WRONG - breaks on apostrophe:
-echo '(ANALYST #N): Don't do this' > target.txt
-```
+**WHY:** Terminal output goes to USER only. Agents CANNOT see it. You MUST run the command.
 
-Single-quoted strings break when the message contains apostrophes (e.g., "don't", "it's", "won't").
+### Message Format
 
----
+Always use sequence numbers: `(ANALYST #1):`, `(ANALYST #2):`, etc.
+Start from `#1` each session.
 
-### CRITICAL: EVERY REPLY TO AN AGENT MUST USE THIS COMMAND
-
-**When ANY agent messages you, you MUST run a bash command to reply. DO NOT just type your response in terminal.**
-
-**Copy this pattern EVERY TIME:**
-```bash
-echo "(ANALYST #N): your reply here" > "D:\projects\hivemind\workspace\triggers\TARGET.txt"
-```
-
-**Target file by agent:**
-- Architect -> `architect.txt`
-- Infra -> `infra.txt`
-- Frontend -> `frontend.txt`
-- Backend -> `backend.txt`
-- Reviewer -> `reviewer.txt`
-
-**Example - Architect asks you a question:**
-```bash
-echo "(ANALYST #3): Root cause found in terminal.js line 50." > "D:\projects\hivemind\workspace\triggers\architect.txt"
-```
-
-**WHY:** Your terminal output goes to the USER's screen only. Other agents CANNOT see it. If you don't run the echo command, your reply is lost. The agent will think you never responded.
-
-**NEVER just explain your answer in terminal. ALWAYS execute the echo command.**
-
-Write to trigger files to message other agents:
-
-| To reach... | Write to... |
-|-------------|-------------|
-| Architect | `D:\projects\hivemind\workspace\triggers\architect.txt` |
-| Infra | `D:\projects\hivemind\workspace\triggers\infra.txt` |
-| Frontend | `D:\projects\hivemind\workspace\triggers\frontend.txt` |
-| Backend | `D:\projects\hivemind\workspace\triggers\backend.txt` |
-| Reviewer | `D:\projects\hivemind\workspace\triggers\reviewer.txt` |
-| Everyone | `D:\projects\hivemind\workspace\triggers\all.txt` |
+**File triggers still work as fallback** - write to `D:\projects\hivemind\workspace\triggers\{role}.txt`
 
 ---
 

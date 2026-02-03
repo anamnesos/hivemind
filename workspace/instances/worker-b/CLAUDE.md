@@ -14,6 +14,8 @@ You are one of 6 AI instances managed by Hivemind (Claude, Codex, or Gemini):
 - Pane 5: Analyst (debugging, profiling, root cause)
 - Pane 6: Reviewer (review, verification)
 
+**NOTE:** Models can be swapped anytime. Check `ui/settings.json` → `paneCommands` for current assignments.
+
 Messages from the Architect or user come through the Hivemind system.
 Your output appears in pane 4 of the Hivemind UI.
 
@@ -40,9 +42,9 @@ Your output appears in pane 4 of the Hivemind UI.
 3. Read `workspace/build/status.md`
 4. Check what tasks are assigned to Backend
 5. If you have incomplete tasks: Start working on them
-6. **ALWAYS message Architect on startup** via trigger (`D:\projects\hivemind\workspace\triggers\architect.txt`):
+6. **ALWAYS message Architect on startup**:
    ```bash
-   echo "(BACKEND #1): # HIVEMIND SESSION: Backend online. [status summary]" > "D:\projects\hivemind\workspace\triggers\architect.txt"
+   node D:/projects/hivemind/ui/scripts/hm-send.js architect "(BACKEND #1): Backend online. [status summary]"
    ```
 7. Say in terminal: "Backend online. [Current status summary]"
 
@@ -91,7 +93,7 @@ When user asks "can you see the image?" or shares a screenshot:
 - Read `../shared_context.md` for task assignments
 - Update status when you complete work
 - When you receive a [HIVEMIND SYNC], acknowledge and check for your tasks
-- **PRIMARY REPORT-TO: Architect** - Always message `D:\projects\hivemind\workspace\triggers\architect.txt` when you complete work, hit a blocker, or need a decision. Architect is the hub - all coordination flows through them.
+- **PRIMARY REPORT-TO: Architect** - Always message Architect via `node D:/projects/hivemind/ui/scripts/hm-send.js architect "(BACKEND #N): message"` when you complete work, hit a blocker, or need a decision. Architect is the hub - all coordination flows through them.
 
 ### Agent-to-Agent Protocol (CRITICAL)
 
@@ -147,89 +149,59 @@ When you finish a task, you MUST do ALL of these:
    - What they need to do next
    - Any gotchas or context they need
 
-**NEVER "wait for Reviewer" without first messaging Reviewer.** Reviewer does not monitor your work - you must notify them. Write to `D:\projects\hivemind\workspace\triggers\reviewer.txt` with your completion summary and review request.
+**NEVER "wait for Reviewer" without first messaging Reviewer.** Reviewer does not monitor your work - you must notify them. Use `node D:/projects/hivemind/ui/scripts/hm-send.js reviewer "(BACKEND #N): [completion summary and review request]"`
 
 This prevents the user from having to manually coordinate between agents.
 
 ## Direct Messaging
 
-### MANDATORY Message Format
+**Use WebSocket via `hm-send.js` for agent-to-agent messaging:**
 
-Every message MUST use this exact format with an incrementing sequence number:
-
-```
-(BACKEND #1): your message here
-(BACKEND #2): next message
-(BACKEND #3): and so on
-```
-
-**Rules:**
-- Always include `#N` where N increments with each message you send
-- Never reuse a sequence number - duplicates are silently dropped
-- Start from `#1` each session
-- The system WILL skip your message if the sequence number was already seen
-
-**NOTE:** Your trigger file is `backend.txt` (legacy: `worker-b.txt` also works). Other agents message you by writing to `D:\projects\hivemind\workspace\triggers\backend.txt`.
-
-| To reach... | Write to... |
-|-------------|-------------|
-| Architect | `D:\projects\hivemind\workspace\triggers\architect.txt` |
-| Infra | `D:\projects\hivemind\workspace\triggers\infra.txt` |
-| Frontend | `D:\projects\hivemind\workspace\triggers\frontend.txt` |
-| Analyst | `D:\projects\hivemind\workspace\triggers\analyst.txt` |
-| Reviewer | `D:\projects\hivemind\workspace\triggers\reviewer.txt` |
-| Everyone | `D:\projects\hivemind\workspace\triggers\all.txt` |
-
-### Trigger Message Quoting (IMPORTANT)
-
-When writing trigger messages via bash:
-
-**DO use double quotes:**
 ```bash
-echo "(BACKEND #N): Your message here" > "D:\projects\hivemind\workspace\triggers\target.txt"
+node D:/projects/hivemind/ui/scripts/hm-send.js <target> "(BACKEND #N): Your message"
 ```
 
-**DO use heredoc for complex/multi-line messages:**
-```bash
-cat << 'EOF' > "D:\projects\hivemind\workspace\triggers\target.txt"
-(BACKEND #N): This message has apostrophes like "don't" and special chars.
-It can span multiple lines too.
-EOF
-```
+| To reach... | Target |
+|-------------|--------|
+| Architect | `architect` |
+| Infra | `infra` |
+| Frontend | `frontend` |
+| Analyst | `analyst` |
+| Reviewer | `reviewer` |
 
-**DON'T use single quotes with apostrophes:**
-```bash
-# WRONG - breaks on apostrophe:
-echo '(BACKEND #N): Don't do this' > target.txt
-```
+**Why WebSocket:** File triggers lose 40%+ messages under rapid communication. WebSocket has zero message loss.
+
+### Message Format
+
+Always use sequence numbers: `(BACKEND #1):`, `(BACKEND #2):`, etc.
+Start from `#1` each session.
+
+**File triggers still work as fallback** - write to `workspace/triggers/{role}.txt`
 
 Single-quoted strings break when the message contains apostrophes (e.g., "don't", "it's", "won't").
 
 ---
 
-### CRITICAL: EVERY REPLY TO AN AGENT MUST USE THIS COMMAND
+### CRITICAL: USE WEBSOCKET FOR AGENT-TO-AGENT MESSAGING
 
-**When ANY agent messages you, you MUST run a bash command to reply. DO NOT just type your response in terminal.**
+**When ANY agent messages you, you MUST run this command to reply. DO NOT just type your response in terminal.**
 
-**Copy this pattern EVERY TIME:**
+**Use WebSocket via `hm-send.js`:**
 ```bash
-echo "(BACKEND #N): your reply here" > "D:\projects\hivemind\workspace\triggers\TARGET.txt"
+node D:/projects/hivemind/ui/scripts/hm-send.js <target> "(BACKEND #N): your reply here"
 ```
 
-**Target file by agent:**
-- Architect -> `architect.txt`
-- Infra -> `infra.txt`
-- Frontend -> `frontend.txt`
-- Analyst -> `analyst.txt`
-- Reviewer -> `reviewer.txt`
+| To reach... | Target |
+|-------------|--------|
+| Architect | `architect` |
+| Infra | `infra` |
+| Frontend | `frontend` |
+| Analyst | `analyst` |
+| Reviewer | `reviewer` |
 
 **Example - Architect asks you a question:**
 ```bash
-echo "(BACKEND #3): Task complete, ready for review." > "D:\projects\hivemind\workspace\triggers\architect.txt"
+node D:/projects/hivemind/ui/scripts/hm-send.js architect "(BACKEND #3): Task complete, ready for review."
 ```
 
-**WHY:** Your terminal output goes to the USER's screen only. Other agents CANNOT see it. If you don't run the echo command, your reply is lost. The agent will think you never responded.
-
-**NEVER just explain your answer in terminal. ALWAYS execute the echo command.**
-
-Use this for quick coordination, questions, or real-time updates without waiting for state machine transitions.
+**WHY:** Your terminal output goes to the USER's screen only. Other agents CANNOT see it. If you don't run the command, your reply is lost.
