@@ -33,11 +33,11 @@ Add sequence numbers to messages. Receivers track "last seen" per sender and ski
 
 **Examples:**
 ```
-(LEAD #1): Hey team, starting comms check
-(WORKER-A #1): Lead, I'm online
-(REVIEWER #1): Confirmed, ready to review
-(LEAD #2): Great, let's discuss the new feature
-(WORKER-A #2): I have a question about that
+(ARCH #1): Hey team, starting comms check
+(FRONT #1): Arch, I'm online
+(REV #1): Confirmed, ready to review
+(ARCH #2): Great, let's discuss the new feature
+(FRONT #2): I have a question about that
 ```
 
 ---
@@ -71,16 +71,16 @@ Add sequence numbers to messages. Receivers track "last seen" per sender and ski
 ```json
 {
   "counters": {
-    "LEAD": 5,
-    "WORKER-A": 3,
-    "WORKER-B": 2,
-    "REVIEWER": 4
+    "ARCH": 5,
+    "FRONT": 3,
+    "BACK": 2,
+    "REV": 4
   },
   "lastSeen": {
-    "LEAD": { "WORKER-A": 3, "WORKER-B": 2, "REVIEWER": 4 },
-    "WORKER-A": { "LEAD": 5, "WORKER-B": 2, "REVIEWER": 4 },
-    "WORKER-B": { "LEAD": 5, "WORKER-A": 3, "REVIEWER": 4 },
-    "REVIEWER": { "LEAD": 5, "WORKER-A": 3, "WORKER-B": 2 }
+    "ARCH": { "FRONT": 3, "BACK": 2, "REV": 4 },
+    "FRONT": { "ARCH": 5, "BACK": 2, "REV": 4 },
+    "BACK": { "ARCH": 5, "FRONT": 3, "REV": 4 },
+    "REV": { "ARCH": 5, "FRONT": 3, "BACK": 2 }
   }
 }
 ```
