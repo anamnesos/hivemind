@@ -1,0 +1,30 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "name": "ana-intent-start",
+        "type": "command",
+        "command": "node D:/projects/hivemind/workspace/scripts/ana-hooks.js SessionStart"
+      }
+    ],
+    "SessionEnd": [
+      {
+        "name": "ana-intent-end",
+        "type": "command",
+        "command": "node D:/projects/hivemind/workspace/scripts/ana-hooks.js SessionEnd"
+      }
+    ],
+    "AfterTool": [
+      {
+        "matcher": "read_file|write_file|replace|run_shell_command",
+        "hooks": [
+          {
+            "name": "ana-intent-after-tool",
+            "type": "command",
+            "command": "node D:/projects/hivemind/workspace/scripts/ana-hooks.js AfterTool"
+          }
+        ]
+      }
+    ]
+  }
+}
