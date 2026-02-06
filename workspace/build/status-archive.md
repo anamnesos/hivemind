@@ -5687,3 +5687,510 @@ Created comprehensive mobile API system with REST endpoints, SSE real-time updat
 **Finding:** 5 status indicators use text/emoji (●, —, ✓, ✕, ⏳) - need SVG consistency
 
 **Status:** AUDIT COMPLETE - Awaiting implementation approval
+
+---
+
+## Sessions 53-69 (Archived from status.md - Session 80)
+
+## Session 69 - Timing Fixes + Spawn Fix (Feb 3, 2026)
+
+| Task | Owner | Status |
+|------|-------|--------|
+| Gemini Enter delay (500ms final) | Analyst/Architect | ✅ DONE (`20a4548`) |
+| Codex context timing fix (5000→8000ms) | Architect | ✅ DONE (`66b8e5f`) |
+| Codex spawn ENOENT fix | Architect | ✅ DONE (`83f434f`) |
+| Pane header cleanup (remove SDK indicators) | Frontend | ✅ DONE |
+| Update injection paths after folder renames | Frontend | ✅ DONE (approved) |
+
+**Gemini Enter Delay (20a4548):**
+- Regression: 50ms delay insufficient when Gemini actively working
+- Root cause (Analyst): OS can batch text+Enter even with renderer delay
+- Final fix: 500ms delay + refresh button \n→\r
+- VERIFIED working this session (ping test 5/5)
+
+**Codex Context Timing (66b8e5f):**
+- Bug: Codex delay starts at spawn, Architect delay starts after ready-detection
+- Old: Codex 5000ms from spawn beat Architect 6-7s total
+- Fix: Codex now 8000ms, guaranteed after Architect
+- Review: APPROVED HIGH confidence
+
+**Codex Spawn ENOENT Fix (83f434f):**
+- Bug: Codex panes fail with `spawn cmd.exe ENOENT`
+- Root cause: Electron env may not have ComSpec set
+- Fix: Explicit shell path (ComSpec || C:\Windows\System32\cmd.exe)
+- Review: APPROVED HIGH confidence
+
+**Pane Header Cleanup:**
+- Removed `pane-timer`, `sdk-status`, `sdk-session-id`, `delivery-indicator` from pane headers
+- Cleaned related JS handlers and CSS rules (header-only indicators)
+**Review:** ✅ Approved by Reviewer (Session 69)
+
+## Session 68 - Gemini Fix + Instruction Audit (Feb 3, 2026)
+
+| Task | Owner | Status |
+|------|-------|--------|
+| Gemini PTY Enter fix | Architect | ✅ VERIFIED (`beee58b`) |
+| Architect context injection delay (pane 1 faster) | Frontend | ✅ DONE (`462342b`, `d843e56`) |
+| Instruction file audit + fixes | Architect | ✅ DONE (`b6d66c8`) |
+| xterm flow control fix | Architect | ✅ DONE (`df1e38c`) |
+
+**Gemini Enter Fix:**
+- Root cause: Gemini CLI `bufferFastReturn()` eats Enter within 30ms
+- Fix: 50ms delay between text write and Enter
+- Verified: Analyst received and responded to test message
+
+**Instruction File Fixes (12 files):**
+- All startup check-ins use WebSocket (`hm-send.js`)
+- All agent messaging uses WebSocket (not file triggers)
+- Removed hardcoded pane-to-model mappings
+- Added "check settings.json" note for model lookups
+
+**xterm Flow Control Fix:**
+- Root cause: PTY sends data faster than xterm can render, causing "write data discarded" errors
+- Fix: Added write queue with callback-based flow control
+- Waits for xterm to finish processing before sending next chunk
+- Changes: 5 `terminal.write()` calls → `queueTerminalWrite()`
+- Tests: 134/134 terminal + 70/70 injection pass
+
+**Next Session 69:** Restructure to modular ROLE.md + model-notes.md
+
+## Session 66 - Naming Audit & PTY Startup Fix (Feb 2, 2026)
+
+| Task | Owner | Status |
+|------|-------|--------|
+| PTY startup injection ready-gate | Frontend | ✅ `6334c54` |
+| MAP.md accuracy verification | All agents | ✅ `6334c54` |
+| gemini-oracle test fix | Architect | ✅ `6334c54` |
+| Role constants in config.js | Frontend | ✅ `1da06c5` |
+| claudeRunning → agentRunning | Backend | ✅ `caa6727`, `14225d9`, `69cc636` |
+| spawnClaude → spawnAgent | Frontend | ⏳ Lower priority |
+
+**Commits:**
+- `6334c54` - PTY startup injection fix, MAP.md fixes, gemini-oracle test fix
+- `1da06c5` - feat: add centralized role constants to config.js
+- `caa6727` - refactor: agentRunning in IPC handlers
+- `14225d9` - refactor: agentRunning in core modules
+- `69cc636` - refactor: complete agentRunning rename
+
+**Naming Audit Progress:**
+- ✅ Centralized ROLE_NAMES, LEGACY_ROLE_ALIASES, ROLE_ID_MAP in config.js
+- ✅ claudeRunning → agentRunning COMPLETE (all files + tests + backward compat)
+- ⏳ spawnClaude→spawnAgent (lower priority)
+
+---
+
+## Session 65 - SDK Rollout (Feb 2, 2026)
+
+| Task | Owner | Status |
+|------|-------|--------|
+| Analyst check-in | Analyst | ✅ COMPLETE |
+| SDK Mode verification | Analyst | ✅ COMPLETE |
+| **SDK dependency fix** | Infra | ✅ COMPLETE |
+| Dependency review | Reviewer | ✅ APPROVED (HIGH confidence) |
+
+**SDK Dependency Fix:**
+- Root cause: Missing openai-agents, google-genai packages
+- Installed: openai-agents 0.7.0, google-genai 1.61.0, tenacity 9.1.2
+- All imports verified working
+
+---
+
+## Session 64 - Multi-Model SDK Integration (Feb 2, 2026)
+
+| Task | Owner | Status |
+|------|-------|--------|
+| SDK documentation research | Architect | ✅ COMPLETE |
+| Technical spec | Architect | ✅ `build/multi-model-sdk-spec.md` |
+| Spec review | Reviewer | ✅ Issues found |
+| sdk-bridge.js multi-model support | Frontend | ✅ APPROVED by Reviewer #4 |
+| Python manager: BaseAgent class | Architect | ✅ COMPLETE |
+| Python manager: CodexAgent | Architect | ✅ COMPLETE |
+| Python manager: GeminiAgent | Architect | ✅ COMPLETE |
+| HivemindManager factory method | Architect | ✅ COMPLETE |
+| Initial COMMIT | Architect | ✅ `bef0445` PUSHED |
+| GeminiAgent tool use implementation | Architect | ✅ COMPLETE |
+| CodexAgent MCPServerStdio fix | Architect | ✅ COMPLETE |
+| CodexAgent sandbox fix | Architect | ✅ COMPLETE |
+| Tenacity retry logic | Architect | ✅ COMPLETE |
+| E2E test | Architect | ✅ **PASSED** |
+| **COMMIT: SDK V2 Fixes** | Architect | ✅ `3b0aa35` PUSHED |
+
+**Session 64 Fixes (commit `3b0aa35`):**
+
+GeminiAgent:
+- Implement `_build_tools()` with 5 tool functions (read_file, write_file, run_bash, glob_files, grep_search)
+- Enable Automatic Function Calling (AFC) via GenerateContentConfig
+- Update model to gemini-3-flash (matches PTY mode)
+
+CodexAgent:
+- Fix MCPServerStdio pattern: use connect()/cleanup() not __aenter__/__aexit__
+- Fix sandbox value: "workspace-write" (was invalid "elevated_windows_sandbox")
+- Add list_tools() verification on connect
+
+Resilience:
+- Add tenacity retry decorator with exponential backoff
+- Add requirements.txt with SDK dependencies
+
+**E2E Test Results:**
+- ✅ SDK imports successfully
+- ✅ All 5 agent classes present
+- ✅ GeminiAgent tools execute (read, write, bash, glob, grep)
+- ✅ CodexAgent patterns verified
+- ✅ Tenacity retry logic present
+
+**sdk-bridge.js Updates (earlier commit `bef0445`):**
+- Added `PANE_CONFIG` with role + model per pane (claude/codex/gemini)
+- Added `getModelForPane()` helper method
+- `sendMessage()` now includes `model` field in IPC payload
+- Sessions initialized from PANE_CONFIG, track model type
+- `PANE_ROLES` derived from PANE_CONFIG (backward compatible)
+- Tests: 2634/2634 passing
+
+---
+
+## Session 63 - Bug Fixes + UX Improvements (Feb 2, 2026)
+
+| Task | Owner | Status |
+|------|-------|--------|
+| Fix duplicate Gemini context injection | Frontend | ✅ COMMITTED `4456fd5` |
+| Fix Codex modelType in context injection | Frontend | ✅ COMMITTED `e6091dd` |
+| System friction reduction (3-agent decision) | All | ✅ COMMITTED `2983d63` |
+| Pane button SVG overhaul | Frontend | ✅ COMMITTED `8c359a6`, `204e376` |
+
+**Pane Button UX Overhaul:**
+- Replaced cryptic letter buttons (C, X, ~, K, R, L) with intuitive SVG icons
+- Icons: Plus-circle (claim), Square (stop), Corner-up-left (escape), Rotate-cw (restart), File-text (refresh), Lock/Unlock
+- Updated tooltips with friendlier language
+- Files: `index.html`, `terminal.js`, `layout.css`, `terminal.test.js`
+- Tests: 2634/2634 passing
+
+---
+
+## Session 62 - Gemini Startup Prompt + Modularization (Feb 2, 2026)
+
+| Task | Owner | Status |
+|------|-------|--------|
+| Gemini startup prompt injection | Frontend | ✅ REVIEWED - approved by Reviewer #2 |
+| Gemini keyboard events fix | Frontend | ✅ REVIEWED - approved by Reviewer #2 |
+| #3 renderer.js modularization | Frontend | ✅ COMMITTED `931bc4f` |
+
+**Renderer Modularization - COMPLETE:**
+- Created: `modules/utils.js` (debounce + shortcutTooltips, 34 lines)
+- Created: `modules/command-palette.js` (171 lines)
+- Created: `modules/target-dropdown.js` (124 lines)
+- Created: `modules/status-strip.js` (196 lines)
+- Created: `modules/model-selector.js` (73 lines)
+- renderer.js: 2383 → 1774 lines (-609, -26%)
+- Tests: 2634/2634 passing
+- sdkMode solution: passed as parameter to initModelSelectors()
+
+**Gemini Startup Prompt:**
+- Problem: Gemini panes spawn but sit idle (unlike Claude, Gemini CLI needs explicit first message)
+- Fix: Added startup prompt injection at 10000ms in `spawnClaude()` Gemini path
+- Prompt: "Read GEMINI.md and check in as {role}. Start by reading workspace/app-status.json and workspace/current_state.md, then message Architect via trigger file."
+- Timeline: Identity (6s) → Context (8s) → Startup prompt (10s)
+- Applies to: Fresh spawns + model switches (via restartPane → spawnClaude)
+- File: `ui/modules/terminal.js` lines 980-991
+- Tests: 2634/2634 passing
+
+---
+
+## Session 60 - Tech Debt Quick Wins (Feb 1, 2026)
+
+| Task | Owner | Status |
+|------|-------|--------|
+| Finding #7: Queue logic disambiguation | Frontend | ✅ `415a363` |
+| Finding #12: Test coverage (triggers.js) | Analyst | ✅ `e62c32b` |
+| Finding #13: Test coverage (model-switch-handlers.js) | Backend | ✅ `079203a` |
+| Finding #4: main.js modular refactor | Backend | ✅ COMPLETE |
+| Finding #5: daemon-handlers headless refactor | Backend | ✅ COMPLETE |
+| Finding #14: Context injection IPC infrastructure | Backend | ✅ COMPLETE |
+| Finding #14: Context injection in spawnClaude | Frontend | ✅ APPROVED - ready for commit |
+| Priority 2: Test coverage (daemon-handlers, watcher) | Analyst | ✅ `0cd906c` |
+| Model Switch: per-pane dropdown | Frontend | ✅ `89afc50` |
+| Model Switch: dropdown/spawn bug fixes | Frontend | ✅ `742c8db` |
+| Model Switch: Gemini default to gemini-3-flash | Frontend | ✅ `cdf135c` |
+| Model Switch: simplified Gemini spawn (--yolo) | Frontend | ✅ `c67ae03` |
+| Model Switch: context injection on switch | Frontend | ✅ `aab538e` |
+| **Model Switch: Full bug fix (3 root causes)** | Frontend | ✅ `817b209` |
+| **Model Switch: Broadcast notification** | Frontend | ✅ `817b209` |
+
+**Model Switch Full Bug Fix (3 Root Causes):**
+- Bug: Switching model spawned OLD model (e.g. Gemini→Claude spawned Gemini)
+- Root causes identified by Analyst #5 + Reviewer #2:
+  1. Race condition - Recovery manager auto-restarts before settings update
+     - Fix: `markExpectedExit(paneId, 'model-switch')` before kill
+  2. PTY not recreated - Kill destroys PTY but spawnClaude tried to write to deleted PTY
+     - Fix: Renderer calls `restartPane(paneId, model)` instead of `spawnClaude()`
+     - recovery.js updated: `restartPane(paneId, model = null)` passes model to spawnClaude
+  3. Wrong event listener - Waited for 'exit' but daemon sends 'killed'
+     - Fix: Listen for 'killed' event with correct handler signature
+- Files: model-switch-handlers.js, recovery.js, renderer.js
+- Tests: 17/17 model-switch + 54/54 recovery passing
+
+**Model Switch Broadcast Notification:**
+- Broadcasts "(SYSTEM): [Role] switched to [Model]" to all.txt trigger file
+- Notifies all agents when a pane changes model
+- File: `ui/modules/ipc/model-switch-handlers.js`
+
+**Queue logic disambiguation (Finding #7 Option B):**
+- Renamed `messageQueues` → `throttleQueues` in daemon-handlers.js
+- Renamed `processingPanes` → `throttlingPanes` in daemon-handlers.js
+- Renamed `queueMessage()` → `enqueueForThrottle()` in daemon-handlers.js
+- Renamed `processQueue()` → `processThrottleQueue()` in daemon-handlers.js
+- Renamed `processQueue()` → `processIdleQueue()` in injection.js
+- Added docstrings explaining two-queue architecture
+- Updated injection.test.js to match new names
+- All 2674 tests pass
+
+---
+
+## Session 59 - Tech Debt + Race Condition Fix (Feb 1, 2026)
+
+| Task | Owner | Status |
+|------|-------|--------|
+| Finding #9: Notification consolidation | Frontend | ✅ `5f64952` |
+| Finding #10: formatDuration consolidation | Frontend | ✅ `2fa58bc` |
+| Trigger file race condition fix | Frontend | ✅ `55025df` |
+| parseMessageSequence test fixes | Analyst | ✅ (included in `55025df`) |
+
+**Notification consolidation (Finding #9):**
+- Created `ui/modules/notifications.js` - unified notification system
+- Consolidated `showStatusNotice()` from renderer.js and `showToast()` from daemon-handlers.js
+- New unified API: `showNotification(message, { type, location, timeout })`
+- Legacy APIs preserved for backward compatibility
+- Added 17 new tests in `ui/__tests__/notifications.test.js`
+- All 2794 tests pass
+
+---
+
+## Session 58 - Message Timing Fix (Feb 1, 2026)
+
+| Task | Owner | Status |
+|------|-------|--------|
+| Increase DELIVERY_ACK_TIMEOUT_MS to 65s | Backend | ✅ `ab360d1` |
+| Finding #8: Consolidate timing constants | Frontend | ✅ `0a38a53` |
+
+**Constants consolidation (Finding #8):**
+- Moved 25+ timing/debounce constants to `ui/modules/constants.js`
+- Updated `renderer.js`, `watcher.js`, `terminal.js` to import from constants.js
+- Resolved naming conflict: IDLE_THRESHOLD_MS → UI_IDLE_THRESHOLD_MS (30s) vs INJECTION_IDLE_THRESHOLD_MS (2s)
+- All 2777 tests pass
+
+**Pending:** Runtime verification after restart
+
+---
+
+## Session 57 - Backlog Fixes (Feb 1, 2026)
+
+| Task | Owner | Status |
+|------|-------|--------|
+| restartPane spawn failure handling | Backend | Complete |
+| Oracle delete-screenshot path traversal guard | Backend | Complete |
+| Oracle rate limit retry (429 backoff) | Backend | Complete |
+| Screenshot handler tests (invalid filename) | Backend | Complete |
+| Oracle module unit tests | Backend | Complete |
+| Watcher friction-resolution ordering fix | Backend | Complete |
+| Watcher test update (friction-resolution) | Backend | Complete |
+| Message timing investigation (Task #5) | Backend | Complete |
+| CI workflow (concurrency + job deps) | Infra | Complete |
+| **Gemini respawn fix** | Architect | ✅ `5279b1c` |
+| **Message injection race condition fix** | Frontend | ✅ `176cbb5` |
+
+**Gemini respawn bug (Session 57):**
+- Bug: Respawn button failed for pane 5 (Gemini) - command not sent
+- Root cause: After `pty.kill()`, PTY was only recreated for Codex panes
+- Fix: recovery.js now recreates PTY for ALL panes after kill
+- File: `ui/modules/terminal/recovery.js` lines 231-241
+
+**Message injection race condition (Session 57):**
+- Bug: Analyst messages not reaching Architect (intermittent)
+- Root cause #1: daemon-handlers.js `processingPanes.delete()` called immediately after sendToPane(), not in onComplete
+- Root cause #2: sendTrustedEnter IPC round-trip creates race window where focus can change
+- Fix: Moved queue lock release into onComplete callback, added focus verification logging
+- Files: `ui/modules/daemon-handlers.js`, `ui/modules/terminal/injection.js`
+
+---
+
+## Session 56 - Debug Logging Fixes (Feb 1, 2026)
+
+| Task | Owner | Status |
+|------|-------|--------|
+| Verify Task-Pool Status Expansion | Analyst | ✅ Verified |
+| Investigate IdleDetection logging | Analyst | ✅ Found issue |
+| Fix IdleDetection log (line 437) | Frontend | ✅ Fixed (log.debug → log.info) |
+| Fix StatusStrip log (line 582) | Frontend | ✅ Fixed (log.debug → log.info) |
+| Review fixes | Reviewer | ✅ Approved |
+| Challenge-response on IPC bridge | Team | ✅ Simpler solution adopted |
+| Verify logs working post-restart | Frontend | ✅ Verified (IdleDetection + StatusStrip in app.log) |
+| Remove debug logging (cleanup) | Frontend | ✅ Complete (lines 437, 582 removed) |
+
+**Root cause:** `log.debug()` writes to app.log but filtered by `minLevel=info`.
+**Fix:** Changed to `log.info('Tag', ...)` - visible in app.log, agents can grep.
+
+**Challenge-response:** Reviewer challenged IPC bridge proposal. Team agreed `log.info()` is simpler. Agents read app.log directly. IPC bridge backlogged.
+
+**Post-verification cleanup:** Removed high-frequency log.info() calls after verifying they worked.
+
+---
+
+## Session 55 - Gemini Integration Phase 1 (Feb 1, 2026)
+
+| Task | Owner | Status |
+|------|-------|--------|
+| Test Gemini CLI on Windows | Infra | ✅ Complete (v0.26.0, 2.5-pro works) |
+| Create GEMINI.md for Analyst | Architect | ✅ Complete |
+| Update main.js paneCommands | Infra | ✅ Complete (line 99) |
+| Update CLAUDE.md roles table | Architect | ✅ Complete |
+| Update docs/instance-mapping.md | Architect | ✅ Complete |
+| Update README.md | Architect | ✅ Complete |
+| Fix agent communication gap | Architect | ✅ Fixed (Infra + Backend AGENTS.md) |
+| Reviewer approval | Reviewer | ✅ Approved |
+| **Runtime test** | All | ✅ Verified (Analyst checked in) |
+| **DEFAULT_SETTINGS fix** | Architect | ✅ `f087eb1` |
+
+**Committed:** Gemini with `-y` flag is now the default for pane 5. New installs work out of the box.
+
+---
+
+## Session 55 - Oracle Visual QA Phase 2 (Feb 1, 2026)
+
+| Task | Owner | Status |
+|------|-------|--------|
+| gemini-oracle.js module | Backend | ✅ Complete |
+| oracle:analyzeScreenshot IPC handler | Backend | ✅ Complete |
+| Oracle UI tab | Frontend | ⏳ Pending |
+
+---
+
+## Session 54 - Task Pool Watcher + Stuck Detection (Jan 31, 2026)
+
+| Task | Owner | Status |
+|------|-------|--------|
+| Task-pool file watcher hookup | Backend | ✅ `83a259e` |
+| Stuck Claude detection (0 tokens + timer) | Backend | ✅ `61df70e` |
+| Constants consolidation (BYPASS_CLEAR_DELAY_MS) | Backend | ✅ `5da9189` |
+| Task pool dead code cleanup | Backend | ✅ `5da9189` |
+| Task-pool status expansion (in_progress/completed/failed/needs_input) | Backend | ✅ Committed `4f7629a` |
+| UI button debounce | Frontend | ✅ Committed `134d231` |
+| Codex output styling (thinking vs decision) | Frontend | ✅ Committed `dd10276` |
+| Status strip UI (30px task counts) | Frontend | ✅ Committed `adae291` |
+| PTY stuck detection workaround (disabled) | Architect | ✅ Committed `ef3970f` |
+| PTY stuck detection proper fix | Backend | ✅ Committed `4fa7ec4` |
+
+---
+
+## Session 53 - Smart Parallelism Sprint (Jan 31, 2026)
+
+| Task | Owner | Status |
+|------|-------|--------|
+| Smart parallelism design | Architect | ✅ `8fb1469` |
+| Smart parallelism UI (Phase 3) | Frontend | ✅ `b3888c3` |
+| PTY Enter timing fix | Backend | ✅ `5ae0c41` |
+
+**Smart Parallelism UI deliverables:**
+- Idle detection indicator (shows when agent idle 30s + claimable tasks)
+- "Claim available task" button
+- Task pool IPC handlers (get-task-list, claim-task)
+
+**PTY Enter timing fix:**
+- Extended _hivemindBypass clear from 0ms to 75ms
+- Focus restoration via requestAnimationFrame
+
+---
+
+---
+
+## Known Bugs (Session 54)
+
+### PTY Stuck Detection Misfiring (FIXED ✅)
+- **Symptoms:** Claude panes (1, 3, 6) got ESC'd mid-thought, interrupting reasoning
+- **Root Cause:** `recovery-manager.js` interpreted "0 tokens for 15s" as stuck
+- **Reality:** 0 tokens + timer advancing = Claude is THINKING (normal behavior)
+- **Fix (`4fa7ec4`):** Now triggers on timer STALLED (not changing), not on thinking
+- **Detection re-enabled:** `ptyStuckDetection: true` in main.js
+- **Verification needed:** Claude should be able to think >15s without interruption
+
+---
+
+## Session 54 Process Discoveries
+
+**New protocols added to CLAUDE.md:**
+- Assignment Declaration - Architect declares STRATEGIC/CODE REVIEW/IMPLEMENTATION
+- Disagreement Protocol - Rules for productive conflict
+- Direction Gate - Verify user intent before building
+- Human in the Loop - User is ultimate quality gate
+
+**Why documented:** 3-agent strategic check (Architect + Analyst + Reviewer) validated role clarity and surfaced these gaps.
+
+---
+
+## Pending Runtime Verifications
+
+### Sessions 52-54 - All Verified ✅
+
+| Item | Session | Status |
+|------|---------|--------|
+| Copy/Paste UX | 52 | ✅ Verified |
+| Codex Resume Context | 52 | ✅ Verified |
+| Codex Auto-Restart | 52 | ✅ Verified |
+| Smart Parallelism UI | 53 | ✅ Verified (Session 57 - Analyst) |
+| PTY Enter Timing | 53 | ✅ Verified (Session 57 - Analyst) |
+| Status Strip UI | 54 | ✅ Verified (Session 57 - Analyst) |
+| PTY Stuck Detection Fix | 54 | ✅ Verified (Session 57 - Analyst) |
+| Task-Pool Status Expansion | 54 | ✅ Verified (Session 57 - Analyst) |
+
+
+## Session 66 - Feb 2, 2026
+
+### SDK Mode Parallelism Fix ✅
+
+**Task:** Fix SDK mode sequential execution - agents should work in parallel, not one at a time
+**Owner:** Architect
+**Status:** IMPLEMENTED - Ready for review
+
+**Changes:**
+- `hivemind-sdk-v2.py:1315-1370` - Command loop now spawns asyncio tasks instead of awaiting
+- Agents run concurrently, not sequentially
+- True parallelism like PTY mode
+
+**Review Required:** Reviewer to verify code quality before testing
+
+
+**Commit:** `ad2989a` - feat: SDK mode parallel execution
+**Status:** ✅ COMMITTED + PUSHED
+
+**Testing Required:**
+1. Restart app in SDK mode
+2. Send messages to multiple agents simultaneously
+3. Verify all agents show "thinking" at the same time (not sequential)
+4. Check npm console for proper error handling if any agent fails
+
+### PTY Startup Injection Ready-Gate ✅
+
+**Task:** Replace fixed startup timers with PTY-ready detection for identity/context injection  
+**Owner:** Frontend  
+**Status:** IMPLEMENTED - Ready for review + runtime verification  
+
+**Changes:**
+- `ui/modules/terminal.js` - Watch PTY output for ready prompt before injecting identity/context
+- `ui/modules/constants.js` - Added startup readiness timing constants
+
+**Behavior:**
+- Detect ready via prompt pattern (`>`) or "How can I help" text
+- Fallback inject after 30s if pattern never seen (edge case)
+- Prevents injection during Claude Code subscription prompt
+
+**Follow-up Fix (Reviewer #2):**
+- Added ready-gate hook to initTerminal pty.onData (was only in reattach)
+- Clear startup state on initTerminal exit
+- Tests: `npm test -- terminal.test.js` (PASS, 134/134; Jest open-handles warning)
+
+### Role Constants Centralized ✅
+
+**Task:** Add canonical role constants in config.js  
+**Owner:** Frontend  
+**Status:** IMPLEMENTED - Ready for review  
+
+**Changes:**
+- `ui/config.js`: added ROLE_NAMES, LEGACY_ROLE_ALIASES, ROLE_ID_MAP exports

@@ -1,24 +1,24 @@
 # Current State
 
-**Session:** 79 | **Mode:** PTY | **Date:** Feb 5, 2026
+**Session:** 80 | **Mode:** PTY | **Date:** Feb 6, 2026
 
 ---
 
-## STATUS: ACTIVE — Session 79 In Progress
+## STATUS: ACTIVE — Session 80 Doc Cleanup Sprint
 
 ---
 
-### Session 79 Accomplishments
+### Session 80 Accomplishments
 
 | Task | Status |
 |------|--------|
-| Merge Pane 2 (Infra) + Pane 4 (Backend) into DevOps | DONE |
-| Update config.js, index.html, trigger system | DONE |
-| Update all source modules (35+ files) | DONE |
-| Update all test mocks (20+ files) | DONE |
-| Full test suite passing (87 suites, 2796 tests) | DONE |
-| Grep audit — no stale pane-4 references | DONE |
-| Update instance instructions (AGENTS.md) | DONE |
+| CLAUDE.md 3-pane updates | DONE |
+| SPRINT.md overhaul | DONE |
+| MAP.md audit (Frontend) | DONE |
+| Agent instruction file audit (15+ files) | DONE |
+| blockers.md archival | DONE |
+| status.md archival (882→90 lines) | DONE |
+| Reviewer review + fixes | DONE |
 
 ---
 
@@ -38,6 +38,5 @@ Panes 3, 4, and 6 fully removed from codebase.
 
 | Issue | Severity |
 |-------|----------|
-| Main CLAUDE.md role table still lists 6 panes | LOW |
 | Codex Windows sandbox experimental | LOW |
 | Codex 0.98.0 random exit bug (#10511) | MEDIUM |

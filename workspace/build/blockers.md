@@ -10,22 +10,20 @@ None.
 
 ---
 
-## Backlogged (Low Priority)
+## Recently Resolved
 
-### Focus steal during trigger injection
-**Priority:** LOW
-**Status:** Partial fix - focus restored faster but not eliminated
-**Details:** Command bar briefly unresponsive (~1s) during message injection to Claude panes. Terminal.input() disabled for Claude panes, so focus-based Enter required.
-**Workaround:** None needed - minor annoyance only
+### Main CLAUDE.md stale role table (Session 80) FIXED
+- **Priority:** LOW
+- **Owner:** Architect
+- **Fix:** Updated all docs to reflect 3-pane layout (CLAUDE.md, SPRINT.md, AGENTS.md, GEMINI.md, instance files, docs/roles/, docs/models/)
+- **Session:** 80
 
-### Empty trigger file log noise
-**Priority:** LOW (cosmetic)
-**Status:** Backlogged - not a bug
-**Details:** "Empty trigger file after 3 retries" logs appear after successful delivery because watcher sees the cleared file.
-**Resolution:** Not a bug - working as designed
+---
 
-### UI button debounce
-**Priority:** LOW
-**Status:** Future sprint
-**Details:** Some buttons (spawn, kill, nudge, freshStart) lack debounce on rapid clicks.
-**Protected:** Broadcast input (500ms debounce), Full Restart (confirm dialog)
+## Backlog (Nice-to-Have)
+
+### xterm.js flow control warning (Session 60)
+- **Priority:** LOW (cosmetic/warning)
+- **Owner:** Frontend
+- **Issue:** "write data discarded, use flow control to avoid losing data" in devtools
+- **Impact:** Some terminal output may be lost during heavy bursts - warning only, not crash
