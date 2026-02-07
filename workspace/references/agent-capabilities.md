@@ -5,7 +5,60 @@
 
 ---
 
-## Quick Comparison
+## Plain English — What Can Each Agent Actually Do?
+
+Think of each agent as a person with different tools in their toolbox. Here's what each one can do, explained without the jargon.
+
+### Architect (Claude Code — Pane 1)
+
+**Startup automation:** When Architect wakes up, a small script runs automatically that reads what everyone on the team is doing and feeds it into Architect's memory. This means every new session, Architect already knows the team's status without anyone telling it. It also auto-updates its own status when it edits files or shuts down.
+
+**Internal teammates:** Architect can spawn helper agents (Frontend, Reviewer) that live inside its own process. They talk to each other instantly through direct messages — no files, no delays.
+
+**Custom commands:** You could create shortcut commands (like typing `/sync-team`) that do common multi-step tasks in one go. We haven't built any yet.
+
+**Plugin system:** Could connect to outside tools (like a database viewer or API tester) through a standard plug-in format called MCP. Not using this yet.
+
+**Session memory:** Can pick up where it left off after a restart using `--resume` or `--continue`.
+
+### DevOps (Codex CLI — Pane 2)
+
+**No auto-scripts on startup.** Unlike the other two, Codex doesn't have automatic scripts that run when it starts or stops. It uses a different approach — pre-written instruction files (called Skills) that tell it how to behave.
+
+**Session save/restore:** Can save its conversation and reload it later — even "fork" a conversation to try two different approaches from the same starting point. Useful for experiments.
+
+**Remote control mode:** Has a special mode where OTHER tools can send it commands through a standard interface (MCP server). This could let Hivemind control Codex directly instead of typing into its terminal.
+
+**Safety rules:** Has a built-in system for allowing or blocking specific terminal commands. Good for preventing accidental damage.
+
+**Cloud mode:** Can run tasks on a remote server instead of your local machine. Not useful for us right now.
+
+### Analyst (Gemini CLI — Pane 5)
+
+**Startup automation:** Like Architect, Gemini has automatic scripts that update Ana's status when sessions start/stop and when files are touched. Already set up and working.
+
+**Helper agents:** Can create specialized sub-agents for deep investigations without cluttering Ana's main conversation. Not set up yet but could be useful — imagine a "code tracer" agent that follows a bug through 10 files while Ana keeps working.
+
+**On-demand skills:** Can load specialized knowledge only when needed (like a "hivemind-debug" skill that knows our exact project structure). Saves memory by not loading everything upfront.
+
+**Plugin bundles:** Can package multiple tools together as one installable "extension". Could package all our Hivemind tools for easy setup on new machines.
+
+### What's Working Right Now
+
+- Architect's startup script reads the whole team's status automatically
+- Architect auto-tracks which files it's editing
+- Ana's startup script updates her status automatically
+- Ana auto-tracks which files she's touching
+- All three agents can message each other through WebSocket (instant) or trigger files (slower backup)
+
+### What We Could Add Next (Biggest Wins)
+
+1. **Codex direct messaging** — Right now we "type" into DevOps's terminal like a robot pressing keys. Codex has a mode where we could send it requests directly (like texting instead of shouting across a room). Would skip all the terminal injection issues.
+2. **Auto-log failures** — When Architect's tools fail, automatically write the error to errors.md. No manual logging needed.
+3. **Ana's helper agents** — Let Ana spawn investigators for deep code traces without filling up her memory.
+4. **Session restore for DevOps** — When Hivemind restarts, DevOps could reload its previous conversation instead of starting fresh.
+
+---
 
 | Capability | Claude Code (Arch) | Codex CLI (DevOps) | Gemini CLI (Analyst) |
 |------------|-------------------|-------------------|---------------------|
