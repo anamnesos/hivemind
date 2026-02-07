@@ -6,6 +6,49 @@ Last updated: 2026-02-06
 
 ---
 
+## Session 82-84 - Hooks + Intent Board + Capabilities (Feb 6, 2026)
+
+| Task | Owner | Status |
+|------|-------|--------|
+| Shared Intent Board protocol (3 CLAUDE.md files) | Architect | ✅ DONE |
+| Intent seed files (workspace/intent/*.json) | Architect | ✅ DONE |
+| Gemini CLI hooks (ana-hooks.js) | Analyst | ✅ DONE |
+| Claude Code hooks (arch-hooks.js) | Architect | ✅ DONE |
+| Agent capabilities reference doc | All 3 agents | ✅ DONE |
+| Plain English section added | Architect | ✅ DONE |
+| README.md + MAP.md updates | Architect | ✅ DONE |
+| UI fixes (expand button, tooltip) | Architect | ✅ DONE |
+| Reviewer gate (hooks + intent board) | Reviewer | ✅ APPROVED |
+
+**Initiative:** Discovered Gemini CLI and Claude Code have lifecycle hooks. Built auto-sync for intent board.
+- Architect hooks inject team state as additionalContext on fresh sessions
+- Analyst hooks auto-update status on session start/end and file edits
+- Codex has no lifecycle hooks — needs alternative approach
+- Agent capabilities reference catalogs all 3 CLIs with plain English guide
+- Commits pushed: expand fix, tooltip fix, delegation rule, intent board, hooks, capabilities
+
+---
+
+## Session 81 - Rename Sprint + Instance Cleanup (Feb 6, 2026)
+
+| Task | Owner | Status |
+|------|-------|--------|
+| Audit instance directories for stale refs | Analyst | ✅ DONE |
+| Update ana/AGENTS.md + ana/GEMINI.md to 3-pane | Architect | ✅ DONE |
+| Update infra/GEMINI.md to DevOps identity + 3-pane | Architect | ✅ DONE |
+| Delete stale back/ directory + front/AGENTS.md + nul artifacts | Architect | ✅ DONE |
+| Remove Pane 4 from ui/settings.json | DevOps | ✅ DONE |
+| spawnClaude → spawnAgent rename (50+ refs, 10 files) | Architect | ✅ DONE |
+| spawnAllClaude → spawnAllAgents rename | Architect | ✅ DONE |
+| infra/ → devops/ instance dir rename (config, scaffolder, tests) | Architect | ✅ DONE |
+| Reviewer gate (Agent Teams pattern) | Reviewer | ✅ APPROVED |
+
+**Initiative:** Analyst found stale 6-pane references. Completed all doc cleanup + two major renames from Session 80 backlog.
+- Commits: `139ce85` (spawnAgent rename), `38818d5` (infra→devops rename)
+- Remaining: delete stale `infra/` dir after restart (locked by running agent)
+
+---
+
 ## Session 80 - Doc Cleanup Sprint (Feb 6, 2026)
 
 | Task | Owner | Status |
@@ -16,14 +59,20 @@ Last updated: 2026-02-06
 | blockers.md archival | Architect | ✅ DONE |
 | status.md archival | Architect | ✅ DONE |
 | Agent instruction file audit (15+ files) | Architect | ✅ DONE |
-| Review all changes | Reviewer | ⏳ PENDING |
+| Review all changes | Reviewer | ✅ DONE |
+| Source JSDoc audit (4 files) | Architect | ✅ DONE |
+| Test mock audit (14 files) | Architect | ✅ DONE |
+| Push all commits | Architect | ✅ DONE |
 
-**Initiative:** Full documentation cleanup after 3-pane merge (Session 79).
-- Updated 15+ files to reflect 3-pane architecture (Panes 1, 2, 5)
+**Initiative:** Full documentation + source cleanup after 3-pane merge (Session 79).
+- Updated 20+ doc files to reflect 3-pane architecture (Panes 1, 2, 5)
 - Archived sessions 53-69 from status.md → status-archive.md
 - Archived resolved blockers → blockers-archive.md
 - Fixed stale references in CLAUDE.md, SPRINT.md, MAP.md, AGENTS.md, GEMINI.md
 - Updated all instance files (arch, infra→devops, ana) and docs/roles/
+- Source JSDoc: sdk-renderer.js (12 occurrences), mcp-bridge.js, watcher.js, api-docs-handlers.js
+- Test mocks: 14 test files aligned to 3-pane config (PANE_ROLES, PANE_IDS, ROLE_ID_MAP)
+- Commits: a7ac5e6, 8b1ffc9, 5a4848a, bd64803, d143270 — all pushed
 
 ---
 
@@ -98,6 +147,10 @@ Last updated: 2026-02-06
 
 ## Backlog
 
-### spawnClaude → spawnAgent rename (Session 66)
+### Delete stale workspace/instances/infra/ directory
 - **Priority:** LOW
-- **Status:** Deferred — lower priority naming cleanup
+- **Status:** Blocked — directory locked by running Pane 2 agent. Clean up after next restart.
+
+### Runtime verification of 3-pane UI
+- **Priority:** MEDIUM
+- **Status:** Needs Electron boot to verify visually

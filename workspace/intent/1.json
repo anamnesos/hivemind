@@ -1,11 +1,11 @@
 {
   "pane": "1",
   "role": "Architect",
-  "session": 83,
-  "intent": "Intent board implemented, preparing to commit session work",
-  "active_files": ["workspace/instances/arch/CLAUDE.md", "workspace/instances/devops/CLAUDE.md", "workspace/instances/ana/CLAUDE.md"],
-  "teammates": "Frontend not spawned, Reviewer not spawned",
-  "last_findings": "Intent board protocol added to all 3 agent CLAUDE.md files",
+  "session": 84,
+  "intent": "Wrapping up session — handoffs updated, docs teammate finishing README/MAP updates",
+  "active_files": ["workspace/references/agent-capabilities.md", "workspace/session-handoff.json", "workspace/build/status.md"],
+  "teammates": "docs-updater (active, updating README + MAP)",
+  "last_findings": "Hooks working for Architect + Analyst. Capabilities reference complete with plain English section.",
   "blockers": "none",
-  "last_update": "2026-02-06T21:00:00Z"
+  "last_update": "2026-02-06T22:00:00.000Z"
 }

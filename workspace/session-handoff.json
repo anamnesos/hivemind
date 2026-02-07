@@ -1,86 +1,61 @@
 {
-  "session": 54,
+  "session": 84,
+  "date": "2026-02-06",
   "mode": "PTY",
-  "date": "2026-01-31",
-  "sprint": "Autonomous Operation + Process Improvements",
+  "status": "COMPLETE",
 
-  "tasks": [
-    {"task": "Task-pool file watcher", "owner": "Backend", "status": "committed", "commit": "83a259e"},
-    {"task": "Stuck Claude detection", "owner": "Backend", "status": "committed", "commit": "61df70e"},
-    {"task": "UI button debounce", "owner": "Frontend", "status": "committed", "commit": "134d231"},
-    {"task": "Constants consolidation", "owner": "Backend", "status": "committed", "commit": "5da9189"},
-    {"task": "Codex reasoning styling", "owner": "Frontend", "status": "committed", "commit": "dd10276"},
-    {"task": "Task-pool status expansion", "owner": "Backend", "status": "committed", "commit": "4f7629a"},
-    {"task": "Status strip UI", "owner": "Frontend", "status": "committed", "commit": "adae291"},
-    {"task": "PTY stuck detection workaround", "owner": "Architect", "status": "superseded", "commit": "ef3970f"},
-    {"task": "PTY stuck detection proper fix", "owner": "Backend", "status": "committed", "commit": "4fa7ec4"}
+  "completed": [
+    "Shared Intent Board — protocol added to all 3 agent CLAUDE.md files",
+    "Intent seed files created (workspace/intent/1.json, 2.json, 5.json)",
+    "Gemini CLI hooks — Ana built SessionStart/SessionEnd/AfterTool automation (ana-hooks.js)",
+    "Claude Code hooks — Architect SessionStart/SessionEnd/PostToolUse/PreCompact automation (arch-hooks.js)",
+    "Hooks config wired in .claude/settings.local.json and .gemini/settings.json",
+    "Agent capabilities reference created (workspace/references/agent-capabilities.md)",
+    "Plain English section added to capabilities reference",
+    "README.md and MAP.md updated to current state",
+    "Expand button fix, tooltip fix, coordinator delegation rule committed",
+    "All commits pushed to origin/main"
   ],
 
-  "blockers": [],
+  "architecture": {
+    "current_panes": {
+      "1": "Architect + Frontend teammate + Reviewer teammate (Claude Opus)",
+      "2": "DevOps (Codex)",
+      "5": "Analyst (Gemini)"
+    },
+    "config_source": "ui/config.js → PANE_ROLES, PANE_IDS, ROLE_ID_MAP, TRIGGER_TARGETS",
+    "instance_dirs": "arch (pane 1), devops (pane 2), ana (pane 5)",
+    "panes_removed": "3, 4, 6 — fully removed from config, HTML, source, tests, docs",
+    "hooks": {
+      "architect": "workspace/scripts/arch-hooks.js → SessionStart (additionalContext injection), SessionEnd, PostToolUse, PreCompact",
+      "analyst": "workspace/scripts/ana-hooks.js → SessionStart, SessionEnd, AfterTool",
+      "devops": "No hooks — Codex CLI has no lifecycle hooks. Uses Skills/SKILL.md instead"
+    }
+  },
+
+  "not_yet_done": [
+    "Delete stale workspace/instances/infra/ directory (may be cleaned by now after restart)",
+    "Runtime verification of 3-pane UI (needs Electron boot)",
+    "Verify Architect hooks work on fresh session (additionalContext injection)",
+    "DevOps intent board — needs alternative to hooks (Codex has no lifecycle hooks)"
+  ],
+
+  "important_notes": [
+    "NEVER use subagents (Task tool without team_name) — always use Agent Teams pattern",
+    "Architect hooks inject team state as additionalContext on SessionStart — fresh sessions auto-see intent board",
+    "Hook scripts must stay fast (sub-10ms) — they run synchronously and block agent response",
+    "front/CLAUDE.md and rev/CLAUDE.md are kept — used by Agent Teams teammate spawn prompts"
+  ],
+
+  "cli_setup": {
+    "claude": { "type": "native", "version": "2.1.32" },
+    "codex": { "type": "native", "version": "0.98.0" },
+    "gemini": { "type": "npm", "version": "0.27.0" }
+  },
 
   "team": {
-    "Architect": {"pane": 1, "status": "done", "focus": "Coordinated, 9 commits, documented new protocols"},
-    "Infra": {"pane": 2, "status": "standby"},
-    "Frontend": {"pane": 3, "status": "done", "focus": "Status strip UI"},
-    "Backend": {"pane": 4, "status": "done", "focus": "PTY stuck fix"},
-    "Analyst": {"pane": 5, "status": "done", "focus": "PTY fix design, strategic check"},
-    "Reviewer": {"pane": 6, "status": "done", "focus": "All reviews approved, strategic check"}
-  },
-
-  "commits": [
-    {"hash": "4fa7ec4", "desc": "PTY stuck detection proper fix (trigger on stalled, not thinking)"},
-    {"hash": "adae291", "desc": "Status strip UI (30px task count display)"},
-    {"hash": "ef3970f", "desc": "Disable PTY stuck detection (workaround - superseded)"},
-    {"hash": "4f7629a", "desc": "Task-pool status expansion (in_progress/completed/failed/needs_input)"},
-    {"hash": "dd10276", "desc": "Codex reasoning styling (dim+italic for thinking)"},
-    {"hash": "5da9189", "desc": "Constants consolidation + dead code cleanup"},
-    {"hash": "134d231", "desc": "UI button debounce (spawn, kill, nudge, freshStart)"},
-    {"hash": "61df70e", "desc": "Stuck Claude detection (PTY token/timer parsing)"},
-    {"hash": "83a259e", "desc": "Task-pool file watcher (addWatch/removeWatch)"}
-  ],
-
-  "discoveries": {
-    "session54": [
-      "3-Agent Decision Pattern: Architect + Analyst + Reviewer for strategic decisions",
-      "Quality Gate: Reviewer must npm test + npm start before approval",
-      "Assignment Declaration: Architect states STRATEGIC/CODE REVIEW/IMPLEMENTATION",
-      "Disagreement Protocol: Both objections heard, Architect synthesizes, log overrides",
-      "Direction Gate: Verify user intent before building wrong thing correctly",
-      "Human in the Loop: User is ultimate quality gate, trust is earned"
-    ]
-  },
-
-  "verifications": {
-    "completed": [
-      "Task-pool watcher (verified via logs)",
-      "UI debounce (reviewed, approved)",
-      "Constants import (reviewed, approved)",
-      "PTY stuck detection fix (reviewed, approved)",
-      "Status strip UI (reviewed, approved)",
-      "Task-pool status expansion (reviewed, approved)"
-    ],
-    "pending": [
-      "Status strip - verify 30px bar appears with task counts",
-      "PTY stuck fix - verify Claude can think >15s without ESC",
-      "Task-pool expansion - verify lifecycle states in task-pool.json"
-    ]
-  },
-
-  "newProtocols": {
-    "location": "CLAUDE.md - Strategic Decision Protocol section",
-    "added": [
-      "Assignment Declaration (Session 54)",
-      "Disagreement Protocol (Session 54)",
-      "Direction Gate (Session 54)",
-      "Human in the Loop (Session 54)"
-    ]
-  },
-
-  "nextSession": {
-    "priority": [
-      "Runtime verify: Status strip, PTY fix, task-pool expansion",
-      "Consider new autonomous features"
-    ],
-    "notes": "Session 54 was critical for process documentation. 3-agent pattern validated. New protocols documented in CLAUDE.md."
+    "1": { "role": "Architect + Frontend + Reviewer (internal)", "cli": "claude", "status": "online" },
+    "2": { "role": "DevOps", "cli": "codex", "status": "online" },
+    "5": { "role": "Analyst", "cli": "gemini", "status": "online" }
   }
 }
