@@ -63,7 +63,7 @@ If a choice exists between "elegant but complex" and "simple but works" — choo
 **When you start a fresh session, BEFORE waiting for user input:**
 
 1. **Read `workspace/app-status.json`** — Check mode and restart time
-2. **Read `workspace/current_state.md`** — Slim status file
+2. **Read `workspace/session-handoff.json`** — Primary session state
 3. Read `workspace/build/blockers.md` — Active blockers only
 4. Read `workspace/build/errors.md` — Active errors only
 5. **Read all intent files** — `workspace/intent/1.json`, `2.json`, `5.json` (see SHARED INTENT BOARD)
@@ -310,8 +310,7 @@ Start sequence numbers from `#1` each session.
 
 Before EVER telling the user to restart, you MUST:
 
-1. **Update `workspace/session-handoff.json`** — Structured handoff
-2. **Update `workspace/current_state.md`** — Human-readable summary
+1. **Update `workspace/session-handoff.json`** — Primary session state (tasks, roadmap, issues, stats)
 3. **Update `workspace/build/status.md`** — Mark completed tasks
 4. **Shut down teammates** — SendMessage shutdown_request to both
 5. **Clean up team** — Teammate cleanup operation

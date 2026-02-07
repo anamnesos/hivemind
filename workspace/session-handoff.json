@@ -35,8 +35,26 @@
     "Verify Ana's expanded --include-directories works (needs pane 5 restart)",
     "Live shared state over WebSocket (P3 on reliability roadmap)",
     "Rolling changelog / diff-of-context per pane (P3)",
-    "Context compressor idea (Ana auto-generates current_state.md hourly) — filed for later"
+    "Context compressor idea (Ana auto-generates session summary hourly) — filed for later"
   ],
+
+  "roadmap": [
+    "P3: Live shared state over WebSocket",
+    "P3: Rolling changelog / diff-of-context per pane",
+    "P4: Context compressor idea"
+  ],
+
+  "known_issues": {
+    "Gemini shell fragility (node-pty binary)": "MEDIUM — recurred Session 85, restart fixed",
+    "Codex Windows sandbox experimental": "LOW",
+    "Codex 0.98.0 random exit bug (#10511)": "MEDIUM",
+    "Jest worker leak warning (cosmetic)": "LOW"
+  },
+
+  "stats": {
+    "test_suites": 89,
+    "tests_passed": 2803
+  },
 
   "important_notes": [
     "NEVER use subagents (Task tool without team_name) — always use Agent Teams pattern",
