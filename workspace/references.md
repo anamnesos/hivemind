@@ -37,6 +37,15 @@
 | File System | https://nodejs.org/api/fs.html | fs.watch, readFile, writeFile |
 | Path | https://nodejs.org/api/path.html | path.join, resolve, dirname |
 
+## Web Platform
+
+| Topic | URL | Notes |
+|-------|-----|-------|
+| Page Visibility API | https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API | visibilitychange, document.hidden for pausing work |
+| animation-play-state | https://developer.mozilla.org/docs/Web/CSS/animation-play-state | Pause/resume CSS animations |
+| offset-path | https://developer.mozilla.org/en-US/docs/Web/CSS/offset-path | CSS motion path for particle streams |
+| offset-distance | https://developer.mozilla.org/en-US/docs/Web/CSS/offset-distance | Animating distance along motion path |
+
 ## chokidar (File Watcher)
 
 | Topic | URL | Notes |

@@ -30,6 +30,61 @@ Track problems and patterns as we build Hivemind. This feeds into improving the 
 
 ## Friction Log
 
+### Feb 2 2026 - coordination - No message priority/interrupt system
+
+**What happened**: User pointed out that if they need to interrupt an agent or change plans, their urgent message would be queued behind other messages. Same issue for agents communicating with each other.
+
+**Root cause**: Trigger message system is pure FIFO - no priority levels, no interrupt capability. The `[URGENT]` tag in the protocol is just a label with no queue behavior change.
+
+**Resolution**: None yet - logged as feature request.
+
+**Pattern**: Yes - will become worse as message volume increases.
+
+**Improvement**: Options: 1) Priority channel that bypasses queue, 2) Interrupt signal to clear pending and deliver NOW, 3) Separate urgent trigger file (e.g., architect-urgent.txt) processed first, 4) Rate-limit HIVEMIND SYNCs.
+
+**Decision (3-agent consensus - Analyst + Reviewer + Architect):**
+- Phase 1: Rate-limit SYNCs (max 1/30s) - addresses likely root cause
+- Phase 2 (if needed): Explicit interrupt mechanism (user-triggered clear + inject)
+- REJECTED: Silent priority reordering (breaks sequence guard lastSeen tracking)
+- REJECTED: Option 2 clear-pending without user action (message loss risk)
+- Rationale: FIFO is intentional for correctness. Reduce queue buildup first, add complexity only if proven necessary.
+
+---
+
+### Feb 1 2026 - coordination - Agents stuck on stale context despite corrections
+
+... (existing content) ...
+
+---
+
+### Feb 2 2026 - coordination - File Visibility Lag (Gemini CLI)
+
+**What happened**: Infra (Gemini CLI, pane 2) could not see `renderer.js` or new modular files in `ui/modules/` (except `utils.js`), even though `status.md` and `current_state.md` confirmed they were created/modified today.
+
+**Root cause**: Known issue in Session 62 where Gemini agents don't immediately see file system changes made by Claude panes.
+
+**Resolution**: Messaged Architect to confirm file existence and absolute paths.
+
+**Pattern**: YES - documented in GEMINI.md as a session-specific issue.
+
+**Improvement**: Implement a robust "FS SYNC" check or wait protocol for Gemini agents.
+
+---
+
+### Feb 1 2026 - coordination - Agent check-in race condition
+
+**What happened**: Backend agent ran startup check-in command correctly, but message never reached Architect. Other agents (Infra, Analyst, Frontend) checked in successfully.
+
+**Root cause**: All agents write to same file (architect.txt) on startup. Backend's message was overwritten by another agent before the file watcher could read it.
+
+**Resolution**: Workaround - Architect proactively pings agents who don't check in. Backend confirmed online after direct ping.
+
+**Pattern**: Yes - will recur every session with 6 agents racing to write to same file.
+
+**Improvement**: Options: 1) Architect proactively pings each agent on startup rather than waiting for check-ins, 2) Each agent writes to unique file (backend-checkin.txt), 3) Add retry with random jitter to check-in protocol, 4) Use append mode with watcher that processes multiple messages.
+
+---
+
 ### Jan 18 2026 - onboarding - Instances didn't auto-register
 
 **What happened**: New instances opened with "how can I help you today" - didn't know their role or what to do.
@@ -540,4 +595,76 @@ setTimeout(() => {
 
 ---
 
+### Feb 1 2026 - review - Persisted settings override code defaults silently
+
+**What happened**: Phase 1 Gemini integration changed main.js DEFAULT_SETTINGS to set pane 5 to `gemini -m gemini-2.5-pro`. After restart, pane 5 still ran Codex. User reported the issue.
+
+**Root cause**:
+1. `ui/settings.json` persists user settings and overrides DEFAULT_SETTINGS
+2. settings.json had `"5": "codex"` from before the change
+3. Reviewer approved main.js change without checking if persisted config would override it
+4. The code change was correct but had no effect at runtime
+
+**Resolution**: Updated `ui/settings.json` directly to have `"5": "gemini -m gemini-2.5-pro"`.
+
+**Pattern**: YES - any time a "default" is changed, persisted settings will override it for existing installations.
+
+**Severity**: MEDIUM - caused wasted restart, but easily diagnosed.
+
+**Improvement**:
+1. **Review checklist item**: "For default config changes, verify no persisted settings file overrides them"
+2. When changing defaults, also update (or document update to) the persisted settings file
+3. Consider migration logic: if DEFAULT_SETTINGS differs from settings.json, prompt user or auto-migrate
+
+---
+
+### Feb 1 2026 - tooling - Gemini CLI sandboxed to instance folder only
+
+**What happened**: Analyst (Gemini CLI, pane 5) was assigned to verify logs in `ui/app.log`. Analyst reported they could not access any files outside `workspace/instances/investigator/`. Could not read shared_context.md, blockers.md, errors.md, status.md, or any code files.
+
+**Root cause**: Gemini CLI enforces a strict sandbox. It only allows file access within its working directory (`workspace/instances/investigator/`). Unlike Claude Code, it cannot read arbitrary project paths.
+
+**Resolution**: Added `--include-directories "D:\projects\hivemind"` flag to pane 5 command in main.js and settings.json. This expands Gemini's sandbox to include the full project directory. **Requires restart to take effect.**
+
+**Pattern**: YES - any new Gemini pane needs `--include-directories` if it needs project-wide file access.
+
+**Severity**: MEDIUM - fixed with simple flag addition.
+
+---
+
 (Add new entries as friction occurs)
+
+---
+
+### Feb 1 2026 - coordination - Analyst messages to Architect lost (REGRESSION)
+
+**What happened**: Architect accused Analyst of ignoring mandatory status reports. Actually, Analyst WAS sending replies (#26, #28, #30, #31) but messages never arrived. Analyst used shared_context.md to report issue.
+
+**Root cause**: Trigger file (architect.txt) being cleared instantly after Analyst writes - before content can be delivered. Analyst verified:
+1. Write command succeeds (tested with temp file)
+2. Immediate read of architect.txt returns empty
+3. Some process clearing file too fast
+
+**Resolution**: NEW BLOCKER filed. Backend to investigate. Possible Gemini CLI timing/file handle difference.
+
+**Pattern**: REGRESSION - 176cbb5 fix worked earlier (24+ messages verified including from Analyst). Edge case or timing issue.
+
+**Improvement**:
+1. Investigate file clearing timing for Gemini CLI specifically
+2. Add fallback communication (shared_context.md) when triggers fail
+3. Consider write verification before clearing trigger files
+
+---
+
+### Feb 1 2026 - coordination - High volume of trigger delivery timeouts during large audits
+
+**What happened**: app.log shows widespread "Delivery timeout" warnings for agent-to-agent triggers. Architect confirmed receipt of some messages, but the system logged timeouts anyway.
+
+**Root cause**: DELIVERY_ACK_TIMEOUT_MS (65s) is too short for large tasks where Claude spends significant time "thinking" or running complex audits (Finding #12). The acknowledgement isn't sent until Claude finishes and the message is actually "delivered" to the TUI, leading to false-positive timeouts.
+
+**Resolution**: Analyst reported the observation. Architect acknowledged and deferred further investigation. No current impact on delivery, only log noise.
+
+**Pattern**: YES - recurring during high-load sessions or long reasoning tasks.
+
+**Improvement**: 1) Further increase DELIVERY_ACK_TIMEOUT_MS, 2) Move acknowledgement to when message is ENQUEUED for injection, not when injection COMPLETES, or 3) Accept timeouts as best-effort status rather than warnings.
+
