@@ -1,8 +1,30 @@
 # Build Status
 
-Last updated: 2026-02-06
+Last updated: 2026-02-07
 
 **For older sessions (1-69):** See `status-archive.md`
+
+---
+
+## Session 85 - Reliability Sprint P1+P2 (Feb 7, 2026)
+
+| Task | Owner | Status |
+|------|-------|--------|
+| PTY health monitoring (alive/idle/status cascade) | DevOps | DONE |
+| Auto-restart on dead panes | DevOps | DONE |
+| Integration tests (WS delivery + recovery manager) | DevOps | DONE |
+| Port 0 falsy bug fix (websocket-server.js `\|\|` → `??`) | Architect | DONE |
+| Gemini startup prompt injection on restart button | Architect | DONE |
+| Ana --include-directories expanded to project root | Architect | DONE |
+| README.md + MAP.md accuracy updates | Architect | DONE |
+
+**Commits:** `72f8145`, `e1936ec`, `aacb212`, `2851b11`
+**Test suite:** 87 suites/2797 tests → 89 suites/2803 tests
+
+**Key decisions:**
+- WS heartbeats rejected (agents don't maintain persistent connections). PTY-level monitoring via daemon instead.
+- Health status cascade: dead > restarting > stuck > stale > healthy
+- Gemini panes were missing context injection on restart button — `!state.isGemini` guard removed
 
 ---
 

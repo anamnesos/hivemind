@@ -4,37 +4,35 @@
 
 ---
 
-## STATUS: IN PROGRESS — Reliability / "Nervous System" Sprint
+## STATUS: COMPLETE — Reliability Sprint P1+P2
 
 ---
 
-### Session 85 — Reliability Roadmap
+### Session 85 — Reliability + Fixes
 
-**Origin:** Casual 3-agent conversation surfaced unanimous consensus: self-healing before features.
+| Task | Owner | Status |
+|------|-------|--------|
+| PTY health monitoring (alive/idle/status cascade) | DevOps | DONE (72f8145) |
+| Auto-restart on dead panes | DevOps | DONE (72f8145) |
+| Integration tests (WS delivery + recovery manager) | DevOps | DONE (aacb212) |
+| Port 0 falsy bug fix (websocket-server.js) | Architect | DONE (2851b11) |
+| Gemini startup prompt injection on restart button | Architect | DONE (needs app restart to load) |
+| Ana --include-directories expanded to project root | Architect | DONE (needs pane 5 restart) |
+| README.md + MAP.md accuracy updates | Architect | DONE |
 
-**Key Insight (Ana):** "If James steps away, the Hivemind isn't an entity, it's just a collection of stalled processes." All 3 models (Opus, Codex, Gemini) independently converged on reliability as the #1 priority.
+### Verify After Restart
 
-| Priority | Task | Owner | Status |
-|----------|------|-------|--------|
-| P1 | Heartbeat system (30s pings, alive/dead tracking) | DevOps | ASSIGNED |
-| P1 | Auto-restart (60s missing heartbeat → pane restart) | DevOps | ASSIGNED |
-| P2 | Integration test harness (WS round-trip, trigger parsing, pane-kill recovery) | DevOps + Analyst | ASSIGNED |
-| P3 | Live shared state over WebSocket (ephemeral, advisory) | DevOps | PLANNED |
-| P3 | Rolling changelog / diff-of-context per pane | DevOps | PLANNED |
-| P4 | Expand Ana's --include-directories to project root | Architect | PLANNED |
+- [ ] Ana gets startup prompt injected via restart button (not just full app restart)
+- [ ] Ana can read files outside workspace/ (expanded --include-directories)
+- [ ] PTY health monitoring shows correct status in health dashboard
 
-### Session 82-84 Accomplishments
+### Roadmap (Next)
 
-| Task | Status |
-|------|--------|
-| Shared Intent Board protocol (all 3 CLAUDE.md files) | DONE |
-| Intent seed files (1.json, 2.json, 5.json) | DONE |
-| Gemini CLI hooks (ana-hooks.js) | DONE |
-| Claude Code hooks (arch-hooks.js) | DONE |
-| Agent capabilities reference doc | DONE |
-| UI fixes (expand button, tooltip, cyberpunk theme) | DONE |
-
----
+| Priority | Task | Status |
+|----------|------|--------|
+| P3 | Live shared state over WebSocket | PLANNED |
+| P3 | Rolling changelog / diff-of-context per pane | PLANNED |
+| P4 | Context compressor (Ana auto-generates current_state.md) | IDEA |
 
 ### Architecture (Session 79+)
 
@@ -44,7 +42,7 @@
 | 2 | Codex | DevOps (Infra + Backend combined) |
 | 5 | Gemini | Analyst |
 
-Panes 3, 4, and 6 fully removed from codebase.
+Test suite: 89 suites, 2803 tests passing.
 
 ---
 
@@ -55,4 +53,4 @@ Panes 3, 4, and 6 fully removed from codebase.
 | Gemini shell fragility (node-pty binary) | MEDIUM — recurred Session 85, restart fixed |
 | Codex Windows sandbox experimental | LOW |
 | Codex 0.98.0 random exit bug (#10511) | MEDIUM |
-| Codex "missing rollout path" SQLite error (cosmetic) | LOW |
+| Jest worker leak warning (cosmetic) | LOW |

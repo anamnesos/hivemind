@@ -1,20 +1,17 @@
 {
-  "session": 84,
-  "date": "2026-02-06",
+  "session": 85,
+  "date": "2026-02-07",
   "mode": "PTY",
   "status": "COMPLETE",
 
   "completed": [
-    "Shared Intent Board — protocol added to all 3 agent CLAUDE.md files",
-    "Intent seed files created (workspace/intent/1.json, 2.json, 5.json)",
-    "Gemini CLI hooks — Ana built SessionStart/SessionEnd/AfterTool automation (ana-hooks.js)",
-    "Claude Code hooks — Architect SessionStart/SessionEnd/PostToolUse/PreCompact automation (arch-hooks.js)",
-    "Hooks config wired in .claude/settings.local.json and .gemini/settings.json",
-    "Agent capabilities reference created (workspace/references/agent-capabilities.md)",
-    "Plain English section added to capabilities reference",
-    "README.md and MAP.md updated to current state",
-    "Expand button fix, tooltip fix, coordinator delegation rule committed",
-    "All commits pushed to origin/main"
+    "PTY-level health monitoring and auto-restart on dead panes (commit 72f8145)",
+    "Integration tests: WS delivery audit + recovery manager (commit aacb212)",
+    "Port 0 falsy bug fix in websocket-server.js (commit 2851b11)",
+    "Gemini startup prompt injection fix — restart button now injects context for Gemini panes",
+    "Ana --include-directories expanded from workspace/ to project root",
+    "README.md updated (Self-Healing section, test counts, intent board)",
+    "MAP.md updated (date, test counts 89 suites/2803, new test files)"
   ],
 
   "architecture": {
@@ -34,17 +31,26 @@
   },
 
   "not_yet_done": [
-    "Delete stale workspace/instances/infra/ directory (may be cleaned by now after restart)",
-    "Runtime verification of 3-pane UI (needs Electron boot)",
-    "Verify Architect hooks work on fresh session (additionalContext injection)",
-    "DevOps intent board — needs alternative to hooks (Codex has no lifecycle hooks)"
+    "Verify Gemini startup prompt injection works on restart button (code fix applied, needs app restart to load)",
+    "Verify Ana's expanded --include-directories works (needs pane 5 restart)",
+    "Live shared state over WebSocket (P3 on reliability roadmap)",
+    "Rolling changelog / diff-of-context per pane (P3)",
+    "Context compressor idea (Ana auto-generates current_state.md hourly) — filed for later"
   ],
 
   "important_notes": [
     "NEVER use subagents (Task tool without team_name) — always use Agent Teams pattern",
-    "Architect hooks inject team state as additionalContext on SessionStart — fresh sessions auto-see intent board",
-    "Hook scripts must stay fast (sub-10ms) — they run synchronously and block agent response",
-    "front/CLAUDE.md and rev/CLAUDE.md are kept — used by Agent Teams teammate spawn prompts"
+    "Architect = coordinator, NOT implementer — delegate to Ana/DevOps/Frontend/Reviewer",
+    "terminal.js triggerStartupInjection now injects context for ALL panes including Gemini (was skipping Gemini before)",
+    "websocket-server.js uses ?? instead of || for port (0 is falsy in JS)",
+    "Test suite: 89 suites, 2803 tests all passing"
+  ],
+
+  "commits_this_session": [
+    "72f8145 - feat: PTY-level health monitoring and auto-restart on dead panes",
+    "e1936ec - chore: session 85 workspace updates and stale file cleanup",
+    "aacb212 - test: integration tests for WS delivery and recovery manager",
+    "2851b11 - fix: port 0 falsy bug in websocket-server, test cleanup leak"
   ],
 
   "cli_setup": {
