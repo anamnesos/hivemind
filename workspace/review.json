@@ -3,13 +3,13 @@
   "review": {
     "reviewer": "Reviewer",
     "model": "claude-sonnet-4-5-20250929",
-    "author": "DevOps",
+    "author": "DevOps + Analyst",
     "author_model": "codex-0.98.0",
     "change_type": "concurrency",
     "result": "approved",
-    "findings": "Full integration review: traced both onExit handlers, verified one-shot consumption, timing analysis (15s vs ms exit), memory leak analysis, cross-file contracts (killAllTerminals/freshStartAll correctly not guarded). High confidence.",
+    "findings": "4-fix layered defense: (1) shouldIgnoreExit guard persists for both onExit handlers, (2) Gemini bypasses isPromptReady to avoid stale false positives, (3) spawnAgent prefers explicit model param for Gemini detection, (4) terminal.clear() on restart removes stale buffer. All complementary, no conflicts. Memory safe (max 3 entries). Indentation fix applied to recovery.js SDK branch. 90 suites / 2807 tests passing.",
     "tests_touched": false,
-    "timestamp": "2026-02-08T05:55:00Z"
+    "timestamp": "2026-02-08T06:12:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
