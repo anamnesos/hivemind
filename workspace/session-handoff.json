@@ -2,9 +2,19 @@
   "session": 92,
   "date": "2026-02-08",
   "mode": "PTY",
-  "status": "IN_PROGRESS",
+  "status": "COMPLETE",
 
-  "completed": [],
+  "completed": [
+    "Backlog audit: cleared 7/10 known issues (Ana investigated, Architect cleaned docs)",
+    "Fix: workflow.js IPC migration — window.ipcRenderer → window.hivemind.workflow/graph (14 call sites, commit f2873eb)",
+    "Fix: graceful shutdown cleanup — unsetup registry, perf-audit unregister, status-strip/watcher/memory timer cleanup (commit f2873eb)",
+    "Fix: missing test mock (cleanup in hivemind-app.test.js) + missing export (shutdown in transcript-logger.js)",
+    "Docs: cleared resolved known issues from session-handoff.json and blockers.md (commit 49abc0c)",
+    "Fix: screenshots tab click-to-expand and proportional thumbnails (commit e0ebed1)",
+    "Phase 1 UI cleanup: removed MCP indicator, Spawn button, Cost badge, dead Dashboard HTML; fixed activity event name mismatch activity-entry→activity-logged (commit 8a17303)",
+    "Phase 2+3: Panel declutter (21→4 primary tabs + Dev toggle with localStorage) and Feed enhancement (chat-style messages, escapeHtml, append-only DOM, 500-entry cap, debounced search, noise filtering, AWAITING HUMAN banner) (commit 66e0ae7)",
+    "Phase 4 assessment: listener 'leaks' are app-lifetime singletons (not real leaks), lazy tab init deferred (architectural), dead code already removed in Phase 1"
+  ],
 
   "architecture": {
     "current_panes": {
@@ -28,9 +38,8 @@
   "roadmap": [],
 
   "known_issues": {
-    "Workflow/GraphTab invoke errors at startup": "MEDIUM — workflow.js uses window.ipcRenderer which isn't exposed. Non-blocking but logs errors.",
     "Codex 0.98.0 random exit bug (#10511)": "MEDIUM — upstream, still on 0.98.0",
-    "Jest worker leak warning (cosmetic)": "LOW — still appearing in test runs"
+    "Jest worker leak warning (cosmetic)": "LOW — only perf-audit has full unregister, other modules silently skip"
   },
 
   "stats": {
@@ -47,10 +56,17 @@
     "pipeline.js: conversation-aware state machine, hybrid detection (tags + keywords), auto-notifications",
     "context-compressor.js: generates token-budget-constrained snapshots from 6 data sources, persists to workspace/context-snapshots/{paneId}.md, auto-refreshes via watcher.addWatch() + 120s timer. arch-hooks.js reads snapshots for post-compaction restoration.",
     "NEW: terminal.js flow control — watermark-based (500KB HIGH / 50KB LOW) with PTY pause/resume via XOFF/XON through daemon. Fixes 'write data discarded' warning from Session 60.",
+    "NEW S92: Panel tabs split into primary (Feed/Shots/Oracle/Git) and devtools (17 tabs behind Dev toggle). State persisted in localStorage key 'hivemind-devtools-open'. Activity tab renamed to Feed with chat-style message rendering, escapeHtml XSS protection, append-only DOM, noise filtering.",
     "Test suite: 93 suites, 2996 tests all passing"
   ],
 
-  "commits_this_session": [],
+  "commits_this_session": [
+    "f2873eb - fix: workflow IPC migration to window.hivemind + graceful shutdown cleanup",
+    "49abc0c - docs: clear resolved known issues from backlog",
+    "e0ebed1 - fix: screenshots tab click-to-expand and proportional thumbnails",
+    "8a17303 - fix: declutter header and fix activity tab event mismatch",
+    "66e0ae7 - feat: panel declutter with Dev Tools toggle and chat-style Feed"
+  ],
 
   "cli_setup": {
     "claude": { "type": "native", "version": "2.1.32" },
@@ -65,9 +81,9 @@
   },
 
   "verify_after_restart": {
-    "what": "S91 verified at S92 startup — terminals spawn, no watcher loops, no data-discard warnings",
-    "how": "VERIFIED via console.log at startup",
-    "success": "All 3 panes spawned, WebGL renderers enabled, agent colors attached, no errors",
-    "failure": "N/A — passed"
+    "what": "S92 UI cleanup: (1) Header shows only Project/Sync/Actions (no MCP/Spawn/Cost), (2) Panel shows 4 primary tabs (Feed/Shots/Oracle/Git) + Dev toggle, (3) Feed tab receives activity-logged events, (4) Click-to-expand works on screenshot thumbnails",
+    "how": "Visual inspection — open panel, check tabs. Click Dev toggle to show/hide devtools tabs. Open Feed tab, check entries appear. Drop an image in Shots, click thumbnail to expand.",
+    "success": "4 primary tabs visible, Dev toggle shows/hides 17 devtools tabs, Feed entries render with timestamps, screenshots expand on click",
+    "failure": "Tabs missing, devtools toggle broken, Feed empty despite agent activity, screenshots don't expand"
   }
 }
