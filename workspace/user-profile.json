@@ -1,0 +1,11 @@
+{
+  "name": "James",
+  "experience_level": "learning",
+  "background": "No formal dev training. Built Hivemind from scratch in 10 days.",
+  "preferences": {
+    "explain_concepts": true,
+    "prefer_simple_over_clever": true,
+    "learning_pace_over_shipping": true
+  },
+  "notes": "Edit this file to customize how agents interact with you."
+}
