@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
   "review": {
-    "reviewer": "Reviewer",
-    "model": "claude-sonnet-4-5-20250929",
-    "author": "DevOps + Analyst",
-    "author_model": "codex-0.98.0",
-    "change_type": "concurrency",
+    "reviewer": "Reviewer (Agent Teams) + Architect validation",
+    "model": "claude-opus-4-6",
+    "author": "Frontend (Agent Teams)",
+    "author_model": "claude-sonnet-4-5-20250929",
+    "change_type": "architectural",
     "result": "approved",
-    "findings": "4-fix layered defense: (1) shouldIgnoreExit guard persists for both onExit handlers, (2) Gemini bypasses isPromptReady to avoid stale false positives, (3) spawnAgent prefers explicit model param for Gemini detection, (4) terminal.clear() on restart removes stale buffer. All complementary, no conflicts. Memory safe (max 3 entries). Indentation fix applied to recovery.js SDK branch. 90 suites / 2807 tests passing.",
-    "tests_touched": false,
-    "timestamp": "2026-02-08T06:12:00Z"
+    "findings": "Full integration review: traced war-room entry → pipeline.onMessage → detectStage → advanceStage → handleAutoNotifications → triggers.sendDirectMessage. No circular dependencies (setPipelineHook injection pattern). Cross-file contracts verified (sendDirectMessage 3-arg signature matches). Re-entrant notification path identified — safe now (Pipeline messages filtered by SYSTEM_LABELS), re-entrancy guard added. Forward-only stage transitions, atomic persistence, 50 tests. 91 suites / 2857 tests passing.",
+    "tests_touched": true,
+    "timestamp": "2026-02-08T08:31:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
