@@ -3,13 +3,13 @@
   "review": {
     "reviewer": "Reviewer (Agent Teams)",
     "model": "claude-opus-4-6",
-    "author": "DevOps (Codex)",
-    "author_model": "codex-0.98.0",
+    "author": "Frontend (Agent Teams)",
+    "author_model": "claude-opus-4-6",
     "change_type": "routine",
     "result": "approved",
-    "findings": "Item 16: Per-pane typing guard in processIdleQueue. injection.js checks lastTypedTime[paneId] < TYPING_GUARD_MS in addition to userIsTyping(). All 4 injection paths respect the guard. Edge case (undefined pane) handled by falsy short-circuit. Timer leak fix: Codex identity timeouts tracked/cleared in terminal.js. EPIPE suppression in main.js. 2 new tests verify the new code path. 91 suites / 2917 tests passing.",
-    "tests_touched": true,
-    "timestamp": "2026-02-08T22:25:00Z"
+    "findings": "CSS performance audit fixes: (1) Killed 10+ infinite idle animations (paneBreathe, hexPulse drop-shadow, taskPulse, conflictPulse, heartbeat pulses, breathe/breatheDot). Preserved state-gated animations. (2) Removed backdrop-filter from .pane, .pane-header, .panel-tabs — replaced with solid backgrounds matching blurred appearance. Kept on .header only. (3) Replaced 22 transition:all with specific property lists — all verified to cover actual hover/active changes. Net -90 lines CSS. 91 suites / 2917 tests passing.",
+    "tests_touched": false,
+    "timestamp": "2026-02-08T22:40:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
