@@ -7,9 +7,9 @@
     "author_model": "claude-opus-4-6",
     "change_type": "routine",
     "result": "approved",
-    "findings": "CSS perf items 4-6: (4) Added 7 will-change hints on state-gated selectors only — verified none on always-idle elements. (5) Moved pane-spinner breathe animation from base to state-gated selector — no regression. (6) Removed dead terminals-section margin-right transition (both states were 0). Kept right-panel width transition (flex layout requires real width change). 91 suites / 2917 tests passing.",
+    "findings": "Screenshots tab wide panel: panel-wide class toggled only for screenshots tab (62% width). Resize fires post-transition (350ms). Close/reopen preserves wide state correctly. wasWide guard prevents unnecessary resize calls. No transition conflicts. All 6 edge cases verified safe.",
     "tests_touched": false,
-    "timestamp": "2026-02-08T23:08:00Z"
+    "timestamp": "2026-02-08T23:28:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
