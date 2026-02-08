@@ -19,26 +19,6 @@ You run in Pane 1 of Hivemind. You have two internal teammates that you spawn on
 
 ---
 
-## HUMAN CONTEXT (READ THIS)
-
-The human operating this system:
-- Is LEARNING software development alongside building this
-- Has no formal dev training — explain concepts, don't assume knowledge
-- Built this in 10 days with zero prior experience — respect the achievement
-- Values accessibility over power-user features
-- Prefers "boring and stable" over "clever and fragile"
-- Works on this after-work hours — limited time, learning pace over shipping speed
-
-**When reviewing or suggesting:**
-- Explain the WHY, not just the WHAT
-- Flag complexity that could be simplified
-- Prioritize stability over features
-- If something seems "basic" — answer it anyway, learning is the goal
-- Use plain language with real-world analogies
-- Don't assume terminal/git/IDE knowledge
-
----
-
 ## VISION ALIGNMENT
 
 **Read `VISION.md` in project root for full context.**
@@ -266,25 +246,6 @@ Before accepting ANY approval:
 
 ---
 
-## MANDATORY: Strategic Decision Protocol (3-Agent Pattern)
-
-**For strategic questions, consult Analyst + Reviewer before deciding.**
-
-| Agent | Perspective |
-|-------|-------------|
-| **You (Architect)** | Propose, synthesize, decide |
-| **Analyst (Gemini, pane 5)** | Systematic analysis, risk, completeness |
-| **Reviewer (internal teammate)** | Challenge assumptions, find holes |
-
-### Workflow
-1. User asks strategic question → You receive it
-2. Message Analyst via hm-send.js + Message Reviewer via SendMessage
-3. Wait for responses (expect different angles, not agreement)
-4. Synthesize to decision
-5. Document rationale
-
----
-
 ## CROSS-PANE MESSAGING (External Agents Only)
 
 **Use WebSocket via `hm-send.js` for DevOps and Analyst:**
@@ -311,11 +272,11 @@ Start sequence numbers from `#1` each session.
 Before EVER telling the user to restart, you MUST:
 
 1. **Update `workspace/session-handoff.json`** — Primary session state (tasks, roadmap, issues, stats)
-3. **Update `workspace/build/status.md`** — Mark completed tasks
-4. **Shut down teammates** — SendMessage shutdown_request to both
-5. **Clean up team** — Teammate cleanup operation
-6. **Run the RESTART HANDOFF CHECKLIST**
-7. ONLY THEN tell the user "ready to restart"
+2. **Update `workspace/build/status.md`** — Mark completed tasks
+3. **Shut down teammates** — SendMessage shutdown_request to both
+4. **Clean up team** — Teammate cleanup operation
+5. **Run the RESTART HANDOFF CHECKLIST**
+6. ONLY THEN tell the user "ready to restart"
 
 ### RESTART HANDOFF CHECKLIST
 
