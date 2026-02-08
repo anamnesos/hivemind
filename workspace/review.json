@@ -7,9 +7,9 @@
     "author_model": "claude-opus-4-6",
     "change_type": "routine",
     "result": "approved",
-    "findings": "CSS performance audit fixes: (1) Killed 10+ infinite idle animations (paneBreathe, hexPulse drop-shadow, taskPulse, conflictPulse, heartbeat pulses, breathe/breatheDot). Preserved state-gated animations. (2) Removed backdrop-filter from .pane, .pane-header, .panel-tabs — replaced with solid backgrounds matching blurred appearance. Kept on .header only. (3) Replaced 22 transition:all with specific property lists — all verified to cover actual hover/active changes. Net -90 lines CSS. 91 suites / 2917 tests passing.",
+    "findings": "CSS perf items 4-6: (4) Added 7 will-change hints on state-gated selectors only — verified none on always-idle elements. (5) Moved pane-spinner breathe animation from base to state-gated selector — no regression. (6) Removed dead terminals-section margin-right transition (both states were 0). Kept right-panel width transition (flex layout requires real width change). 91 suites / 2917 tests passing.",
     "tests_touched": false,
-    "timestamp": "2026-02-08T22:40:00Z"
+    "timestamp": "2026-02-08T23:08:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
