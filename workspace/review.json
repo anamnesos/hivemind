@@ -3,13 +3,13 @@
   "review": {
     "reviewer": "Reviewer (Agent Teams)",
     "model": "claude-opus-4-6",
-    "author": "Frontend (Agent Teams) + Architect (test constants)",
-    "author_model": "claude-opus-4-6",
+    "author": "DevOps (Codex)",
+    "author_model": "codex-0.98.0",
     "change_type": "routine",
     "result": "approved",
-    "findings": "S96 auto-submit regression fix. 3 changes in injection.js: (1) Gemini path restored Enter — strips trailing \\r from text, sends Enter separately via pty.write. (2) Removed pre-flight idle check from doSendToPane — processIdleQueue already handles idle timing, doSendToPane trusts the queue. (3) Focus failure retries once after 200ms, proceeds with Enter anyway instead of abandoning. Also: test mock constants aligned to production (5s/8s/10s), stale '60s' log message replaced with constant interpolation. 91 suites / 2914 tests passing.",
+    "findings": "Item 16: Per-pane typing guard in processIdleQueue. injection.js checks lastTypedTime[paneId] < TYPING_GUARD_MS in addition to userIsTyping(). All 4 injection paths respect the guard. Edge case (undefined pane) handled by falsy short-circuit. Timer leak fix: Codex identity timeouts tracked/cleared in terminal.js. EPIPE suppression in main.js. 2 new tests verify the new code path. 91 suites / 2917 tests passing.",
     "tests_touched": true,
-    "timestamp": "2026-02-08T21:25:00Z"
+    "timestamp": "2026-02-08T22:25:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
