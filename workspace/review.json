@@ -1,14 +1,20 @@
 {
   "schema_version": 1,
   "review": {
-    "reviewer": "Reviewer (internal teammate)",
-    "model": "claude",
-    "author": "DevOps + Architect",
-    "author_model": "codex",
-    "change_type": "architectural",
+    "reviewer": "Reviewer",
+    "model": "claude-sonnet-4-5-20250929",
+    "author": "Frontend",
+    "author_model": "claude-sonnet-4-5-20250929",
+    "change_type": "routine",
     "result": "approved",
-    "findings": "Gate 7 solid. Message tagging has low-severity latent hazard: AGENT_MESSAGE_PREFIX breaks parseMessageSequence regex ^anchor (inert today, fromRole='cli' bypasses fallback). No tests for new code. Both approved to ship.",
-    "tests_touched": false,
-    "timestamp": "2026-02-08T02:30:00Z"
+    "findings": "Full integration review: traced 3 callers, verified constant match across 3 files, checked double-prefix guard, recovery path, all edge cases. High confidence.",
+    "tests_touched": true,
+    "timestamp": "2026-02-08T05:40:00Z"
+  },
+  "_docs": {
+    "change_type": "routine | architectural | state | concurrency | recovery",
+    "result": "pending | approved | blocked",
+    "rule": "If change_type !== 'routine', reviewer model MUST differ from author model",
+    "workflow": "1. Author fills author+author_model+change_type. 2. Reviewer fills reviewer+model+result+findings. 3. Pre-commit checks result=approved and cross-model rule. 4. After commit, review.json is reset to pending."
   }
 }
