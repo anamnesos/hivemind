@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
   "review": {
-    "reviewer": "Architect (self-review, teammates lost to compaction)",
+    "reviewer": "Reviewer (Agent Teams)",
     "model": "claude-opus-4-6",
-    "author": "Frontend (Agent Teams)",
+    "author": "Frontend (Agent Teams) + Architect (test constants)",
     "author_model": "claude-opus-4-6",
     "change_type": "routine",
     "result": "approved",
-    "findings": "Phase 4 extras: Deleted dead multi-project-dashboard.js (707 lines, no imports). Status-strip idempotency guard (prevents double-init). Cost indicator moved to status bar (replaces removed cost-alert-badge). Waiting segment hidden when zero (CSS + existing JS classList.toggle). updateCostIndicator properly handles null/0/alert states. 93 suites / 2996 tests passing.",
-    "tests_touched": false,
-    "timestamp": "2026-02-08T11:25:00Z"
+    "findings": "S96 auto-submit regression fix. 3 changes in injection.js: (1) Gemini path restored Enter — strips trailing \\r from text, sends Enter separately via pty.write. (2) Removed pre-flight idle check from doSendToPane — processIdleQueue already handles idle timing, doSendToPane trusts the queue. (3) Focus failure retries once after 200ms, proceeds with Enter anyway instead of abandoning. Also: test mock constants aligned to production (5s/8s/10s), stale '60s' log message replaced with constant interpolation. 91 suites / 2914 tests passing.",
+    "tests_touched": true,
+    "timestamp": "2026-02-08T21:25:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
