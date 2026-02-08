@@ -1,17 +1,18 @@
 {
-  "session": 85,
-  "date": "2026-02-07",
+  "session": 90,
+  "date": "2026-02-08",
   "mode": "PTY",
-  "status": "COMPLETE",
+  "status": "ACTIVE",
 
   "completed": [
-    "PTY-level health monitoring and auto-restart on dead panes (commit 72f8145)",
-    "Integration tests: WS delivery audit + recovery manager (commit aacb212)",
-    "Port 0 falsy bug fix in websocket-server.js (commit 2851b11)",
-    "Gemini startup prompt injection fix — restart button now injects context for Gemini panes",
-    "Ana --include-directories expanded from workspace/ to project root",
-    "README.md updated (Self-Healing section, test counts, intent board)",
-    "MAP.md updated (date, test counts 89 suites/2803, new test files)"
+    "Fix: rename INFRA.md → DEVOPS.md + remove stale role files (commit 51e7e24)",
+    "Fix: restore injectContext to renderer.js hivemind API — multi-session silent failure (commit 72bc0b5)",
+    "Feat: color-coded agent message tags in terminal via xterm.js decorations (commit eb9eb84)",
+    "Fix: suppress Codex state DB rollout path stderr noise (commit aa1ba06)",
+    "Reverted ANSI background color experiment in injection.js — only works for Codex, not Claude/Gemini",
+    "Verified S89 fixes (context injection, agent colors, Codex stderr) — all confirmed working",
+    "Feat: automated chat-to-review pipeline P2 (commit a363122) — 50 new tests, 91 suites / 2857 total",
+    "Feat: live shared state with rolling changelog P3 (commit c25e8d7) — 64 new tests, 92 suites / 2921 total"
   ],
 
   "architecture": {
@@ -23,6 +24,7 @@
     "config_source": "ui/config.js → PANE_ROLES, PANE_IDS, ROLE_ID_MAP, TRIGGER_TARGETS",
     "instance_dirs": "arch (pane 1), devops (pane 2), ana (pane 5)",
     "panes_removed": "3, 4, 6 — fully removed from config, HTML, source, tests, docs",
+    "review_gate": "workspace/review.json + pre-commit Gate 7. Cross-model review required for non-routine changes (use Ana/Gemini or DevOps/Codex).",
     "hooks": {
       "architect": "workspace/scripts/arch-hooks.js → SessionStart (additionalContext injection), SessionEnd, PostToolUse, PreCompact",
       "analyst": "workspace/scripts/ana-hooks.js → SessionStart, SessionEnd, AfterTool",
@@ -31,44 +33,46 @@
   },
 
   "not_yet_done": [
-    "Verify Gemini startup prompt injection works on restart button (code fix applied, needs app restart to load)",
-    "Verify Ana's expanded --include-directories works (needs pane 5 restart)",
-    "Live shared state over WebSocket (P3 on reliability roadmap)",
-    "Rolling changelog / diff-of-context per pane (P3)",
-    "Context compressor idea (Ana auto-generates session summary hourly) — filed for later"
+    "Context compressor idea (P4)"
   ],
 
   "roadmap": [
-    "P3: Live shared state over WebSocket",
-    "P3: Rolling changelog / diff-of-context per pane",
     "P4: Context compressor idea"
   ],
 
   "known_issues": {
+    "Codex defaults to terminal output instead of hm-send.js": "MEDIUM — recurring, needs enforcement not just reminders",
+    "Codex state DB rollout path error": "LOW — cosmetic, now suppressed (aa1ba06). Codex uses filesystem fallback successfully.",
     "Gemini shell fragility (node-pty binary)": "MEDIUM — recurred Session 85, restart fixed",
     "Codex Windows sandbox experimental": "LOW",
     "Codex 0.98.0 random exit bug (#10511)": "MEDIUM",
-    "Jest worker leak warning (cosmetic)": "LOW"
+    "Jest worker leak warning (cosmetic)": "LOW",
+    "ANSI escape codes stripped by Claude/Gemini CLIs": "LOW — xterm.js decoration approach used instead (agent-colors.js)"
   },
 
   "stats": {
-    "test_suites": 89,
-    "tests_passed": 2803
+    "test_suites": 92,
+    "tests_passed": 2921
   },
 
   "important_notes": [
     "NEVER use subagents (Task tool without team_name) — always use Agent Teams pattern",
     "Architect = coordinator, NOT implementer — delegate to Ana/DevOps/Frontend/Reviewer",
-    "terminal.js triggerStartupInjection now injects context for ALL panes including Gemini (was skipping Gemini before)",
-    "websocket-server.js uses ?? instead of || for port (0 is falsy in JS)",
-    "Test suite: 89 suites, 2803 tests all passing"
+    "ALL teammates MUST be spawned with model: opus — user directive Session 90",
+    "Gate 7 pre-commit: workspace/review.json must have result=approved. Non-routine changes require cross-model review (use Ana/Gemini or DevOps/Codex as reviewer).",
+    "shared-state.js: watches intent files + pipeline.json + review.json, broadcasts diffs over WebSocket, rolling changelog with per-pane lastSeenAt tracking",
+    "pipeline.js: conversation-aware state machine, hybrid detection (tags + keywords), auto-notifications",
+    "Test suite: 92 suites, 2921 tests all passing"
   ],
 
   "commits_this_session": [
-    "72f8145 - feat: PTY-level health monitoring and auto-restart on dead panes",
-    "e1936ec - chore: session 85 workspace updates and stale file cleanup",
-    "aacb212 - test: integration tests for WS delivery and recovery manager",
-    "2851b11 - fix: port 0 falsy bug in websocket-server, test cleanup leak"
+    "51e7e24 - fix: rename INFRA.md to DEVOPS.md and remove stale role files",
+    "72bc0b5 - fix: restore injectContext to renderer.js hivemind API",
+    "eb9eb84 - feat: color-coded agent message tags in terminal via xterm.js decorations",
+    "2c2bea4 - Revert suppress Codex stderr (precautionary)",
+    "aa1ba06 - Reapply suppress Codex stderr (confirmed cosmetic)",
+    "a363122 - feat: automated chat-to-review pipeline (P2)",
+    "c25e8d7 - feat: live shared state with rolling changelog (P3)"
   ],
 
   "cli_setup": {
@@ -81,5 +85,12 @@
     "1": { "role": "Architect + Frontend + Reviewer (internal)", "cli": "claude", "status": "online" },
     "2": { "role": "DevOps", "cli": "codex", "status": "online" },
     "5": { "role": "Analyst", "cli": "gemini", "status": "online" }
+  },
+
+  "verify_after_restart": {
+    "what": "Shared state broadcasting + pipeline + context injection + agent colors",
+    "how": "1. Update an intent file and check workspace/state-changelog.json is created. 2. Send cross-pane message and verify pipeline.json tracking. 3. Check logs for 'Context injection scheduled'. 4. Verify agent color tags in terminal.",
+    "success": "state-changelog.json created on intent update, pipeline tracking active, context injection logged, agent tags colored",
+    "failure": "If no state-changelog: check shared-state.js init in hivemind-app.js. If no pipeline tracking: check war-room.js setPipelineHook. If no context injection: check renderer.js line 329."
   }
 }
