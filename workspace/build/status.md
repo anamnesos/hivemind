@@ -6,6 +6,26 @@ Last updated: 2026-02-07
 
 ---
 
+## Session 91 - Bugfixes + Flow Control (Feb 8, 2026)
+
+| Task | Owner | Status |
+|------|-------|--------|
+| Watcher infinite loop fix (/logs/ ignore) | Analyst (impl) / Reviewer (review) | DONE |
+| Pipeline title extraction cleanup | Analyst (impl) / Reviewer (review) | DONE |
+| Role inference alignment (broadcast + direct) | Analyst (impl) / Reviewer (review) + Architect (extra fix) | DONE |
+| arch/CLAUDE.md stale section removal | Analyst (cleanup) | DONE |
+| xterm.js flow control (watermark-based) | Analyst (impl) / Reviewer (review) + Architect (syntax fix) | DONE |
+
+**Commits:** `c291c12`, `3107eac`
+**Test suite:** 93 suites / 2996 tests (unchanged)
+
+**Key decisions:**
+- Flow control uses XOFF/XON via node-pty `handleFlowControl: true` — transport-level, CLIs unaware
+- Watermarks: HIGH=500KB (pause), LOW=50KB (resume) — generous thresholds with hysteresis to prevent oscillation
+- Reviewer caught fatal syntax error in terminal-daemon.js before commit — Analyst had introduced duplicate `});`
+
+---
+
 ## Session 85 - Reliability Sprint P1+P2 (Feb 7, 2026)
 
 | Task | Owner | Status |

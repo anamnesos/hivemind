@@ -6,34 +6,28 @@
 
 ## Active Blockers
 
-None.
+- **Item 7: Jest worker processes fail to exit gracefully (LOW)**
+  - Root Cause: Multiple IPC handler modules (`perf-audit`, `template`, `organic-ui`, `status-strip`, `watcher`) use `setInterval` for polling but lack unregistration logic.
+  - Affected: `ui/modules/ipc/*.js`, `ui/modules/*.js`.
+  - Suggested Fix: Implement `unregister` functions in all handler modules and ensure they are called during `app.shutdown`.
+  - Owner: DevOps (Implementer)
 
 ---
 
 ## Recently Resolved
 
-### Architect injection lock-hang risk (Session 82) FIXED
-- **Priority:** CRITICAL
-- **Owner:** Architect
-- **Fix:** Safety timer in injection.js changed from const→let with 10s replacement timer covering full Enter+verify phase. Prevents permanent injectionInFlight lock.
+- **Item 2: Workflow/GraphTab invoke errors (RESOLVED)**
+  - Fixed: Exposed workflow/graph APIs in `preload.js`, updated `workflow.js` to use `window.hivemind`, and registered `KnowledgeGraph` handlers.
+  - Verification: Level 1 (Tests pass, IPC channels verified).
+- **Item 1, 3, 4, 5, 8, 9, 10: Cleared by Audit (RESOLVED)**
+- **Item 6: Codex 0.98.0 exit bug (RETAINED - UPSTREAM)**
 
-### hm-send.js message truncation (Session 82) FIXED
-- **Priority:** MEDIUM
-- **Owner:** Architect
-- **Fix:** Changed arg parsing to join all args between target and --flags, handling PowerShell splitting quoted strings.
+---
 
-### Main CLAUDE.md stale role table (Session 80) FIXED
-- **Priority:** LOW
-- **Owner:** Architect
-- **Fix:** Updated all docs to reflect 3-pane layout (CLAUDE.md, SPRINT.md, AGENTS.md, GEMINI.md, instance files, docs/roles/, docs/models/)
-- **Session:** 80
+_Archived to blockers-archive.md. See Session 82 (injection lock, hm-send truncation), Session 80 (stale docs)._
 
 ---
 
 ## Backlog (Nice-to-Have)
 
-### xterm.js flow control warning (Session 60)
-- **Priority:** LOW (cosmetic/warning)
-- **Owner:** Frontend
-- **Issue:** "write data discarded, use flow control to avoid losing data" in devtools
-- **Impact:** Some terminal output may be lost during heavy bursts - warning only, not crash
+_Empty — xterm.js flow control fixed in S91 (commit 3107eac). All prior backlog items resolved._

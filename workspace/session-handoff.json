@@ -1,19 +1,10 @@
 {
-  "session": 90,
+  "session": 92,
   "date": "2026-02-08",
   "mode": "PTY",
-  "status": "ACTIVE",
+  "status": "IN_PROGRESS",
 
-  "completed": [
-    "Fix: rename INFRA.md → DEVOPS.md + remove stale role files (commit 51e7e24)",
-    "Fix: restore injectContext to renderer.js hivemind API — multi-session silent failure (commit 72bc0b5)",
-    "Feat: color-coded agent message tags in terminal via xterm.js decorations (commit eb9eb84)",
-    "Fix: suppress Codex state DB rollout path stderr noise (commit aa1ba06)",
-    "Reverted ANSI background color experiment in injection.js — only works for Codex, not Claude/Gemini",
-    "Verified S89 fixes (context injection, agent colors, Codex stderr) — all confirmed working",
-    "Feat: automated chat-to-review pipeline P2 (commit a363122) — 50 new tests, 91 suites / 2857 total",
-    "Feat: live shared state with rolling changelog P3 (commit c25e8d7) — 64 new tests, 92 suites / 2921 total"
-  ],
+  "completed": [],
 
   "architecture": {
     "current_panes": {
@@ -26,33 +17,25 @@
     "panes_removed": "3, 4, 6 — fully removed from config, HTML, source, tests, docs",
     "review_gate": "workspace/review.json + pre-commit Gate 7. Cross-model review required for non-routine changes (use Ana/Gemini or DevOps/Codex).",
     "hooks": {
-      "architect": "workspace/scripts/arch-hooks.js → SessionStart (additionalContext injection), SessionEnd, PostToolUse, PreCompact",
+      "architect": "workspace/scripts/arch-hooks.js → SessionStart (reads context-snapshots/1.md, falls back to intent files), SessionEnd, PostToolUse, PreCompact (writes compaction marker)",
       "analyst": "workspace/scripts/ana-hooks.js → SessionStart, SessionEnd, AfterTool",
       "devops": "No hooks — Codex CLI has no lifecycle hooks. Uses Skills/SKILL.md instead"
     }
   },
 
-  "not_yet_done": [
-    "Context compressor idea (P4)"
-  ],
+  "not_yet_done": [],
 
-  "roadmap": [
-    "P4: Context compressor idea"
-  ],
+  "roadmap": [],
 
   "known_issues": {
-    "Codex defaults to terminal output instead of hm-send.js": "MEDIUM — recurring, needs enforcement not just reminders",
-    "Codex state DB rollout path error": "LOW — cosmetic, now suppressed (aa1ba06). Codex uses filesystem fallback successfully.",
-    "Gemini shell fragility (node-pty binary)": "MEDIUM — recurred Session 85, restart fixed",
-    "Codex Windows sandbox experimental": "LOW",
-    "Codex 0.98.0 random exit bug (#10511)": "MEDIUM",
-    "Jest worker leak warning (cosmetic)": "LOW",
-    "ANSI escape codes stripped by Claude/Gemini CLIs": "LOW — xterm.js decoration approach used instead (agent-colors.js)"
+    "Workflow/GraphTab invoke errors at startup": "MEDIUM — workflow.js uses window.ipcRenderer which isn't exposed. Non-blocking but logs errors.",
+    "Codex 0.98.0 random exit bug (#10511)": "MEDIUM — upstream, still on 0.98.0",
+    "Jest worker leak warning (cosmetic)": "LOW — still appearing in test runs"
   },
 
   "stats": {
-    "test_suites": 92,
-    "tests_passed": 2921
+    "test_suites": 93,
+    "tests_passed": 2996
   },
 
   "important_notes": [
@@ -62,18 +45,12 @@
     "Gate 7 pre-commit: workspace/review.json must have result=approved. Non-routine changes require cross-model review (use Ana/Gemini or DevOps/Codex as reviewer).",
     "shared-state.js: watches intent files + pipeline.json + review.json, broadcasts diffs over WebSocket, rolling changelog with per-pane lastSeenAt tracking",
     "pipeline.js: conversation-aware state machine, hybrid detection (tags + keywords), auto-notifications",
-    "Test suite: 92 suites, 2921 tests all passing"
+    "context-compressor.js: generates token-budget-constrained snapshots from 6 data sources, persists to workspace/context-snapshots/{paneId}.md, auto-refreshes via watcher.addWatch() + 120s timer. arch-hooks.js reads snapshots for post-compaction restoration.",
+    "NEW: terminal.js flow control — watermark-based (500KB HIGH / 50KB LOW) with PTY pause/resume via XOFF/XON through daemon. Fixes 'write data discarded' warning from Session 60.",
+    "Test suite: 93 suites, 2996 tests all passing"
   ],
 
-  "commits_this_session": [
-    "51e7e24 - fix: rename INFRA.md to DEVOPS.md and remove stale role files",
-    "72bc0b5 - fix: restore injectContext to renderer.js hivemind API",
-    "eb9eb84 - feat: color-coded agent message tags in terminal via xterm.js decorations",
-    "2c2bea4 - Revert suppress Codex stderr (precautionary)",
-    "aa1ba06 - Reapply suppress Codex stderr (confirmed cosmetic)",
-    "a363122 - feat: automated chat-to-review pipeline (P2)",
-    "c25e8d7 - feat: live shared state with rolling changelog (P3)"
-  ],
+  "commits_this_session": [],
 
   "cli_setup": {
     "claude": { "type": "native", "version": "2.1.32" },
@@ -88,9 +65,9 @@
   },
 
   "verify_after_restart": {
-    "what": "Shared state broadcasting + pipeline + context injection + agent colors",
-    "how": "1. Update an intent file and check workspace/state-changelog.json is created. 2. Send cross-pane message and verify pipeline.json tracking. 3. Check logs for 'Context injection scheduled'. 4. Verify agent color tags in terminal.",
-    "success": "state-changelog.json created on intent update, pipeline tracking active, context injection logged, agent tags colored",
-    "failure": "If no state-changelog: check shared-state.js init in hivemind-app.js. If no pipeline tracking: check war-room.js setPipelineHook. If no context injection: check renderer.js line 329."
+    "what": "S91 verified at S92 startup — terminals spawn, no watcher loops, no data-discard warnings",
+    "how": "VERIFIED via console.log at startup",
+    "success": "All 3 panes spawned, WebGL renderers enabled, agent colors attached, no errors",
+    "failure": "N/A — passed"
   }
 }
