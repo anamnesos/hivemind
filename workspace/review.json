@@ -3,13 +3,13 @@
   "review": {
     "reviewer": "Reviewer",
     "model": "claude-sonnet-4-5-20250929",
-    "author": "Frontend",
-    "author_model": "claude-sonnet-4-5-20250929",
-    "change_type": "routine",
+    "author": "DevOps",
+    "author_model": "codex-0.98.0",
+    "change_type": "concurrency",
     "result": "approved",
-    "findings": "Full integration review: traced 3 callers, verified constant match across 3 files, checked double-prefix guard, recovery path, all edge cases. High confidence.",
-    "tests_touched": true,
-    "timestamp": "2026-02-08T05:40:00Z"
+    "findings": "Full integration review: traced both onExit handlers, verified one-shot consumption, timing analysis (15s vs ms exit), memory leak analysis, cross-file contracts (killAllTerminals/freshStartAll correctly not guarded). High confidence.",
+    "tests_touched": false,
+    "timestamp": "2026-02-08T05:55:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
