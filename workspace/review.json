@@ -7,9 +7,9 @@
     "author_model": "claude-opus-4-6",
     "change_type": "routine",
     "result": "approved",
-    "findings": "Terminal text rendering fixes: 3 changes across terminal.js and renderer.js. (1) PTY resize sync after fitAddon.fit() in initTerminal — two-phase approach for pre/post PTY creation, try/catch guarded. (2) PTY resize sync in reattachTerminal — single call since PTY exists. (3) toggleExpandPane timer replaced with transitionend listener + 300ms fallback. All three resize paths now consistent. Cross-file data flow verified: fitAddon.fit() → terminal.cols/rows → pty.resize() → daemon. Edge cases checked: display:none, rapid toggling, 0x0 dimensions. Confidence HIGH.",
+    "findings": "3 perf fixes: (1) handleResize refactored — focused pane resizes synchronously, background panes deferred 200ms via setTimeout. deferredResizeTimer cancels stale defers. All callers (scheduleTerminalResize, toggleExpandPane, swapToMainPane, tabs.togglePanel) verified compatible. (2) Scrollback 5000→2000, only affects new Terminal instances. (3) Two document keydown listeners merged into one with early-return routing. Cross-file consistency verified. Confidence HIGH.",
     "tests_touched": false,
-    "timestamp": "2026-02-09T05:16:00Z"
+    "timestamp": "2026-02-09T05:37:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
