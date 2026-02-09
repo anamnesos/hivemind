@@ -7,9 +7,9 @@
     "author_model": "claude-opus-4-6",
     "change_type": "routine",
     "result": "approved",
-    "findings": "3 perf fixes: (1) handleResize refactored — focused pane resizes synchronously, background panes deferred 200ms via setTimeout. deferredResizeTimer cancels stale defers. All callers (scheduleTerminalResize, toggleExpandPane, swapToMainPane, tabs.togglePanel) verified compatible. (2) Scrollback 5000→2000, only affects new Terminal instances. (3) Two document keydown listeners merged into one with early-return routing. Cross-file consistency verified. Confidence HIGH.",
-    "tests_touched": false,
-    "timestamp": "2026-02-09T05:37:00Z"
+    "findings": "Item 19 ResizeObserver: replaces transitionend+300ms fallback and window resize listener with per-pane ResizeObserver on .pane-terminal containers. 50ms debounce focused, 200ms background. Integration verified: renderer.js removals clean, tabs.js handleResize backward compat maintained, observer setup after terminal init (no race), cleanup on kill/freshStart. ResizeObserver mock added for jsdom. Confidence HIGH.",
+    "tests_touched": true,
+    "timestamp": "2026-02-09T05:58:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
