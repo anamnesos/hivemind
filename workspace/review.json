@@ -7,9 +7,9 @@
     "author_model": "claude-opus-4-6",
     "change_type": "routine",
     "result": "approved",
-    "findings": "Item 18: Gemini Enter delay fix. Full integration review — traced constant from constants.js through terminal.js to injection.js. Delay (75ms) is ONLY in Gemini PTY branch (line 531). Claude/Codex paths untouched. Default fallback in destructuring. Edge cases: promise interruption safe (safety timer releases lock), rapid sequential injections safe (175ms spacing with retry). Pre-existing concurrent dequeue noted as separate issue. Tests correctly advance fake timers. Confidence HIGH.",
-    "tests_touched": true,
-    "timestamp": "2026-02-09T00:04:00Z"
+    "findings": "Terminal text rendering fixes: 3 changes across terminal.js and renderer.js. (1) PTY resize sync after fitAddon.fit() in initTerminal — two-phase approach for pre/post PTY creation, try/catch guarded. (2) PTY resize sync in reattachTerminal — single call since PTY exists. (3) toggleExpandPane timer replaced with transitionend listener + 300ms fallback. All three resize paths now consistent. Cross-file data flow verified: fitAddon.fit() → terminal.cols/rows → pty.resize() → daemon. Edge cases checked: display:none, rapid toggling, 0x0 dimensions. Confidence HIGH.",
+    "tests_touched": false,
+    "timestamp": "2026-02-09T05:16:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
