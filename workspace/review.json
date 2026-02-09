@@ -7,9 +7,9 @@
     "author_model": "claude-opus-4-6",
     "change_type": "routine",
     "result": "approved",
-    "findings": "Screenshots tab wide panel: panel-wide class toggled only for screenshots tab (62% width). Resize fires post-transition (350ms). Close/reopen preserves wide state correctly. wasWide guard prevents unnecessary resize calls. No transition conflicts. All 6 edge cases verified safe.",
-    "tests_touched": false,
-    "timestamp": "2026-02-08T23:28:00Z"
+    "findings": "Item 18: Gemini Enter delay fix. Full integration review — traced constant from constants.js through terminal.js to injection.js. Delay (75ms) is ONLY in Gemini PTY branch (line 531). Claude/Codex paths untouched. Default fallback in destructuring. Edge cases: promise interruption safe (safety timer releases lock), rapid sequential injections safe (175ms spacing with retry). Pre-existing concurrent dequeue noted as separate issue. Tests correctly advance fake timers. Confidence HIGH.",
+    "tests_touched": true,
+    "timestamp": "2026-02-09T00:04:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
