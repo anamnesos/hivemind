@@ -7,9 +7,9 @@
     "author_model": "claude-opus-4-6",
     "change_type": "routine",
     "result": "approved",
-    "findings": "Item 19 ResizeObserver: replaces transitionend+300ms fallback and window resize listener with per-pane ResizeObserver on .pane-terminal containers. 50ms debounce focused, 200ms background. Integration verified: renderer.js removals clean, tabs.js handleResize backward compat maintained, observer setup after terminal init (no race), cleanup on kill/freshStart. ResizeObserver mock added for jsdom. Confidence HIGH.",
-    "tests_touched": true,
-    "timestamp": "2026-02-09T05:58:00Z"
+    "findings": "Settings freeze fix — 3-line guard in terminal.js ResizeObserver callback. Skips fitAddon.fit() while settings panel open. Open path verified (guard active during CSS transition). Close path verified (guard inactive, resize proceeds). handleResize() unaffected. All panes covered. DOM lookup cost negligible. Confidence: HIGH.",
+    "tests_touched": false,
+    "timestamp": "2026-02-09T23:00:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
