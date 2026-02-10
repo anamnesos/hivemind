@@ -5,11 +5,11 @@
     "model": "claude-opus-4-6",
     "author": "DevOps",
     "author_model": "codex",
-    "change_type": "routine",
+    "change_type": "architectural",
     "result": "approved",
-    "findings": "Doc hygiene automation: new ui/scripts/doc-lint.js validates errors.md/blockers.md/status.md template invariants (active cap <=5, required metadata fields, stale-marker computation by severity policy). Pre-commit gate 7 integration clean — --staged mode only lints staged docs, graceful skip if script missing. npm lint:docs script added. Analyst verified functional correctness. Reviewer verified code quality: markdown parsing sound, edge cases handled, error messages actionable, exit codes clean.",
-    "tests_touched": false,
-    "timestamp": "2026-02-10T21:17:00Z"
+    "findings": "Comms v2 heartbeat: lastSeen tracking on all inbound WS frames, health-check endpoint with 60s stale threshold, hm-send preflight skips WS when target stale. Backwards-compatible (null health = proceed normally). No memory leaks (bounded maps, 3 entries max). Reviewer confirmed no regression to ACK-timeout-resend. Analyst verified protocol + flagged idle-pane concern (patched: all frames refresh lastSeen). 10 tests passing.",
+    "tests_touched": true,
+    "timestamp": "2026-02-10T21:30:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
