@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
   "review": {
-    "reviewer": "Reviewer (Agent Teams)",
+    "reviewer": "Reviewer",
     "model": "claude-opus-4-6",
-    "author": "Frontend (Agent Teams)",
-    "author_model": "claude-opus-4-6",
-    "change_type": "routine",
+    "author": "DevOps",
+    "author_model": "codex",
+    "change_type": "state",
     "result": "approved",
-    "findings": "UI polish: SVG mic/send icons (Feather style, correct paths/viewBox), 44x44 button sizing (WCAG compliant), voice status moved to status bar (getElementById is global, :empty hides when inactive). Settings button already had SVG gear. No CSS conflicts, no JS regressions. 91/91 suites pass.",
-    "tests_touched": false,
-    "timestamp": "2026-02-10T02:08:00Z"
+    "findings": "sendDirectMessage PTY path: agentRunning gate correctly removed ONLY from sendDirectMessage (line 437). notifyAgents (line 238), broadcastToAllAgents (line 409), and notifyAllAgentsSync (lines 266-270) all retain the running gate — no unintended side effects. The new code copies targets directly (const notified = [...targets]) and dispatches via sendStaggered, which is the correct delivery path. Comment explains rationale (stale agentRunning during startup/reconnect). Cross-file audit: 6 callers (mcp-bridge.js, hivemind-app.js x3, pipeline.js, plugin-manager.js) all pass explicit targets and expect delivery — none relied on the gate for filtering. New test (triggers-full.test.js line 219) correctly initializes pane 2 as idle, sends direct message, asserts delivery succeeds, and verifies inject-message IPC after timers. websocket-delivery.test.js tests WS server layer, unaffected. No silent failure paths remain for direct messages in PTY mode.",
+    "tests_touched": true,
+    "timestamp": "2026-02-09T12:00:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
