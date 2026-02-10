@@ -3,13 +3,13 @@
   "review": {
     "reviewer": "Reviewer",
     "model": "claude-opus-4-6",
-    "author": "DevOps",
-    "author_model": "codex",
-    "change_type": "state",
+    "author": "Architect",
+    "author_model": "claude-opus-4-6",
+    "change_type": "routine",
     "result": "approved",
-    "findings": "sendDirectMessage PTY path: agentRunning gate correctly removed ONLY from sendDirectMessage (line 437). notifyAgents (line 238), broadcastToAllAgents (line 409), and notifyAllAgentsSync (lines 266-270) all retain the running gate — no unintended side effects. The new code copies targets directly (const notified = [...targets]) and dispatches via sendStaggered, which is the correct delivery path. Comment explains rationale (stale agentRunning during startup/reconnect). Cross-file audit: 6 callers (mcp-bridge.js, hivemind-app.js x3, pipeline.js, plugin-manager.js) all pass explicit targets and expect delivery — none relied on the gate for filtering. New test (triggers-full.test.js line 219) correctly initializes pane 2 as idle, sends direct message, asserts delivery succeeds, and verifies inject-message IPC after timers. websocket-delivery.test.js tests WS server layer, unaffected. No silent failure paths remain for direct messages in PTY mode.",
+    "findings": "Health strip label fix. health-strip.js:7 now imports SHORT_AGENT_NAMES from config. Line 104 changed from .substring(0,4) truncation to SHORT_AGENT_NAMES[paneId] fallback chain. Verified: SHORT_AGENT_NAMES exported from config.js (line 120), present in mock-config helper (line 35). Test mock at health-strip.test.js:13 matches config.js values exactly (Arch, DevOps, Ana). Label assertions updated: line 199 'Arch', line 200 'DevOps', line 201 'Ana'. No other consumers of the changed code path. Clean routine fix — no cross-model review needed.",
     "tests_touched": true,
-    "timestamp": "2026-02-09T12:00:00Z"
+    "timestamp": "2026-02-09T12:15:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
