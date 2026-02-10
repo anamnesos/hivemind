@@ -3,13 +3,13 @@
   "review": {
     "reviewer": "Reviewer",
     "model": "claude-opus-4-6",
-    "author": "Architect",
-    "author_model": "claude-opus-4-6",
-    "change_type": "routine",
+    "author": "DevOps",
+    "author_model": "codex",
+    "change_type": "state",
     "result": "approved",
-    "findings": "Health strip label fix. health-strip.js:7 now imports SHORT_AGENT_NAMES from config. Line 104 changed from .substring(0,4) truncation to SHORT_AGENT_NAMES[paneId] fallback chain. Verified: SHORT_AGENT_NAMES exported from config.js (line 120), present in mock-config helper (line 35). Test mock at health-strip.test.js:13 matches config.js values exactly (Arch, DevOps, Ana). Label assertions updated: line 199 'Arch', line 200 'DevOps', line 201 'Ana'. No other consumers of the changed code path. Clean routine fix — no cross-model review needed.",
+    "findings": "CLI auto-detection feature reviewed across 3 files. (1) detectInstalledClis: safe — short timeouts (2.0s/2.5s), windowsHide, piped stdio, per-CLI exception handling, two-phase locate+version check. (2) Rewrite policy: correct — commandNeedsRewrite only triggers on blank/whitespace or known-unavailable CLI; custom commands with flags (codex --yolo) preserved via extractCliFromCommand startsWith check; unknown commands (null CLI) preserved. (3) No-CLIs edge case: early return with changed:false, existing settings untouched. (4) Startup order: loadSettings -> autoDetect -> ensureCodexConfig, all synchronous before daemon/window. Guarded with typeof check. (5) Downstream consumers (pty-handlers, cli-identity, terminal, sdk-bridge, model-selector) all read paneCommands from ctx.currentSettings — auto-detect writes via saveSettings, same mutation path. No format changes. (6) Tests cover non-clobber, selective rewrite, timeout verification. Cross-model satisfied: author=Codex, reviewer=Claude Opus.",
     "tests_touched": true,
-    "timestamp": "2026-02-09T12:15:00Z"
+    "timestamp": "2026-02-09T15:30:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
