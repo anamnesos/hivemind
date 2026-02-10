@@ -27,3 +27,10 @@ Get Hivemind stable and reliable building itself.
 
 ### Not Now
 This is end-goal. Current focus = stability.
+
+---
+
+## Parked V2 Candidates (Comms)
+
+1. Staged ACK semantics (`received -> applied -> verified`) for explicit sender certainty.
+2. Chaos comms test suite: ACK loss, delayed ACK, duplicate-frame bursts, retry/fallback stress.

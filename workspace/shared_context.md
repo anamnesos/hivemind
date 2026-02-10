@@ -1,12 +1,12 @@
 # Hivemind Shared Context
 
 ## Triage Snapshot
-- Last Updated: 2026-02-10 10:00 (local)
+- Last Updated: 2026-02-10 23:30 (local)
 - Session: S107
 - Health: GREEN
 - Active Risks (Top 3):
-  1. [RISK-001] Compaction message swallow / Item 20 (LOW, Shared)
-  2. [RISK-002] Trigger file delivery split/mangled (LOW, Shared)
+  1. [RISK-001] Runtime validation pending for comms reliability protocol (LOW, Shared)
+  2. [RISK-002] Trigger file delivery split/mangled fallback path still needs runtime burn-in (LOW, Shared)
   3. [RISK-003] Codex exit bug #10511 (MEDIUM, Upstream)
 
 ---
@@ -56,14 +56,14 @@ Panes 3, 4, 6 removed (S77/S79). Frontend and Reviewer run as Agent Teams teamma
 - STALE: NO
 - Stale Since: n/a
 - Why It Matters: Fire-and-forget messaging causes silent stalls — James has to manually push
-- Current State: Design agreed (ACK-timeout-resend in hm-send.js). Not yet implemented.
-- Next Milestone: v1 implementation — messageId + ack-required + timeout + retry/fallback
+- Current State: Implemented and merged in `f9521e1` (ACK-timeout-resend, exponential backoff, server-side dedup, trigger fallback).
+- Next Milestone: Runtime validation after next app restart (dedup under resend race + fallback exhaustion path).
 
 ---
 
 ## Open Risks (Max 5)
-- [RISK-001] Compaction message swallow / Item 20 - LOW - Shared - 2026-02-10 - resend manually
-- [RISK-002] Trigger file delivery split/mangled - LOW - Shared - 2026-02-10 - user pushes manually
+- [RISK-001] Comms protocol runtime validation pending (f9521e1) - LOW - Shared - 2026-02-10 - verify on restart
+- [RISK-002] Trigger file delivery split/mangled fallback path - LOW - Shared - 2026-02-10 - monitor post-retry
 - [RISK-003] Codex exit bug #10511 - MEDIUM - Upstream - 2026-02-10 - upgraded to 0.99.0-alpha.10, monitor
 - [RISK-004] Jest worker leak warning (cosmetic) - LOW - DevOps - 2026-02-10 - 36 modules have unregister, 1 residual timer
 
