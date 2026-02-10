@@ -1,33 +1,33 @@
 # Blockers
 
-**For resolved items:** See `blockers-archive.md`
+## Triage Snapshot
+- Last Updated: 2026-02-10 10:00 (local)
+- Active Blockers: 0
+- Severity Counts: CRITICAL 0 | HIGH 0 | MEDIUM 0 | LOW 0
+- Top 3 Priorities:
+  (none)
 
 ---
 
-## Active Blockers
+## ACTIVE (Max 5)
 
-- **Item 7: Jest worker processes fail to exit gracefully (LOW)**
-  - Root Cause: Multiple IPC handler modules (`perf-audit`, `template`, `organic-ui`, `status-strip`, `watcher`) use `setInterval` for polling but lack unregistration logic.
-  - Affected: `ui/modules/ipc/*.js`, `ui/modules/*.js`.
-  - Suggested Fix: Implement `unregister` functions in all handler modules and ensure they are called during `app.shutdown`.
-  - Owner: DevOps (Implementer)
+(No active blockers.)
 
 ---
 
-## Recently Resolved
-
-- **Item 2: Workflow/GraphTab invoke errors (RESOLVED)**
-  - Fixed: Exposed workflow/graph APIs in `preload.js`, updated `workflow.js` to use `window.hivemind`, and registered `KnowledgeGraph` handlers.
-  - Verification: Level 1 (Tests pass, IPC channels verified).
-- **Item 1, 3, 4, 5, 8, 9, 10: Cleared by Audit (RESOLVED)**
-- **Item 6: Codex 0.98.0 exit bug (RETAINED - UPSTREAM)**
-
----
-
-_Archived to blockers-archive.md. See Session 82 (injection lock, hm-send truncation), Session 80 (stale docs)._
+## Recently Resolved (Last 5 one-liners)
+- [BLK-021] Voice input non-functional in Electron - resolved by 5375439 - verified S102 by User
+- [BLK-022] broadcastInput interrupted by xterm focus steal - resolved by 4d484a7 - verified S102 by User
+- [BLK-019] Terminal layout/fitting issues (3 root causes) - resolved by 857d4d8+94de7a0+31ba1c9 - verified S100 by Analyst
+- [BLK-016] Injection collision / per-terminal typing guard - resolved by 370d2c9 - verified S98 by Analyst
+- [BLK-014] Agent-to-agent messages executed as commands - resolved by 2a88883 - verified S97 by User
 
 ---
 
 ## Backlog (Nice-to-Have)
+- PTY injection sweeper: background job to retry failed verification injections
 
-_Empty — xterm.js flow control fixed in S91 (commit 3107eac). All prior backlog items resolved._
+---
+
+## Archive
+- Full blocker history: `workspace/build/blockers-archive.md`

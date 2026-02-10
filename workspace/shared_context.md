@@ -1,21 +1,71 @@
 # Hivemind Shared Context
 
-**Last Updated:** Feb 6, 2026 (Session 80)
-**Status:** Doc cleanup sprint complete
-
-**For historical context (Sessions 1-73):** See `shared_context_archive.md`
+## Triage Snapshot
+- Last Updated: 2026-02-10 10:00 (local)
+- Session: S107
+- Health: GREEN
+- Active Risks (Top 3):
+  1. [RISK-001] Compaction message swallow / Item 20 (LOW, Shared)
+  2. [RISK-002] Trigger file delivery split/mangled (LOW, Shared)
+  3. [RISK-003] Codex exit bug #10511 (MEDIUM, Upstream)
 
 ---
 
-## Architecture (Session 79+)
+## Current Operating Model
+- Layout: 3 panes (1 Architect, 2 DevOps, 5 Analyst)
+- Messaging: WebSocket via `hm-send.js` (trigger files fallback only)
+- Runtime Mode: PTY (current default)
+- Config source of truth: `ui/config.js` → PANE_ROLES, PANE_IDS, ROLE_ID_MAP, TRIGGER_TARGETS
 
-| Pane | Agent | Role | Trigger |
-|------|-------|------|---------|
-| 1 | Claude (Opus) | Architect + Frontend/Reviewer teammates | architect.txt |
-| 2 | Codex | DevOps (Infra + Backend combined) | devops.txt |
-| 5 | Gemini | Analyst | analyst.txt |
+| Pane | Agent | Role | CLI | Trigger |
+|------|-------|------|-----|---------|
+| 1 | Claude (Opus) | Architect + Frontend/Reviewer teammates | claude | architect.txt |
+| 2 | Codex | DevOps (Infra + Backend combined) | codex | devops.txt |
+| 5 | Codex | Analyst (switched from Gemini S101) | codex | analyst.txt |
 
-Panes 3, 4, 6 removed. Frontend and Reviewer run as Agent Teams teammates inside Pane 1.
+Panes 3, 4, 6 removed (S77/S79). Frontend and Reviewer run as Agent Teams teammates inside Pane 1.
+
+---
+
+## Current Priorities (Max 5)
+
+### [PRI-001] Transition Objects / Transition Ledger
+- Severity: HIGH
+- Owner: Shared (DevOps scaffold, Analyst spec, Architect coordination)
+- Last Verified: 2026-02-10 10:00 by Architect
+- STALE: NO
+- Stale Since: n/a
+- Why It Matters: Team independently converged — most bugs are invisible handoff failures between correct components
+- Current State: Team consensus achieved S107. DevOps ready to scaffold, Analyst ready to formalize spec.
+- Next Milestone: Schema + lifecycle enum + evidence classes drafted
+
+### [PRI-002] Doc Hygiene Overhaul
+- Severity: MEDIUM
+- Owner: Shared (DevOps templates, Analyst validation, Architect apply)
+- Last Verified: 2026-02-10 10:00 by Architect
+- STALE: NO
+- Stale Since: n/a
+- Why It Matters: Status docs are history books, not dashboards — slows triage under pressure
+- Current State: Templates drafted by DevOps, being applied by Architect, Ana pressure-testing
+- Next Milestone: All three docs migrated, Ana validates triage flow
+
+### [PRI-003] Comms Reliability Protocol
+- Severity: MEDIUM
+- Owner: DevOps
+- Last Verified: 2026-02-10 10:00 by Architect
+- STALE: NO
+- Stale Since: n/a
+- Why It Matters: Fire-and-forget messaging causes silent stalls — James has to manually push
+- Current State: Design agreed (ACK-timeout-resend in hm-send.js). Not yet implemented.
+- Next Milestone: v1 implementation — messageId + ack-required + timeout + retry/fallback
+
+---
+
+## Open Risks (Max 5)
+- [RISK-001] Compaction message swallow / Item 20 - LOW - Shared - 2026-02-10 - resend manually
+- [RISK-002] Trigger file delivery split/mangled - LOW - Shared - 2026-02-10 - user pushes manually
+- [RISK-003] Codex exit bug #10511 - MEDIUM - Upstream - 2026-02-10 - upgraded to 0.99.0-alpha.10, monitor
+- [RISK-004] Jest worker leak warning (cosmetic) - LOW - DevOps - 2026-02-10 - 36 modules have unregister, 1 residual timer
 
 ---
 
@@ -36,48 +86,14 @@ node D:/projects/hivemind/ui/scripts/hm-send.js <target> "(ROLE #N): message"
 
 ---
 
-## Session 82-84 — Hooks + Intent Board + Capabilities (Feb 6, 2026)
-
-**Commits pushed:**
-- Expand button fix, tooltip fix, coordinator delegation rule
-- Intent board protocol (3 CLAUDE.md files + seed JSON files)
-- Gemini CLI hooks (ana-hooks.js + .gemini/settings.json)
-- Claude Code hooks (arch-hooks.js + .claude/settings.local.json)
-- Agent capabilities reference (workspace/references/agent-capabilities.md)
-- Plain English section for capabilities reference
-- README.md + MAP.md updates
-
-**Key decisions:**
-- Lifecycle hooks automate intent board sync (write side solved for Architect + Analyst)
-- Claude Code's `additionalContext` injection gives fresh Architect sessions team state automatically
-- Codex CLI has no lifecycle hooks — needs Skills/SKILL.md alternative
-- Hook scripts must stay fast (sub-10ms, synchronous blocking)
+## References
+- Build status: `workspace/build/status.md`
+- Active blockers: `workspace/build/blockers.md`
+- Active errors: `workspace/build/errors.md`
+- Event kernel spec: `docs/event-kernel-spec.md`
+- Session handoff: `workspace/session-handoff.json`
 
 ---
 
-## Session 80 — Doc Cleanup + Source Audit Sprint (Feb 6, 2026)
-
-**Commits:**
-- `a7ac5e6` — 16 docs updated to 3-pane architecture
-- `8b1ffc9` — README, VISION, triggers, instance-mapping updated
-- `5a4848a` — shared_context archived, .gitignore updated
-- `bd64803` — 5 untracked source files tracked
-- `d143270` — Source JSDoc + 14 test mocks aligned to 3-pane
-
-**What was done:**
-- All documentation files updated from 6-pane → 3-pane references
-- blockers.md archived (400+ → 25 lines), status.md archived (882 → 90 lines)
-- shared_context.md archived (386 → lean), .gitignore updated
-- Source JSDoc: sdk-renderer (12x), mcp-bridge, watcher, api-docs-handlers
-- Test mocks: 14 test files — PANE_ROLES, PANE_IDS, ROLE_ID_MAP aligned
-- 87 suites / 2796 tests passing, all pushed
-
----
-
-## Known Issues
-
-| Issue | Severity |
-|-------|----------|
-| Codex Windows sandbox experimental | LOW |
-| Codex 0.98.0 random exit bug (#10511) | MEDIUM |
-| xterm.js flow control warning (cosmetic) | LOW |
+## Archive
+- Historical context (Sessions 1-73): `workspace/shared_context_archive.md`
