@@ -7,9 +7,9 @@
     "author_model": "codex",
     "change_type": "architectural",
     "result": "approved",
-    "findings": "ERR-001 fix: atomic temp+rename in hm-send.js fallback, stable-size guard in watcher.js, regression test. Analyst verified root cause match (non-atomic write + eager watcher race). Reviewer approved code quality: collision-proof temp naming, Windows-safe rename handling, bounded retries (3x50ms), proper timer cleanup, chokidar ignores .tmp files. 33 tests passing.",
+    "findings": "Compaction gate over-triggering fix: (1) confirmed promotion requires lexical evidence — burst_no_prompt+no_causation alone cannot confirm. (2) 5s chunk-inactivity decay timer resets state when stream goes quiet, re-arms on every chunk. (3) MAX_COMPACTION_DEFER_MS reduced 30s→8s. Reviewer verified timer lifecycle leak-free, all state transitions covered, no regressions to real compaction detection. Analyst confirmed chunk-inactivity patch addresses premature-clear risk. 100 tests passing.",
     "tests_touched": true,
-    "timestamp": "2026-02-10T17:30:00Z"
+    "timestamp": "2026-02-10T21:02:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
