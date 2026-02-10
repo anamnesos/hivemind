@@ -3,13 +3,13 @@
   "review": {
     "reviewer": "Reviewer (Claude Opus)",
     "model": "claude-opus-4-6",
-    "author": "DevOps",
+    "author": "DevOps (Codex)",
     "author_model": "codex",
-    "change_type": "routine",
+    "change_type": "concurrency",
     "result": "approved",
-    "findings": "Handler_error ACK test: verifies send-ack returns ok=false, status=handler_error when onMessage throws. Correct trigger via mockImplementation, assertions match websocket-server.js:504-523. Clean isolation, consistent patterns. 12 tests passing across 2 suites.",
+    "findings": "ERR-004 fix: chunked Claude PTY writes (192-byte segments, clamped 128-256) + Home key cursor reset + fingerprint logging. Chunking logic correct (no off-by-one), inter-chunk yield (2ms) doesn't race with Enter (50ms after last chunk). Gemini/Codex paths verified untouched. Home key \\x1b[H correct ANSI but needs runtime verification in ink TUI (may be no-op, harmlessly ignored). Tests cover chunk boundaries, fingerprint, failure paths. 107 suites, 3249 tests all passing.",
     "tests_touched": true,
-    "timestamp": "2026-02-10T21:41:00Z"
+    "timestamp": "2026-02-10T22:52:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
