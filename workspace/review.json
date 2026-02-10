@@ -7,9 +7,9 @@
     "author_model": "codex",
     "change_type": "routine",
     "result": "approved",
-    "findings": "Trigger fallback integration test: spawns real hm-send.js, WS server withholds ACK to force retry exhaustion, verifies fallback writes complete non-mangled 1200-char message to trigger file. Proper cleanup, timeout safety, exercises real atomic-write path. 4 hm-send tests passing.",
+    "findings": "Handler_error ACK test: verifies send-ack returns ok=false, status=handler_error when onMessage throws. Correct trigger via mockImplementation, assertions match websocket-server.js:504-523. Clean isolation, consistent patterns. 12 tests passing across 2 suites.",
     "tests_touched": true,
-    "timestamp": "2026-02-10T21:38:00Z"
+    "timestamp": "2026-02-10T21:41:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
