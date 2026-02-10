@@ -1,89 +1,100 @@
 {
-  "session": 92,
-  "date": "2026-02-08",
+  "session": 103,
+  "date": "2026-02-10",
   "mode": "PTY",
-  "status": "COMPLETE",
+  "status": "COMPLETED",
 
   "completed": [
-    "Backlog audit: cleared 7/10 known issues (Ana investigated, Architect cleaned docs)",
-    "Fix: workflow.js IPC migration — window.ipcRenderer → window.hivemind.workflow/graph (14 call sites, commit f2873eb)",
-    "Fix: graceful shutdown cleanup — unsetup registry, perf-audit unregister, status-strip/watcher/memory timer cleanup (commit f2873eb)",
-    "Fix: missing test mock (cleanup in hivemind-app.test.js) + missing export (shutdown in transcript-logger.js)",
-    "Docs: cleared resolved known issues from session-handoff.json and blockers.md (commit 49abc0c)",
-    "Fix: screenshots tab click-to-expand and proportional thumbnails (commit e0ebed1)",
-    "Phase 1 UI cleanup: removed MCP indicator, Spawn button, Cost badge, dead Dashboard HTML; fixed activity event name mismatch activity-entry→activity-logged (commit 8a17303)",
-    "Phase 2+3: Panel declutter (21→4 primary tabs + Dev toggle with localStorage) and Feed enhancement (chat-style messages, escapeHtml, append-only DOM, 500-entry cap, debounced search, noise filtering, AWAITING HUMAN banner) (commit 66e0ae7)",
-    "Phase 4 assessment: listener 'leaks' are app-lifetime singletons (not real leaks), lazy tab init deferred (architectural), dead code already removed in Phase 1"
+    "Fix: Resize freeze — debounce + geometry guard + staggered pane resize (febd047)",
+    "Fix: SVG icons for mic/send buttons, consistent 44x44 sizing, voice status relocated to status strip (6e848fa)",
+    "Doc: VISION.md rewrite — inclusive framing, cross-model focus, no dev-bashing",
+    "Doc: Image generation quick-reference added to arch/CLAUDE.md and MEMORY.md",
+    "Doc: 'Just do it' philosophy — don't pre-check APIs, run commands and handle failure gracefully",
+    "Doc: Teammates spawn on-demand, not on startup — reduces check-in noise and context waste",
+    "Doc: Design principle updated — 'Accessible AND powerful' replaces 'Accessibility over power'"
   ],
 
   "architecture": {
     "current_panes": {
       "1": "Architect + Frontend teammate + Reviewer teammate (Claude Opus)",
       "2": "DevOps (Codex)",
-      "5": "Analyst (Gemini)"
+      "5": "Analyst (Codex — was Gemini, switched S101)"
     },
     "config_source": "ui/config.js → PANE_ROLES, PANE_IDS, ROLE_ID_MAP, TRIGGER_TARGETS",
     "instance_dirs": "arch (pane 1), devops (pane 2), ana (pane 5)",
     "panes_removed": "3, 4, 6 — fully removed from config, HTML, source, tests, docs",
-    "review_gate": "workspace/review.json + pre-commit Gate 7. Cross-model review required for non-routine changes (use Ana/Gemini or DevOps/Codex).",
+    "review_gate": "workspace/review.json + pre-commit Gate 7. Cross-model review required for non-routine changes.",
     "hooks": {
-      "architect": "workspace/scripts/arch-hooks.js → SessionStart (reads context-snapshots/1.md, falls back to intent files), SessionEnd, PostToolUse, PreCompact (writes compaction marker)",
+      "architect": "workspace/scripts/arch-hooks.js → SessionStart, SessionEnd, PostToolUse, PreCompact",
       "analyst": "workspace/scripts/ana-hooks.js → SessionStart, SessionEnd, AfterTool",
       "devops": "No hooks — Codex CLI has no lifecycle hooks. Uses Skills/SKILL.md instead"
     }
   },
 
-  "not_yet_done": [],
+  "not_yet_done": [
+    "Linux dual-boot setup checklist for James — DevOps was mid-research, interrupted by Codex crash",
+    "Dual-writer to image-gen-history.json — Reviewer noted backend and renderer both write to history file (consolidate to single writer)",
+    "Agent message color bleed — purple/orange decorations bleed to adjacent lines in terminal"
+  ],
 
-  "roadmap": [],
+  "roadmap": [
+    "CLI auto-detection on startup — detect installed CLIs (claude/codex/gemini), auto-configure paneCommands. If user only has Claude, all panes run Claude.",
+    "API key graceful degradation — disable features gracefully when keys missing, guide user to get them",
+    "WebSocket routing to pane 5 broken — hm-send.js 'analyst' target not delivering, trigger file fallback works. Investigate.",
+    "Compaction message loss mitigation (Item 20 — experimental)",
+    "Test for focus-poll + safety timer extension path (post-merge coverage gap)",
+    "Dual-writer cleanup in image-gen history"
+  ],
 
   "known_issues": {
-    "Codex 0.98.0 random exit bug (#10511)": "MEDIUM — upstream, still on 0.98.0",
-    "Jest worker leak warning (cosmetic)": "LOW — only perf-audit has full unregister, other modules silently skip"
+    "WebSocket routing to pane 5": "MEDIUM — hm-send.js messages to 'analyst' not reaching pane 5. Trigger file fallback works. ROLE_ID_MAP has analyst→5, resolveTargetToPane should work. Needs deeper investigation.",
+    "Agent message color bleed": "LOW — purple/orange color decorations extend beyond agent message lines to adjacent terminal output",
+    "Codex exit bug (#10511)": "MEDIUM — upgraded to 0.99.0-alpha.10, monitor if frequency changes",
+    "Item 20: Compaction message loss": "LOW — no fix without CLI exposing compaction state",
+    "Jest worker leak warning (cosmetic)": "LOW — 12 handlers have unregister, ~26 still missing",
+    "war-room.js \\r sanitization": "LOW — backlogged",
+    "Dual-writer image-gen-history.json": "LOW — both backend and renderer write to same history file with different schemas"
   },
 
   "stats": {
-    "test_suites": 93,
-    "tests_passed": 2996
+    "test_suites": 91,
+    "tests_passed": 2905
   },
 
   "important_notes": [
     "NEVER use subagents (Task tool without team_name) — always use Agent Teams pattern",
     "Architect = coordinator, NOT implementer — delegate to Ana/DevOps/Frontend/Reviewer",
     "ALL teammates MUST be spawned with model: opus — user directive Session 90",
-    "Gate 7 pre-commit: workspace/review.json must have result=approved. Non-routine changes require cross-model review (use Ana/Gemini or DevOps/Codex as reviewer).",
-    "shared-state.js: watches intent files + pipeline.json + review.json, broadcasts diffs over WebSocket, rolling changelog with per-pane lastSeenAt tracking",
-    "pipeline.js: conversation-aware state machine, hybrid detection (tags + keywords), auto-notifications",
-    "context-compressor.js: generates token-budget-constrained snapshots from 6 data sources, persists to workspace/context-snapshots/{paneId}.md, auto-refreshes via watcher.addWatch() + 120s timer. arch-hooks.js reads snapshots for post-compaction restoration.",
-    "NEW: terminal.js flow control — watermark-based (500KB HIGH / 50KB LOW) with PTY pause/resume via XOFF/XON through daemon. Fixes 'write data discarded' warning from Session 60.",
-    "NEW S92: Panel tabs split into primary (Feed/Shots/Oracle/Git) and devtools (17 tabs behind Dev toggle). State persisted in localStorage key 'hivemind-devtools-open'. Activity tab renamed to Feed with chat-style message rendering, escapeHtml XSS protection, append-only DOM, noise filtering.",
-    "Test suite: 93 suites, 2996 tests all passing"
+    "Spawn teammates ON DEMAND, not on startup — user directive Session 103",
+    "When user asks for image gen/send message/etc — JUST DO IT, don't pre-check. Handle failure gracefully.",
+    "Gate 7 pre-commit: workspace/review.json must have result=approved",
+    "James reads ONLY pane 1 — all comms route through Architect. DO NOT override.",
+    "Test suite: 91 suites, 2905 tests passing",
+    "Analyst pane 5 switched to Codex (was Gemini) as of S101",
+    "WebSocket to pane 5 broken — use trigger file fallback for Ana"
   ],
 
   "commits_this_session": [
-    "f2873eb - fix: workflow IPC migration to window.hivemind + graceful shutdown cleanup",
-    "49abc0c - docs: clear resolved known issues from backlog",
-    "e0ebed1 - fix: screenshots tab click-to-expand and proportional thumbnails",
-    "8a17303 - fix: declutter header and fix activity tab event mismatch",
-    "66e0ae7 - feat: panel declutter with Dev Tools toggle and chat-style Feed"
+    "febd047 - fix: debounce resize + geometry guard to prevent UI freeze on window drag",
+    "6e848fa - fix: SVG icons for mic/send buttons, consistent sizing, relocate voice status"
   ],
 
   "cli_setup": {
     "claude": { "type": "native", "version": "2.1.32" },
-    "codex": { "type": "native", "version": "0.98.0" },
+    "codex": { "type": "native", "version": "0.99.0-alpha.10" },
     "gemini": { "type": "npm", "version": "0.27.0" }
   },
 
   "team": {
-    "1": { "role": "Architect + Frontend + Reviewer (internal)", "cli": "claude", "status": "online" },
+    "1": { "role": "Architect + Frontend + Reviewer (on demand)", "cli": "claude", "status": "online" },
     "2": { "role": "DevOps", "cli": "codex", "status": "online" },
-    "5": { "role": "Analyst", "cli": "gemini", "status": "online" }
+    "5": { "role": "Analyst", "cli": "codex", "status": "online" }
   },
 
   "verify_after_restart": {
-    "what": "S92 UI cleanup: (1) Header shows only Project/Sync/Actions (no MCP/Spawn/Cost), (2) Panel shows 4 primary tabs (Feed/Shots/Oracle/Git) + Dev toggle, (3) Feed tab receives activity-logged events, (4) Click-to-expand works on screenshot thumbnails",
-    "how": "Visual inspection — open panel, check tabs. Click Dev toggle to show/hide devtools tabs. Open Feed tab, check entries appear. Drop an image in Shots, click thumbnail to expand.",
-    "success": "4 primary tabs visible, Dev toggle shows/hides 17 devtools tabs, Feed entries render with timestamps, screenshots expand on click",
-    "failure": "Tabs missing, devtools toggle broken, Feed empty despite agent activity, screenshots don't expand"
+    "what": "Verify resize freeze fix works — drag window edges aggressively. Also check SVG icons and button sizing in input area.",
+    "how": "1. Drag window edges/corners rapidly — should NOT freeze. 2. Check mic button shows SVG mic icon (not text). 3. Check send button shows SVG paper plane icon. 4. Both buttons should be same size (44x44). 5. Voice recording status should appear in bottom status strip, not next to mic.",
+    "success": "Window resize is smooth, no freeze. Icons display correctly. Buttons are equally sized.",
+    "failure": "App still freezes on resize. Buttons show text instead of icons. Buttons are different sizes."
   }
 }

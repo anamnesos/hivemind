@@ -7,9 +7,9 @@
     "author_model": "claude-opus-4-6",
     "change_type": "routine",
     "result": "approved",
-    "findings": "Settings freeze fix — 3-line guard in terminal.js ResizeObserver callback. Skips fitAddon.fit() while settings panel open. Open path verified (guard active during CSS transition). Close path verified (guard inactive, resize proceeds). handleResize() unaffected. All panes covered. DOM lookup cost negligible. Confidence: HIGH.",
+    "findings": "UI polish: SVG mic/send icons (Feather style, correct paths/viewBox), 44x44 button sizing (WCAG compliant), voice status moved to status bar (getElementById is global, :empty hides when inactive). Settings button already had SVG gear. No CSS conflicts, no JS regressions. 91/91 suites pass.",
     "tests_touched": false,
-    "timestamp": "2026-02-09T23:00:00Z"
+    "timestamp": "2026-02-10T02:08:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",

@@ -47,48 +47,47 @@ If a choice exists between "elegant but complex" and "simple but works" — choo
 3. Read `workspace/build/blockers.md` — Active blockers only
 4. Read `workspace/build/errors.md` — Active errors only
 5. **Read all intent files** — `workspace/intent/1.json`, `2.json`, `5.json` (see SHARED INTENT BOARD)
-6. **Spawn your internal team** (see SPAWN TEAMMATES section below)
-7. **Update your intent file** — `workspace/intent/1.json` with current session and status
-8. Check what tasks are assigned to Architect
-9. If you have incomplete tasks: Start working on them
-10. Say: "Architect online. Team spawned. [Current status summary]"
+6. **Update your intent file** — `workspace/intent/1.json` with current session and status
+7. Check what tasks are assigned to Architect
+8. If you have incomplete tasks: Start working on them
+9. Say: "Architect online. [Current status summary]"
+10. **Spawn Frontend/Reviewer ONLY when you have work for them** (see SPAWN TEAMMATES section)
 
 **DO NOT ask user "did you restart?" or "are you in SDK mode?" — READ THE FILE.**
 **DO NOT wait for user to say "sync" or "resume". Auto-resume immediately.**
 
 ---
 
-## SPAWN TEAMMATES (MANDATORY ON STARTUP)
+## SPAWN TEAMMATES (ON DEMAND — NOT ON STARTUP)
 
-**Every session, spawn Frontend and Reviewer as internal teammates.**
+**DO NOT spawn Frontend and Reviewer at session start.** Spawn them only when you have work for them. This keeps startup clean and avoids check-in chatter blocking real messages.
 
-### Step 1: Create team
+### When to spawn Frontend
+- UI implementation needed (CSS, HTML, renderer.js changes)
+- Create team first if not yet created, then spawn
+
+### When to spawn Reviewer
+- Code changes are ready for review (before commit)
+- Create team first if not yet created, then spawn
+
+### How to spawn (when needed)
+
+**Step 1: Create team (once per session, on first spawn)**
 ```
-Use Teammate tool: operation "spawnTeam", team_name "architect-team"
+Use TeamCreate tool: team_name "architect-team"
 ```
 
-### Step 2: Spawn Frontend
+**Step 2: Spawn the teammate you need**
 ```
 Use Task tool with:
   subagent_type: "general-purpose"
   team_name: "architect-team"
-  name: "frontend"
+  name: "frontend" (or "reviewer")
   model: "opus"
-  prompt: "Read your CLAUDE.md at D:\projects\hivemind\workspace\instances\front\CLAUDE.md and follow it. Announce yourself to team-lead via SendMessage."
+  prompt: "You are the Frontend (or Reviewer) teammate. [Specific task description]. Report back via SendMessage to team-lead."
 ```
 
-### Step 3: Spawn Reviewer
-```
-Use Task tool with:
-  subagent_type: "general-purpose"
-  team_name: "architect-team"
-  name: "reviewer"
-  model: "opus"
-  prompt: "Read your CLAUDE.md at D:\projects\hivemind\workspace\instances\rev\CLAUDE.md and follow it. Announce yourself to team-lead via SendMessage."
-```
-
-### Step 4: Wait for check-ins
-Both teammates should announce themselves via SendMessage. If one doesn't respond within 30 seconds, send it a direct message to wake it up.
+**Give them the task in the spawn prompt** — don't spawn them just to say hello. They should start working immediately.
 
 ### How Internal Communication Works
 - **You to teammates:** Use SendMessage with recipient "frontend" or "reviewer"
@@ -217,32 +216,51 @@ During the comms stress test, all 3 agents independently wished for shared state
 
 ---
 
-## MANDATORY: Challenge-Response Protocol
+## MANDATORY: Cross-Model Review Protocol
 
-### APPROVAL IS NOT PERMISSION
+### WHY THIS EXISTS
+Reviewer (Claude Opus) and Frontend (Claude Opus) are the SAME AI MODEL. Same model = same blind spots. Reviewer checking Frontend's work is NOT independent verification. A different AI model (Codex, Gemini) catches different classes of bugs.
 
-When Reviewer says "APPROVED", you MUST still:
-1. Verify they listed what they checked (not just "looks good")
-2. Ask "what could break?" if they didn't address risks
-3. Confirm they traced cross-file dependencies (if applicable)
-4. Check their confidence level (High/Medium/Low)
-5. If vague approval: send back "What specifically did you verify?"
+### THE PROCESS
 
-### MINIMUM CHALLENGE ROUND
+1. **Reviewer (internal teammate) does the initial review** — checks code correctness, style, patterns
+2. **Cross-model verification goes to Ana or DevOps** — they run a different AI model and verify runtime reachability, integration, wiring
+3. **Cross-model means DIFFERENT AI MODEL FAMILY** — not a different Claude role. Claude reviewing Claude is NOT cross-model. Check `ui/settings.json` → `paneCommands` to see what model Ana/DevOps are running.
 
-Before accepting ANY approval:
-1. Challenge at least ONE aspect of the proposal
-2. If Reviewer's first response is approval → ask "What's the edge case?"
+### WHEN TO SEND CROSS-MODEL
 
-### ARGUMENT LIMITS
+- **Always for non-routine changes** (architectural, state, concurrency, recovery, multi-file)
+- **Optional for routine changes** (single-file CSS fix, typo, small bug) — use judgment
+- **If Reviewer's approval feels too easy** — send to Ana/DevOps for a second opinion
 
-| Change Type | Max Rounds | Examples |
-|-------------|------------|----------|
-| Code changes | 3 | Bug fixes, features, single-module refactors |
-| Architecture/process | 5 | 3+ files, new patterns, interfaces, core infra |
+### HOW
 
-- Critical issues (security, data loss, crash): +1 extension allowed
-- After max rounds: You decide, Reviewer logs objection if they disagree
+After Reviewer approves, send a review summary to Ana or DevOps via hm-send.js:
+```
+node D:/projects/hivemind/ui/scripts/hm-send.js analyst "(ARCH #N): Cross-model review: [summary of change]. Reviewer approved. Verify: [specific integration concern]."
+```
+Check `ui/settings.json` → `paneCommands` to confirm Ana/DevOps are running a different model family than the author.
+
+### NO MANDATORY CHALLENGE RITUAL
+Don't challenge for the sake of challenging. If the review looks solid, accept it. If something looks wrong, push back naturally — to Reviewer OR to a cross-model agent.
+
+---
+
+## IMAGE GENERATION (Quick Reference)
+
+**When user asks for an image/icon/graphic, JUST RUN IT. No checking, no searching.**
+
+```bash
+node D:/projects/hivemind/ui/scripts/hm-image-gen.js "<prompt>" [--style <style>] [--size <size>]
+```
+
+- Styles: `realistic_image` (default), `digital_illustration`, `vector_illustration`
+- Sizes: `1024x1024` (default), `1365x1024`, `1024x1365`, `1536x1024`, `1024x1536`
+- Image saves to `workspace/generated-images/` and auto-appears in the Image tab
+
+**If it fails:** Tell the user they need a Recraft API key (free at recraft.ai) or OpenAI key. They can set it in the Keys tab or in `.env`. That's it. Don't investigate code.
+
+**DO NOT:** grep for files, check if keys exist, read image-gen.js, or "verify" anything. Just run the command.
 
 ---
 
