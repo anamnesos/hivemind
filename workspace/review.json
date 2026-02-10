@@ -5,11 +5,11 @@
     "model": "claude-opus-4-6",
     "author": "DevOps",
     "author_model": "codex",
-    "change_type": "architectural",
+    "change_type": "routine",
     "result": "approved",
-    "findings": "Compaction gate over-triggering fix: (1) confirmed promotion requires lexical evidence — burst_no_prompt+no_causation alone cannot confirm. (2) 5s chunk-inactivity decay timer resets state when stream goes quiet, re-arms on every chunk. (3) MAX_COMPACTION_DEFER_MS reduced 30s→8s. Reviewer verified timer lifecycle leak-free, all state transitions covered, no regressions to real compaction detection. Analyst confirmed chunk-inactivity patch addresses premature-clear risk. 100 tests passing.",
-    "tests_touched": true,
-    "timestamp": "2026-02-10T21:02:00Z"
+    "findings": "Doc hygiene automation: new ui/scripts/doc-lint.js validates errors.md/blockers.md/status.md template invariants (active cap <=5, required metadata fields, stale-marker computation by severity policy). Pre-commit gate 7 integration clean — --staged mode only lints staged docs, graceful skip if script missing. npm lint:docs script added. Analyst verified functional correctness. Reviewer verified code quality: markdown parsing sound, edge cases handled, error messages actionable, exit codes clean.",
+    "tests_touched": false,
+    "timestamp": "2026-02-10T21:17:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
