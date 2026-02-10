@@ -3,13 +3,13 @@
   "review": {
     "reviewer": "Reviewer",
     "model": "claude-opus-4-6",
-    "author": "Frontend",
+    "author": "Architect",
     "author_model": "claude-opus-4-6",
     "change_type": "routine",
     "result": "approved",
-    "findings": "UI capability gating reviewed across 4 files + 1 test file. (1) oracle.js: ipcRenderer.invoke('get-feature-capabilities') at line 130 matches ipcMain.handle at settings-handlers.js:42. ipcRenderer.on('feature-capabilities-updated') at line 135 matches webContents.send at settings-handlers.js:123. Payload consumption correct — reads imageGenAvailable (line 89) and recraftAvailable (line 103), both present in feature-capabilities.js return shape. Post-generation re-enable (line 192) uses cached imageGenAvailable — correct behavior if keys removed mid-generation. (2) renderer.js: Same IPC names at lines 1188/1196. Reads voiceTranscriptionAvailable (lines 1190/1198) — matches feature-capabilities.js shape. updateVoiceUI disable logic (line 789): !voiceEnabled || !voiceCapabilityAvailable — correct, disabled when EITHER condition fails. Title shows appropriate missing-key message. (3) oracle.css: 3 small rules (lines 241-252), uses existing CSS vars, no !important, --color-warning fallback. Matches existing naming conventions. (4) Tests: 12 tests across 2 describe blocks. Oracle tests (7) exercise real applyImageGenCapability with varying payloads — button disabled state, title, hint text, CSS classes, element reuse, null guard. Voice tests (5) verify boolean disable logic and tooltip strings — logic-only tests acceptable since voice button is in renderer closure. (5) Memory: Both oracle.js and renderer.js register feature-capabilities-updated listeners — intentional (different concerns). Registered once at init in single-page Electron app — no cleanup needed. (6) Cross-file: ipcRenderer import pattern in oracle.js consistent with rest of file. No issues found.",
+    "findings": "Session 106 backlog sprint — 8 items reviewed. (1) WEBP MIME: detectImageExt magic bytes correct, gallery dedup logic sound, fd-based header read efficient. (2) Color bleed: height:1 + layer:top + reset decoration pattern correct. (3) App icon: platform branching correct, path resolution verified. (4) MutationObserver tests: callback pattern matches renderer.js wiring. (5) DevOps: war-room sanitization, dual-writer consolidation, IPC unregister coverage — all verified. All 105 suites, 3218 tests passing.",
     "tests_touched": true,
-    "timestamp": "2026-02-09T17:15:00Z"
+    "timestamp": "2026-02-10T09:20:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
