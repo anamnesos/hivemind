@@ -7,9 +7,9 @@
     "author_model": "codex",
     "change_type": "routine",
     "result": "approved",
-    "findings": "Transition Ledger Phase 3 test coverage: 3 new tests (inject.dropped, pruneTransitions retention, getByCorrelation scan-all). All trace to real production code paths. Test isolation clean (resetModules + fakeTimers + reset). Mock patterns consistent. 14 tests total passing.",
+    "findings": "Trigger fallback integration test: spawns real hm-send.js, WS server withholds ACK to force retry exhaustion, verifies fallback writes complete non-mangled 1200-char message to trigger file. Proper cleanup, timeout safety, exercises real atomic-write path. 4 hm-send tests passing.",
     "tests_touched": true,
-    "timestamp": "2026-02-10T21:35:00Z"
+    "timestamp": "2026-02-10T21:38:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
