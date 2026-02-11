@@ -8,13 +8,15 @@
     "change_type": "architectural",
     "result": "approved",
     "findings": [
-      "APPROVED — Phase C: IPC handlers + CLI script + integration test.",
-      "Reviewer traced full chain: CLI → WS → App → IPC → Investigator → Store. All contracts match.",
-      "Cross-model (Gemini): Runtime reachability verified. IPC wiring via registry correct. WS routing functional.",
-      "No blocking issues. Minor note: CLI uses 'add-hypothesis' command name while IPC uses 'add-assertion' — both accepted, just naming asymmetry."
+      "APPROVED — Slice 3 Phase A: V3 schema + memory module + unit tests.",
+      "V3 schema matches spec exactly — 3 tables, 5 indexes, additive migration.",
+      "getLatestContext() assembles context matching handoff JSON shape with configurable per-category limits.",
+      "Supersession chain correct with self-supersession prevention.",
+      "Search escapes LIKE wildcards. All enums validated. Degraded mode covered.",
+      "Cross-model (Gemini): V3 migration wired correctly. Context assembly robust. No issues."
     ],
-    "tests_touched": ["evidence-ledger-ipc-integration.test.js"],
-    "timestamp": "2026-02-11T21:10:00Z"
+    "tests_touched": ["evidence-ledger-memory.test.js"],
+    "timestamp": "2026-02-11T21:22:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
