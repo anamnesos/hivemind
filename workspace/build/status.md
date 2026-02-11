@@ -1,12 +1,27 @@
 # Build Status
 
-Last updated: 2026-02-07
+Last updated: 2026-02-11
 
 **For older sessions (1-69):** See `status-archive.md`
 
+## Triage Snapshot
+- Last Updated: 2026-02-11 00:45 (local)
+- Active Priorities: 3
+- Focus: ERR-005 memory leak validation, Transition Ledger test-drive, doc hygiene
+
 ---
 
-## Session 91 - Bugfixes + Flow Control (Feb 8, 2026)
+## Current Priorities (Max 5)
+
+- **ERR-005 v2 runtime validation** — verify watcher feedback loop + daemon scrollback fix (af4e1e0). Memory should plateau, not climb.
+- **Transition Ledger test-drive** — wire on injection lifecycle path, add remaining spec features.
+- **status.md template alignment** — update to pass doc-lint validation (this task).
+
+---
+
+## Session History
+
+### Session 91 - Bugfixes + Flow Control (Feb 8, 2026)
 
 | Task | Owner | Status |
 |------|-------|--------|
