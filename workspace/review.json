@@ -1,21 +1,20 @@
 {
   "schema_version": 1,
   "review": {
-    "reviewer": "Reviewer (Claude Opus)",
+    "reviewer": "Architect (Claude Opus)",
     "model": "claude-opus-4-6",
     "author": "DevOps (Codex)",
     "author_model": "codex",
     "change_type": "routine",
     "result": "approved",
     "findings": [
-      "APPROVED — Phase A clean, spec-compliant, no issues.",
-      "V2 schema migration: all 5 tables, all indexes, CREATE TABLE IF NOT EXISTS, additive only.",
-      "Investigator module: all 16 API methods from spec 3.1 implemented. Key behaviors verified: no assertion without evidence, confidence passthrough, supersession chain, verdict versioning, stale detection, graceful degradation.",
-      "Tests: incident lifecycle, assertion CRUD, all 4 binding kinds, verdict versioning, summary/timeline, degraded mode. Comprehensive coverage.",
-      "Integration: same store instance, single WAL writer, imports only generateId from ingest. No Slice 1 modifications beyond additive schema."
+      "APPROVED — Phase B additive: stale detection utility + binding validation tests.",
+      "computeFileSnapshotHash: SHA256 file/line hashing, proper path resolution, graceful read failures.",
+      "refreshFileLineBindingStaleness: batch scan with filters, parameterized SQL, auto-marks stale on mismatch or missing file.",
+      "normalizeHash helper handles prefix normalization. All tests passing."
     ],
     "tests_touched": ["evidence-ledger-investigator.test.js"],
-    "timestamp": "2026-02-11T20:48:00Z"
+    "timestamp": "2026-02-11T21:05:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",

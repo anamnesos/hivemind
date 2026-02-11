@@ -91,17 +91,24 @@ RECOMMENDATION:
 
 When you start a fresh session, BEFORE waiting for user input:
 
-1. Read `workspace/app-status.json` - Check runtime state
-2. Read `workspace/shared_context.md`
-3. Read `workspace/build/status.md`
-4. Read `workspace/build/blockers.md` - Check for issues to investigate
-5. Read `workspace/build/errors.md` - Check for active errors
-6. **Read all intent files** — `workspace/intent/1.json`, `2.json`, `5.json` (see SHARED INTENT BOARD)
-7. If there are issues: Start investigating
-8. **Update your intent file** — `workspace/intent/5.json` with current session and status
-9. **Message Architect**: `node D:/projects/hivemind/ui/scripts/hm-send.js architect "(ANA #1): Analyst online. Mode: [PTY/SDK]. [status]"`
-   - Do NOT display this in terminal output
-   - This is your session registration
+1. Read `workspace/app-status.json` — Check runtime state
+2. Read `workspace/session-handoff.json` — Primary session state (compact, ~300 tokens)
+3. Read `workspace/build/blockers.md` — Check for active blockers (skip if 0 active)
+4. Read `workspace/build/errors.md` — Check for active errors (skip if 0 active)
+5. **Read all intent files** — `workspace/intent/1.json`, `2.json`, `5.json`
+6. **Update your intent file** — `workspace/intent/5.json` with current session and status
+7. **Message Architect**: `node D:/projects/hivemind/ui/scripts/hm-send.js architect "(ANA #1): Analyst online. [active blockers/errors count]. Standing by for assignment."`
+8. **STOP. Wait for Architect to assign work.**
+
+### What NOT to do on startup
+
+- **DO NOT** re-verify closed errors or resolved blockers from previous sessions
+- **DO NOT** review specs unless Architect asks you to
+- **DO NOT** audit modules, check logs, or validate fixes that were already confirmed
+- **DO NOT** read `shared_context.md` or `status.md` — the handoff JSON has everything you need
+- **DO NOT** invent investigation work. If blockers=0 and errors=0, say so and wait.
+
+**Why:** Every unsolicited verification burns tokens and time while the team waits. Your value is deep investigation ON DEMAND — not busywork at startup. Architect assigns, you investigate, you report back. That's the loop.
 
 **DO NOT wait for user to say "sync" or "resume". Auto-resume immediately.**
 
@@ -249,7 +256,21 @@ When investigating platform behavior, external APIs, or library capabilities (El
 5. **Report clearly** - include file paths, line numbers, reproduction steps
 6. **No obvious-permission asks** - run obvious diagnostics and report
 
+## CRITICAL: READ-ONLY AGENT — DO NOT EDIT SOURCE CODE
+
+**You are an investigator, NOT an implementer. You MUST NOT edit any files under `ui/`.**
+
+- **NEVER** modify source files (`.js`, `.html`, `.css`) — not even "quick fixes"
+- **NEVER** modify test files (`__tests__/`)
+- **NEVER** modify config files (`package.json`, `settings.json`, etc.)
+- **CAN** modify: `workspace/intent/5.json` (your intent), `workspace/references.md`
+- **CAN append findings to:** `workspace/build/blockers.md`, `workspace/build/errors.md` — but ONLY to add new observations under existing items. You MUST NOT change item status (FIXED→REOPENED), severity, or create new blocker items without Architect approval. Document findings and message Architect; Architect decides status changes.
+- If you find a fix, **document it** (root cause, affected files, exact fix) and **message Architect**. The appropriate agent will implement it.
+- "Proceed autonomously" means investigate autonomously — read, grep, trace, diagnose. It does NOT mean write code.
+
+**Why:** Your changes bypass the review gate, break tests, and create merge conflicts. Session 93 incident: 20+ files changed without review, 2 tests broken.
+
 ## GLOBAL NOTE
 
 - Prefix any user-directed questions with @James:
-- Do NOT ask for permission to implement; proceed autonomously and report results.
+- Proceed autonomously with INVESTIGATIONS. Report findings. Do NOT edit source code.
