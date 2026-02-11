@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
   "review": {
-    "reviewer": "Reviewer (Claude Opus)",
+    "reviewer": "Architect (Claude Opus)",
     "model": "claude-opus",
-    "author": "DevOps (Codex)",
+    "author": "Analyst (Codex)",
     "author_model": "codex",
-    "change_type": "architectural",
+    "change_type": "routine",
     "result": "approved",
-    "findings": "Phase C config gate review. (1) config.js: envFlagEnabled helper correctly parses truthy/falsy env strings with default fallback; evidenceLedgerEnabled exported with default true. (2) evidence-ledger-store.js: configEnabled derived from config flag, ANDed with options.enabled — correct precedence. logDegradedOnce uses module-level Set for one-time logging — acceptable for singleton store pattern. All 4 degradation paths (disabled, runtime_dir_error, sqlite_driver_unavailable, open_failed) converted to one-time logging. getStatus() exposes configEnabled. (3) Tests: 2 new tests cover disabled-flag degradation (with warn-once assertion) and open-failure one-time logging. Both pass. Existing 5 tests pass with no regressions (config defaults to true so existing behavior unchanged). Minor note: LOGGED_DEGRADE_KEYS is module-scoped not instance-scoped — fine for production singleton, but means test isolation requires resetModules (tests already do this correctly). Cross-model review required (architectural change_type, author=codex, reviewer=claude-opus — models differ, requirement satisfied).",
+    "findings": "Evidence Ledger integration test (1 test). Simulates full message path: WS ingress → triggers routing → inject-message → daemon throttle → injection controller → PTY writes. Asserts single traceId continuity across all hops. Test-only addition, no source changes. Already verified passing in full suite (113/3327).",
     "tests_touched": true,
-    "timestamp": "2026-02-11T21:05:00Z"
+    "timestamp": "2026-02-11T21:10:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
