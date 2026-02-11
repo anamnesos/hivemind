@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
   "review": {
-    "reviewer": "Reviewer (Claude Opus)",
+    "reviewer": "Architect (Claude Opus)",
     "model": "claude-opus",
     "author": "DevOps (Codex)",
     "author_model": "codex",
-    "change_type": "state",
+    "change_type": "concurrency",
     "result": "approved",
-    "findings": "Focus-deferral fix: userInputFocused() changed from focus-only to focus+recent-activity (2s window). Added UI activity tracking via keydown+input events on non-xterm inputs. Injection gates in processIdleQueue and doSendToPane unchanged but now defer only on active typing, not mere focus. 5 new tests. Cross-model: Codex authored, Claude Opus reviewed.",
+    "findings": "PTY write race fix: chunk write→ack barrier before Enter. writeAndWaitAck handshake in daemon-client.js awaits per-chunk daemon.write.ack. Daemon echoes requestedByEventId for matching. pty-handlers.js awaits each chunk sequentially. injection.js aborts on writeChunked failure — sendTrustedEnter never fires if chunks fail. Graceful fallback via writeWithAckIfAvailable. Cleanup on disconnect/timeout. Cross-model: Codex authored, Claude Opus reviewed. 6 new tests.",
     "tests_touched": true,
-    "timestamp": "2026-02-11T08:19:00Z"
+    "timestamp": "2026-02-11T08:35:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
