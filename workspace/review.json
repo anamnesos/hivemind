@@ -8,15 +8,16 @@
     "change_type": "architectural",
     "result": "approved",
     "findings": [
-      "APPROVED — Slice 3 Phase A: V3 schema + memory module + unit tests.",
-      "V3 schema matches spec exactly — 3 tables, 5 indexes, additive migration.",
-      "getLatestContext() assembles context matching handoff JSON shape with configurable per-category limits.",
-      "Supersession chain correct with self-supersession prevention.",
-      "Search escapes LIKE wildcards. All enums validated. Degraded mode covered.",
-      "Cross-model (Gemini): V3 migration wired correctly. Context assembly robust. No issues."
+      "APPROVED — Slice 3 Phase B: IPC handlers + CLI script + seed migration + tests.",
+      "12 new memory IPC channels correctly wire to memory module methods. All parameter shapes verified.",
+      "hm-memory.js CLI follows established WebSocket pattern (requestId matching, response envelope handling).",
+      "Seed migration provably idempotent via deterministic SHA-1 IDs + UNIQUE constraint conflict handling.",
+      "Category mapping correct: important_notes→directive, completed→completion, roadmap+not_yet_done→roadmap, known_issues→issue, architecture→architecture.",
+      "Integration test covers full IPC round-trip: session start → 5 decisions → get-context → verify assembled shape.",
+      "Cross-model (Gemini): IPC wiring verified. CLI pattern consistent. Seed idempotency confirmed. No issues."
     ],
-    "tests_touched": ["evidence-ledger-memory.test.js"],
-    "timestamp": "2026-02-11T21:22:00Z"
+    "tests_touched": ["evidence-ledger-ipc-integration.test.js", "evidence-ledger-memory-seed.test.js"],
+    "timestamp": "2026-02-11T21:40:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
