@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
   "review": {
-    "reviewer": "Architect (Claude Opus)",
+    "reviewer": "Reviewer (Claude Opus)",
     "model": "claude-opus",
     "author": "DevOps (Codex)",
     "author_model": "codex",
-    "change_type": "concurrency",
+    "change_type": "architectural",
     "result": "approved",
-    "findings": "PTY write race fix: chunk write→ack barrier before Enter. writeAndWaitAck handshake in daemon-client.js awaits per-chunk daemon.write.ack. Daemon echoes requestedByEventId for matching. pty-handlers.js awaits each chunk sequentially. injection.js aborts on writeChunked failure — sendTrustedEnter never fires if chunks fail. Graceful fallback via writeWithAckIfAvailable. Cleanup on disconnect/timeout. Cross-model: Codex authored, Claude Opus reviewed. 6 new tests.",
+    "findings": "Evidence Ledger Phase B review (trace propagation through message pipeline). 7 source files, 4 test files. End-to-end trace flow verified: WS ingress (buildTraceContext) creates traceId/parentEventId/eventId with legacy aliases (correlationId/causationId) -> hivemind-app.js extracts traceContext from data.traceContext||data.message.traceContext and forwards to triggers.sendDirectMessage/broadcastToAllAgents via options.traceContext -> triggers.js normalizeTraceContext resolves from ctx/fallback/generate, passes to sendStaggered which attaches to inject-message IPC -> daemon-handlers.js normalizeTraceContext reads from IPC payload, emits inject.route.received bus event, forwards to enqueueForThrottle with traceContext, processThrottleQueue emits inject.route.dispatched and passes to terminal.sendToPane via options.traceContext -> injection.js sendToPane reuses incoming traceId (does NOT call bus.startCorrelation when traceContext present), doSendToPane builds createKernelMeta closure that chains parentEventId from trace context and auto-advances after each emit -> pty-handlers.js normalizeKernelMetaForTrace enriches kernelMeta with traceId/parentEventId aliases before forwarding to daemonClient.write/resize, buildChunkKernelMeta preserves trace links on chunks -> terminal-daemon.js buildDaemonKernelEvent resolves traceId from params/meta/correlationId with fallback to generateKernelId. KEY FINDINGS: (1) Trace unbroken end-to-end -- no gap identified. (2) Legacy aliases preserved everywhere (correlationId=traceId, causationId=parentEventId). (3) Graceful degradation: all normalizers handle null/missing traceContext, daemon-handlers returns null for empty context, websocket-server only builds trace for send/broadcast types. (4) No injection risk -- trace fields are string-only via toNonEmptyString guards, no eval/interpolation. (5) Consistent shape: {traceId, parentEventId, eventId, correlationId, causationId} across all files. (6) injection.js correctly reuses incoming traceId instead of generating new correlation -- prevents trace fragmentation. (7) Tests verify: WS ack includes traceId, message handler receives traceContext, daemon-handlers forwards to terminal.sendToPane, injection reuses incoming trace, PTY handlers normalize and forward kernel meta with trace links. MINOR NOTES (non-blocking): (A) toNonEmptyString and normalizeTraceContext are duplicated across 4 files -- could extract to shared util in Slice 2. (B) daemon-handlers normalizeTraceContext returns null for empty context while triggers.js always generates -- intentional asymmetry (daemon receives from trusted internal IPC, triggers may originate). (C) injection.js passes traceContext||synthetic-from-corrId to doSendToPane -- ensures backward compat when no trace arrives. Cross-model: author=Codex, reviewer=Claude Opus. Full suite passes (111 suites, 3324 tests).",
     "tests_touched": true,
-    "timestamp": "2026-02-11T08:35:00Z"
+    "timestamp": "2026-02-11T20:15:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
