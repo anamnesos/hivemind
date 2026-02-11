@@ -1,20 +1,20 @@
 {
   "schema_version": 1,
   "review": {
-    "reviewer": "Architect (Claude Opus)",
-    "model": "claude-opus-4-6",
+    "reviewer": "Reviewer (Claude Opus) + Analyst (Gemini) cross-model",
+    "model": "claude-opus-4-6 + gemini",
     "author": "DevOps (Codex)",
     "author_model": "codex",
-    "change_type": "routine",
+    "change_type": "architectural",
     "result": "approved",
     "findings": [
-      "APPROVED — Phase B additive: stale detection utility + binding validation tests.",
-      "computeFileSnapshotHash: SHA256 file/line hashing, proper path resolution, graceful read failures.",
-      "refreshFileLineBindingStaleness: batch scan with filters, parameterized SQL, auto-marks stale on mismatch or missing file.",
-      "normalizeHash helper handles prefix normalization. All tests passing."
+      "APPROVED — Phase C: IPC handlers + CLI script + integration test.",
+      "Reviewer traced full chain: CLI → WS → App → IPC → Investigator → Store. All contracts match.",
+      "Cross-model (Gemini): Runtime reachability verified. IPC wiring via registry correct. WS routing functional.",
+      "No blocking issues. Minor note: CLI uses 'add-hypothesis' command name while IPC uses 'add-assertion' — both accepted, just naming asymmetry."
     ],
-    "tests_touched": ["evidence-ledger-investigator.test.js"],
-    "timestamp": "2026-02-11T21:05:00Z"
+    "tests_touched": ["evidence-ledger-ipc-integration.test.js"],
+    "timestamp": "2026-02-11T21:10:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
