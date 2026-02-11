@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
   "review": {
-    "reviewer": "Architect (Claude Opus)",
+    "reviewer": "Reviewer (Claude Opus)",
     "model": "claude-opus",
     "author": "DevOps (Codex)",
     "author_model": "codex",
-    "change_type": "routine",
+    "change_type": "state",
     "result": "approved",
-    "findings": "Hotfix: processQueue exponential defer backoff (100ms→2s cap) on all 4 defer paths (compaction, injection-in-flight, user-input-focused, typing-guard). Log throttling — first defer logged, repeats suppressed, summary on state change. Defer state reset when queue resumes/empties. 3 new tests (backoff progression, reset after resume, log suppression). Fixes renderer freeze from console flood during sustained deferral. 108 suites / 3290 tests.",
+    "findings": "Focus-deferral fix: userInputFocused() changed from focus-only to focus+recent-activity (2s window). Added UI activity tracking via keydown+input events on non-xterm inputs. Injection gates in processIdleQueue and doSendToPane unchanged but now defer only on active typing, not mere focus. 5 new tests. Cross-model: Codex authored, Claude Opus reviewed.",
     "tests_touched": true,
-    "timestamp": "2026-02-11T07:58:00Z"
+    "timestamp": "2026-02-11T08:19:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
