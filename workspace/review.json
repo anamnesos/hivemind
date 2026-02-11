@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
   "review": {
-    "reviewer": "Architect (Claude Opus)",
+    "reviewer": "Reviewer (Claude Opus)",
     "model": "claude-opus",
-    "author": "Analyst (Codex)",
+    "author": "DevOps (Codex)",
     "author_model": "codex",
-    "change_type": "routine",
+    "change_type": "architectural",
     "result": "approved",
-    "findings": "Evidence Ledger query contract tests (12 tests). TC-ENV: alias normalization, validation, edge derivation. TC-Q1: trace chain reconstruction, legacy-correlation lookup, limit+includeEdges. TC-Q2: failure path composed helper. TC-Q3: journey view. All tests exercise real Phase A APIs (store + ingest). Fixtures use deterministic data. No source changes — test-only addition. Suite: 111 suites, 3324 tests.",
+    "findings": "Phase C config gate review. (1) config.js: envFlagEnabled helper correctly parses truthy/falsy env strings with default fallback; evidenceLedgerEnabled exported with default true. (2) evidence-ledger-store.js: configEnabled derived from config flag, ANDed with options.enabled — correct precedence. logDegradedOnce uses module-level Set for one-time logging — acceptable for singleton store pattern. All 4 degradation paths (disabled, runtime_dir_error, sqlite_driver_unavailable, open_failed) converted to one-time logging. getStatus() exposes configEnabled. (3) Tests: 2 new tests cover disabled-flag degradation (with warn-once assertion) and open-failure one-time logging. Both pass. Existing 5 tests pass with no regressions (config defaults to true so existing behavior unchanged). Minor note: LOGGED_DEGRADE_KEYS is module-scoped not instance-scoped — fine for production singleton, but means test isolation requires resetModules (tests already do this correctly). Cross-model review required (architectural change_type, author=codex, reviewer=claude-opus — models differ, requirement satisfied).",
     "tests_touched": true,
-    "timestamp": "2026-02-11T20:20:00Z"
+    "timestamp": "2026-02-11T21:05:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
