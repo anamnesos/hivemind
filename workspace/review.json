@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
   "review": {
-    "reviewer": "Reviewer (Claude Opus)",
-    "model": "claude-opus-4-6",
+    "reviewer": "Analyst (Codex)",
+    "model": "codex",
     "author": "DevOps (Codex)",
     "author_model": "codex",
-    "change_type": "concurrency",
+    "change_type": "routine",
     "result": "approved",
-    "findings": "ERR-004 fix: chunked Claude PTY writes (192-byte segments, clamped 128-256) + Home key cursor reset + fingerprint logging. Chunking logic correct (no off-by-one), inter-chunk yield (2ms) doesn't race with Enter (50ms after last chunk). Gemini/Codex paths verified untouched. Home key \\x1b[H correct ANSI but needs runtime verification in ink TUI (may be no-op, harmlessly ignored). Tests cover chunk boundaries, fingerprint, failure paths. 107 suites, 3249 tests all passing.",
+    "findings": "ERR-005 amplifier fixes: (1) watcher.js regex /logs[\\\\//]/ now matches Windows backslash paths — prevents log file writes from triggering watcher feedback loop. (2) daemon-handlers.js daemon-connected log replaced full existingTerminals serialization (including scrollback) with compact summary (count/alive/pane/sdk). Regression test added for both path formats. Verified by Ana against her original root cause analysis. 107 suites, 3257 tests passing.",
     "tests_touched": true,
-    "timestamp": "2026-02-10T22:52:00Z"
+    "timestamp": "2026-02-10T23:58:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
