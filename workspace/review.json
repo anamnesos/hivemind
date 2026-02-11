@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
   "review": {
-    "reviewer": "Reviewer (Claude Opus)",
+    "reviewer": "Architect (Claude Opus)",
     "model": "claude-opus",
     "author": "DevOps (Codex)",
     "author_model": "codex",
-    "change_type": "state",
+    "change_type": "routine",
     "result": "approved",
-    "findings": "Cross-model review (Claude reviewing Codex code): ERR-006 2-phase submit verification. injection.js: Enter dispatch → acceptance verification (prompt/output transition) with 1 retry+backoff, defer-while-active-output (2s hard cap, no deadlock). Failure paths: submit_not_accepted emits inject.failed + markPotentiallyStuck. Safety timer extended to 9s for defer+verify+retry window. Constants use internal defaults (consistent with existing pattern). Double-completion guard via completed flag. Minor: retry could double-Enter if first accepted but verification missed signal — mitigated by defer check + CLI ignoring empty submits. 3 new tests (retry-success, retry-exhaustion, event emission). 108 suites / 3287 tests pass.",
+    "findings": "Hotfix: processQueue exponential defer backoff (100ms→2s cap) on all 4 defer paths (compaction, injection-in-flight, user-input-focused, typing-guard). Log throttling — first defer logged, repeats suppressed, summary on state change. Defer state reset when queue resumes/empties. 3 new tests (backoff progression, reset after resume, log suppression). Fixes renderer freeze from console flood during sustained deferral. 108 suites / 3290 tests.",
     "tests_touched": true,
-    "timestamp": "2026-02-11T06:18:00Z"
+    "timestamp": "2026-02-11T07:58:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
