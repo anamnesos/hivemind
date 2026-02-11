@@ -3,13 +3,13 @@
   "review": {
     "reviewer": "DevOps (Codex)",
     "model": "codex",
-    "author": "Architect (Claude Opus)",
+    "author": "Frontend (Claude Opus)",
     "author_model": "claude-opus",
-    "change_type": "state",
+    "change_type": "architectural",
     "result": "approved",
-    "findings": "Cross-model review: health-strip.js comms metrics (retry/fail/dedup rates, 5-min rolling window, comms.* wildcard subscription) + hivemind-app.js kernel comms events (emitKernelCommsEvent helper, structured send/broadcast results consumed by websocket-server ACK path). Bus wildcard supported, innerHTML XSS-safe (computed numbers only), metric arrays pruned on render + reset in destroy. Tests: health-strip 22/22, hivemind-app 15/15. Non-blocking rec: absolute cap per metric bucket (10k) for extreme throughput.",
-    "tests_touched": false,
-    "timestamp": "2026-02-11T03:16:00Z"
+    "findings": "Cross-model review: Bridge tab — new user dashboard in right panel. 3 new files (bridge.js, bridge.css, bridge.test.js) + 4 modified (index.html, tabs.js, tabs.css, renderer.js). Event bus subscription/cleanup correct: wildcards (comms.*, contract.*, inject.*, safemode.*) and destroy() unsubscribes each. tabs.js setupRightPanel signature change matches renderer.js call site. No new IPC needed — bus consumed directly in renderer. innerHTML XSS-safe via escapeHtml. Stream capped at 100. Tests: 18/18 pass. Reviewer (Opus) also approved integration review.",
+    "tests_touched": true,
+    "timestamp": "2026-02-11T05:15:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
