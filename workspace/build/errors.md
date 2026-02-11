@@ -1,40 +1,23 @@
 # Active Errors
 
 ## Triage Snapshot
-- Last Updated: 2026-02-10 23:35 (local)
-- Severity Counts: CRITICAL 0 | HIGH 0 | MEDIUM 0 | LOW 1
+- Last Updated: 2026-02-10 19:35 (local)
+- Severity Counts: CRITICAL 0 | HIGH 0 | MEDIUM 1 | LOW 0
 - Top 3 Priorities:
-  1. [ERR-001] Trigger file message delivery split/mangled (LOW, Shared)
-  2. Runtime validation of merged fixes (`f9521e1` + compaction-gate queue deferral)
+  1. [ERR-006] Auto-submit failure on pane 1 injection (MEDIUM) — investigating
 
 ---
 
 ## ACTIVE (Max 5)
 
-### [ERR-001] Trigger file message delivery split/mangled
-- Severity: LOW
-- Owner: Shared (DevOps + Architect)
-- Status: ACTIVE
-- Last Verified: 2026-02-10 10:10 by Architect
-- STALE: NO
-- Stale Since: n/a
-- Evidence Class: STRONG
-- Symptom: Cross-pane messages arrive split — first chunk truncated, second is full message
-- Impact: User must manually push to deliver stuck messages
-- Repro: Send long message via hm-send.js to pane 2 or 5 when WebSocket routing fails
-- Code Pointers: `ui/scripts/hm-send.js`, `ui/modules/terminal/injection.js`, `ui/main.js` (WebSocket routing)
-- Evidence: S105 DevOps split delivery, S107 Ana message stuck (James pushed)
-- Mitigation: User manually pushes stuck messages; resend if truncated
-- Next Action: Run runtime validation after restart (retry/backoff exhaustion + fallback path).
-- Done When: No manual push needed across a full session; ACK retries recover transient delivery misses.
-- Verification Method: runtime
+- [ERR-006] **Auto-submit failure on incoming agent message to pane 1** (MEDIUM) — S110. Root cause: CLI busy-state ignored dispatched Enter. Injection reports success without verifying CLI accepted submit. Single occurrence. Recommended fix (Ana): 2-phase submit — Enter dispatched → submit accepted verification (prompt/input-state transition signal) with 1 retry+backoff if no acceptance, and/or defer Enter while pane reports active generation. Monitoring for recurrence before prioritizing fix.
 
 ---
 
 ## Recently Resolved (Last 3 only)
-- [ERR-002] Messages lost during Claude context compaction (Item 20) - fixed by queue-level compaction gate deferral in `ui/modules/terminal/injection.js` + `ui/__tests__/injection.test.js` - backend verified S107 (runtime verify pending restart)
-- [ERR-003] Settings overlay freezes app (Item 23) - fixed in 788399a - verified S102 by User
-- [ERR-004] Agent message color bleed - fixed in c4fdc82 - verified S106 by Reviewer
+- [ERR-005] Memory leak — RESOLVED S110. v1: ringBuffer cap (55fd3fa). v2: terminal queue cap (55fd3fa). v3: xterm.js scrollback cap 5000 lines (b14b8e2). v4: pendingWarRoomMessages cap 500 (6a783b5). Runtime validated S110: 16-min monitor, baseline 655MB → idle floor 584MB (no ratchet, delta -70MB). SUCCESS/GREEN.
+- [ERR-004] Large message cursor-state corruption — commit 74fd0cd — RUNTIME VALIDATED S109.
+- [ERR-001] Trigger file message delivery split/mangled - fixed by atomic temp+rename in hm-send.js fallback + stable-size watcher guard in watcher.js - commit 32b9993 - runtime validated S109.
 
 ---
 

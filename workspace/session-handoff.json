@@ -1,17 +1,16 @@
 {
-  "session": 103,
-  "date": "2026-02-10",
+  "session": 110,
+  "date": "2026-02-11",
   "mode": "PTY",
-  "status": "COMPLETED",
+  "status": "READY",
 
   "completed": [
-    "Fix: Resize freeze — debounce + geometry guard + staggered pane resize (febd047)",
-    "Fix: SVG icons for mic/send buttons, consistent 44x44 sizing, voice status relocated to status strip (6e848fa)",
-    "Doc: VISION.md rewrite — inclusive framing, cross-model focus, no dev-bashing",
-    "Doc: Image generation quick-reference added to arch/CLAUDE.md and MEMORY.md",
-    "Doc: 'Just do it' philosophy — don't pre-check APIs, run commands and handle failure gracefully",
-    "Doc: Teammates spawn on-demand, not on startup — reduces check-in noise and context waste",
-    "Doc: Design principle updated — 'Accessible AND powerful' replaces 'Accessibility over power'"
+    "S110: ERR-005 v2 runtime validation — v2 fix (af4e1e0) did NOT stop the leak. Amplifiers were real but secondary. Memory profile: fresh start 357MB → peak 2600MB during active work → 1200MB at idle. Idle floor rises each work cycle (357→700→1200). In-process teammates cost ~500MB each (reclaimed on shutdown). Core leak is likely xterm.js scrollback buffer growing unbounded.",
+    "S110: Transition ledger — closed 4 spec gaps. Gap 2: owner lease scoped to mutation events only. Gap 4: precondition enforcement on submit synthetic paths. Gap B: evidenceSpec acceptedSignals/disallowedSignals dynamic enforcement. Gap C: early timeout arming at submit.requested. Ana caught blocking integration regression on Gap 2 (over-constrained owner check), DevOps fixed. Cross-model reviewed. Commit 40565ec. 21 tests, 107 suites / 3264 total.",
+    "S110: status.md template alignment — added Triage Snapshot + Current Priorities (Max 5) sections. All 3 build docs pass doc-lint. Commit b9a8d93.",
+    "S110: Comms metrics + kernel comms events — health-strip.js: 5-min rolling window tracking R/F/D rates via comms.* bus. hivemind-app.js: emitKernelCommsEvent helper, structured send/broadcast results. Cross-model reviewed by DevOps (Codex). Commit a985966. 107 suites / 3266 tests.",
+    "S110: ERR-005 CLOSED — v3 (scrollback cap 5000, b14b8e2) + v4 (pendingWarRoomMessages cap 500, 6a783b5) runtime validated. 16-min monitor: baseline 655MB → idle floor 584MB (no ratchet, delta -70MB). SUCCESS/GREEN.",
+    "S110: Bridge tab — user dashboard in right panel with agent status cards, system metrics, and live event stream. 3 new files (bridge.js, bridge.css, bridge.test.js) + 4 modified (index.html, tabs.js, tabs.css, renderer.js). Cross-model reviewed by DevOps (Codex). Commit 2c29d3f. 108 suites / 3284 tests."
   ],
 
   "architecture": {
@@ -23,7 +22,12 @@
     "config_source": "ui/config.js → PANE_ROLES, PANE_IDS, ROLE_ID_MAP, TRIGGER_TARGETS",
     "instance_dirs": "arch (pane 1), devops (pane 2), ana (pane 5)",
     "panes_removed": "3, 4, 6 — fully removed from config, HTML, source, tests, docs",
-    "review_gate": "workspace/review.json + pre-commit Gate 7. Cross-model review required for non-routine changes.",
+    "review_gate": "workspace/review.json + pre-commit Gate 7. Cross-model review required for non-routine changes. Doc-lint gate also enforces template invariants on staged docs.",
+    "event_kernel": "Phase 4 complete — FULL EVENT KERNEL DEPLOYED. Lane A (interaction kernel): contracts, state vector, injection/terminal/renderer events. Lane B (telemetry): ring buffer with query API, health strip. Daemon bridge. Bridge tab (S110): user-facing dashboard surfacing agent status, system metrics, and live event stream.",
+    "transition_ledger": "S110 — 4 spec gaps closed (owner scope, preconditions, evidenceSpec signals, early timeout). 21 tests. Module at ui/modules/transition-ledger.js. Remaining: Gap A (cancelled phase not wired) is LOW priority.",
+    "comms_reliability": "S110 — Full stack: ACK-timeout-resend, server dedup, trigger fallback, heartbeat health, main-process chunked PTY writes, comms metrics in health strip, kernel comms events. Commits 74fd0cd + a985966.",
+    "compaction_gate": "S108 VERIFIED — Lexical evidence required for confirmed state, chunk-inactivity decay (5s quiet), MAX_COMPACTION_DEFER_MS=8s safety valve. Runtime validated: 122-727ms injection latency (was ~26s).",
+    "doc_hygiene": "S107+S110 — ui/scripts/doc-lint.js validates errors.md/blockers.md/status.md: active cap <=5, required metadata fields, stale-marker computation by severity. Pre-commit gate + npm lint:docs. All 3 docs now pass.",
     "hooks": {
       "architect": "workspace/scripts/arch-hooks.js → SessionStart, SessionEnd, PostToolUse, PreCompact",
       "analyst": "workspace/scripts/ana-hooks.js → SessionStart, SessionEnd, AfterTool",
@@ -32,33 +36,30 @@
   },
 
   "not_yet_done": [
-    "Linux dual-boot setup checklist for James — DevOps was mid-research, interrupted by Codex crash",
-    "Dual-writer to image-gen-history.json — Reviewer noted backend and renderer both write to history file (consolidate to single writer)",
-    "Agent message color bleed — purple/orange decorations bleed to adjacent lines in terminal"
+    "Linux dual-boot setup checklist — ON HOLD (chilling)",
+    "Promotion engine not wired at runtime (backlog — day-1 contracts are enforced, no impact)",
+    "Transition Ledger Gap A: cancelled phase not wired (LOW priority)"
   ],
 
   "roadmap": [
-    "CLI auto-detection on startup — detect installed CLIs (claude/codex/gemini), auto-configure paneCommands. If user only has Claude, all panes run Claude.",
-    "API key graceful degradation — disable features gracefully when keys missing, guide user to get them",
-    "WebSocket routing to pane 5 broken — hm-send.js 'analyst' target not delivering, trigger file fallback works. Investigate.",
-    "Compaction message loss mitigation (Item 20 — experimental)",
-    "Test for focus-poll + safety timer extension path (post-merge coverage gap)",
-    "Dual-writer cleanup in image-gen history"
+    "ERR-005 teammate memory: in-process teammates cost ~500MB each. Consider if that's acceptable or if memory-conscious teammate lifecycle management is needed.",
+    "Codebase ratio: ~33% infra vs ~15% core app — consider where next features should land",
+    "DevOps non-blocking rec: absolute cap per comms metric bucket (10k) for extreme throughput safety"
   ],
 
   "known_issues": {
-    "WebSocket routing to pane 5": "MEDIUM — hm-send.js messages to 'analyst' not reaching pane 5. Trigger file fallback works. ROLE_ID_MAP has analyst→5, resolveTargetToPane should work. Needs deeper investigation.",
-    "Agent message color bleed": "LOW — purple/orange color decorations extend beyond agent message lines to adjacent terminal output",
-    "Codex exit bug (#10511)": "MEDIUM — upgraded to 0.99.0-alpha.10, monitor if frequency changes",
-    "Item 20: Compaction message loss": "LOW — no fix without CLI exposing compaction state",
-    "Jest worker leak warning (cosmetic)": "LOW — 12 handlers have unregister, ~26 still missing",
-    "war-room.js \\r sanitization": "LOW — backlogged",
-    "Dual-writer image-gen-history.json": "LOW — both backend and renderer write to same history file with different schemas"
+    "ERR-004: Long message cursor rotation": "CLOSED — RUNTIME VALIDATED S109.",
+    "ERR-005: Memory leak": "CLOSED — RUNTIME VALIDATED S110. v1-v4 fixes: ringBuffer cap, terminal queue cap, xterm.js scrollback 5000, pendingWarRoomMessages 500. Idle floor stable (655→584MB, no ratchet). In-process teammates cost ~500MB each (reclaimed on shutdown) — acceptable.",
+    "WebSocket routing to panes 2+5": "MITIGATED S107 — ACK-timeout-resend + heartbeat health preflight + trigger fallback. WS connections go stale after ~60s idle. Delivery reliable via fallback.",
+    "Codex exit bug (#10511)": "MEDIUM — upgraded to 0.99.0-alpha.10, monitor",
+    "Item 20: Compaction message loss": "LOW — compaction gate + transition ledger now covers this path.",
+    "ERR-006: Auto-submit failure on pane 1": "MEDIUM — S110. CLI busy-state ignores dispatched Enter. Single occurrence. Monitoring for recurrence. Recommended fix: 2-phase submit verification.",
+    "Jest worker leak warning (cosmetic)": "LOW — 36 handlers now have unregister, 1 residual leak from timer"
   },
 
   "stats": {
-    "test_suites": 91,
-    "tests_passed": 2905
+    "test_suites": 108,
+    "tests_passed": 3284
   },
 
   "important_notes": [
@@ -66,17 +67,23 @@
     "Architect = coordinator, NOT implementer — delegate to Ana/DevOps/Frontend/Reviewer",
     "ALL teammates MUST be spawned with model: opus — user directive Session 90",
     "Spawn teammates ON DEMAND, not on startup — user directive Session 103",
-    "When user asks for image gen/send message/etc — JUST DO IT, don't pre-check. Handle failure gracefully.",
+    "When user asks for image gen/send message/etc — JUST DO IT, don't pre-check.",
     "Gate 7 pre-commit: workspace/review.json must have result=approved",
     "James reads ONLY pane 1 — all comms route through Architect. DO NOT override.",
-    "Test suite: 91 suites, 2905 tests passing",
+    "EVENT KERNEL FULLY DEPLOYED — Phases 1-4 complete.",
+    "TRANSITION LEDGER S110 — 4 spec gaps closed (21 tests). Gap A (cancelled) deferred.",
+    "COMMS RELIABILITY v2 DEPLOYED S109+S110 — main-process chunked PTY writes + comms metrics + kernel events.",
+    "COMPACTION GATE VERIFIED S108 — injection latency 122-727ms (was ~26s). Runtime confirmed.",
+    "DOC HYGIENE — all 3 build docs pass doc-lint as of S110.",
     "Analyst pane 5 switched to Codex (was Gemini) as of S101",
-    "WebSocket to pane 5 broken — use trigger file fallback for Ana"
+    "ERR-005 CLOSED S110 — all 4 vectors fixed and runtime validated. Idle floor stable."
   ],
 
   "commits_this_session": [
-    "febd047 - fix: debounce resize + geometry guard to prevent UI freeze on window drag",
-    "6e848fa - fix: SVG icons for mic/send buttons, consistent sizing, relocate voice status"
+    "40565ec - feat: transition ledger — close 4 spec gaps (owner scope, preconditions, evidenceSpec, early timeout)",
+    "b9a8d93 - docs: status.md template alignment for doc-lint validation",
+    "a985966 - feat: comms metrics in health strip + kernel comms events in WebSocket handler",
+    "2c29d3f - feat: Bridge tab — user dashboard with agent status, metrics, and event stream"
   ],
 
   "cli_setup": {
@@ -92,9 +99,9 @@
   },
 
   "verify_after_restart": {
-    "what": "Verify resize freeze fix works — drag window edges aggressively. Also check SVG icons and button sizing in input area.",
-    "how": "1. Drag window edges/corners rapidly — should NOT freeze. 2. Check mic button shows SVG mic icon (not text). 3. Check send button shows SVG paper plane icon. 4. Both buttons should be same size (44x44). 5. Voice recording status should appear in bottom status strip, not next to mic.",
-    "success": "Window resize is smooth, no freeze. Icons display correctly. Buttons are equally sized.",
-    "failure": "App still freezes on resize. Buttons show text instead of icons. Buttons are different sizes."
+    "what": "Bridge tab visual verification — confirm agent cards, metrics, and event stream render correctly in right panel.",
+    "how": "Open right panel, click Bridge tab. Should show 3 agent cards (Architect, DevOps, Analyst), system metrics row, and live event stream.",
+    "success": "All 3 sections visible, event stream populates with kernel events, agent cards reflect pane states.",
+    "failure": "Tab missing, blank content, or JS errors in console. Check bridge.js loading and bus reference."
   }
 }
