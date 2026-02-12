@@ -1,21 +1,23 @@
 {
   "schema_version": 1,
   "review": {
-    "reviewer": "Reviewer (internal teammate)",
+    "reviewer": "Reviewer (Opus)",
     "model": "claude-opus-4-6",
-    "author": "Frontend + DevOps",
-    "author_model": "claude-opus-4-6 + codex",
+    "author": "Architect (Opus)",
+    "author_model": "claude-opus-4-6",
     "change_type": "routine",
     "result": "approved",
     "findings": [
-      "IPC cleanup: 3 missing channels (activity-logged, oracle:image-generated, pane-model-changed) added to RENDERER_IPC_CHANNELS. clearRendererIpcListeners() now covers all registered channels.",
-      "ERR-008: Long message Enter delay increased to 200ms base (was 50ms). Defer window 5000ms for long payloads (was 2000ms). Short messages unchanged. Scaling math verified for edge cases.",
-      "Tests: 119 suites, 3375 tests passing."
+      "isWebGLEnabled() lazy-eval with try-catch, defaults to false. Correct.",
+      "Both createTerminal and reattachTerminal have identical WebGL conditional. Consistent.",
+      "try-catch correctly nested inside if block. No dead code.",
+      "Scrollback 5000→2000, test expectations updated to match (line-4001 start, 2000 total lines).",
+      "121 suites, 3384 tests passing."
     ],
     "tests_touched": [
-      "injection.test.js"
+      "terminal.test.js"
     ],
-    "timestamp": "2026-02-12T07:18:00Z"
+    "timestamp": "2026-02-12T10:39:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
