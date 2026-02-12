@@ -1,23 +1,29 @@
 {
   "schema_version": 1,
   "review": {
-    "reviewer": "Reviewer (Claude Opus) + Analyst (Gemini) cross-model",
-    "model": "gemini",
+    "reviewer": "Reviewer (Claude Opus)",
+    "model": "claude-opus-4-6",
     "author": "DevOps (Codex)",
     "author_model": "codex",
-    "change_type": "architectural",
+    "change_type": "routine",
     "result": "approved",
     "findings": [
-      "APPROVED — Evidence Ledger runtime fix: better-sqlite3 added, DB initializes at boot, CLI returns real data.",
-      "Boot sequence placement correct: after settings load, before WS/IPC traffic.",
-      "Seed from session-handoff.json is safe and idempotent (empty-table check + stable SHA1 IDs).",
-      "Unavailable-runtime recreation prevents stale degraded cache.",
-      "No crash paths — all failures return {ok:false} without throwing.",
-      "Cross-file contracts verified: hivemind-app.js → handlers → store/memory/investigator all match.",
-      "Cross-model (Gemini) verified: boot init reachable, seed path e2e confirmed, DB populated with decisions+sessions."
+      "APPROVED — Memory leak fixes: 5 changes targeting idle memory creep.",
+      "Watcher feedback loop broken: context-snapshots/ added to ignored patterns with cross-platform regex.",
+      "Polling interval raised from 1s to 5s — trigger watcher (300ms) is separate and unaffected.",
+      "ContextCompressor refresh raised to 300s with idle skip (>30s no output).",
+      "Transcript tail read bounded by 2000 lines / 512KB — FD properly closed in finally block.",
+      "closeSharedRuntime() added to shutdown after consumers, before transport teardown.",
+      "119 suites / 3364 tests passing."
     ],
-    "tests_touched": [],
-    "timestamp": "2026-02-12T04:05:00Z"
+    "tests_touched": [
+      "watcher.test.js",
+      "context-compressor.test.js",
+      "memory-summarizer.test.js",
+      "memory-store.test.js",
+      "hivemind-app.test.js"
+    ],
+    "timestamp": "2026-02-12T05:25:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
