@@ -1,23 +1,20 @@
 {
   "schema_version": 1,
   "review": {
-    "reviewer": "Reviewer (Opus)",
-    "model": "claude-opus-4-6",
+    "reviewer": "DevOps (Codex)",
+    "model": "codex",
     "author": "Architect (Opus)",
     "author_model": "claude-opus-4-6",
-    "change_type": "routine",
+    "change_type": "state",
     "result": "approved",
     "findings": [
-      "isWebGLEnabled() lazy-eval with try-catch, defaults to false. Correct.",
-      "Both createTerminal and reattachTerminal have identical WebGL conditional. Consistent.",
-      "try-catch correctly nested inside if block. No dead code.",
-      "Scrollback 5000→2000, test expectations updated to match (line-4001 start, 2000 total lines).",
-      "121 suites, 3384 tests passing."
+      "agent-colors.js: marker.onDispose() correctly ties decoration lifetime to marker for all 3 sites (primary, reset, wrapped).",
+      "preload.js: onData/onExit return disposer that removes exact handler reference via ipcRenderer.removeListener.",
+      "terminal.js: agentColorDisposers Map tracks+disposes on both create and reattach paths, cleanup in teardownTerminalPane.",
+      "Change set is coherent and addresses decoration/listener leak vectors."
     ],
-    "tests_touched": [
-      "terminal.test.js"
-    ],
-    "timestamp": "2026-02-12T10:39:00Z"
+    "tests_touched": [],
+    "timestamp": "2026-02-12T18:45:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
