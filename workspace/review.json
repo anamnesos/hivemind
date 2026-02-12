@@ -1,24 +1,21 @@
 {
   "schema_version": 1,
   "review": {
-    "reviewer": "Architect (Claude Opus)",
+    "reviewer": "Reviewer (internal teammate)",
     "model": "claude-opus-4-6",
-    "author": "DevOps (Codex)",
-    "author_model": "codex",
+    "author": "Frontend + DevOps",
+    "author_model": "claude-opus-4-6 + codex",
     "change_type": "routine",
     "result": "approved",
     "findings": [
-      "APPROVED — ERR-008 Enter delay scaling: small, focused fix.",
-      "computeScaledEnterDelayMs adds byte-proportional delay for trusted-enter Claude panes only.",
-      "Base 50ms + 1ms per 64 bytes over 256B threshold, capped at +250ms extra (300ms max total).",
-      "Non-trusted enter methods (Gemini PTY, Codex exec) correctly bypass scaling.",
-      "payloadBytes computation moved up to shared scope — no duplication.",
-      "2 new tests added (short-message base delay, long-message scaled delay). 96 tests pass across injection suites."
+      "IPC cleanup: 3 missing channels (activity-logged, oracle:image-generated, pane-model-changed) added to RENDERER_IPC_CHANNELS. clearRendererIpcListeners() now covers all registered channels.",
+      "ERR-008: Long message Enter delay increased to 200ms base (was 50ms). Defer window 5000ms for long payloads (was 2000ms). Short messages unchanged. Scaling math verified for edge cases.",
+      "Tests: 119 suites, 3375 tests passing."
     ],
     "tests_touched": [
       "injection.test.js"
     ],
-    "timestamp": "2026-02-12T06:40:00Z"
+    "timestamp": "2026-02-12T07:18:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
