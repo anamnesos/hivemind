@@ -8,18 +8,17 @@
     "change_type": "architectural",
     "result": "approved",
     "findings": [
-      "Promotion Engine Phase 2: shared service layer unifies IPC and WebSocket access to contract promotion.",
-      "3 IPC channels (list/approve/reject) map through executeContractPromotionAction — signatures match.",
-      "WS routing in hivemind-app extracts action/payload/requestId — matches CLI message shape exactly.",
-      "CLI hm-promotion.js sends {type: contract-promotion, action, payload, requestId} — correct WS protocol.",
-      "requestId propagation verified: CLI → WS runtime → handler → response with matching requestId.",
-      "Split-brain mitigation: syncStatsFromDisk before reads, saveStats after mutations, checkPromotions merges disk+memory.",
-      "Handler registry wiring correct: registered in DEFAULT_HANDLERS, unregister cleanup on all 3 channels.",
-      "FLAG: normalize redundant call in invalid_action path (cosmetic). FLAG: race window in approve/reject acceptable (single-threaded, convergent merge).",
-      "3 test files cover service layer, IPC handlers, and CLI helpers. No blocking issues."
+      "Sync→async logging fix: buffered-file-writer.js with 500ms flush interval, backpressure cap at 2000 lines.",
+      "Flushing guard prevents concurrent appendFile calls; re-check ensures no data loss during flush.",
+      "logger.js, diagnostic-log.js, hivemind-app console-message all converted to buffered writer.",
+      "Shutdown path calls flush() with catch — graceful data preservation on exit.",
+      "Timer uses unref() so it doesn't block process exit.",
+      "Data loss window: max 0.5s of logs on abrupt crash — acceptable tradeoff for no event-loop starvation.",
+      "Remaining appendFileSync callers (memory-store, screenshot-handlers, war-room) not in hot path — fine as-is.",
+      "Tests properly await _flushForTesting() before asserting file writes."
     ],
-    "tests_touched": ["contract-promotion-service.test.js", "contract-promotion-handlers.test.js", "hm-promotion.test.js"],
-    "timestamp": "2026-02-12T23:35:00Z"
+    "tests_touched": ["logger.test.js", "diagnostic-log.test.js"],
+    "timestamp": "2026-02-12T23:50:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
