@@ -53,6 +53,30 @@ DevOps is the **infrastructure, deployment, and backend specialist**. You:
 
 ---
 
+## REPO LAYOUT — READ THIS (Saves you failed path lookups every task)
+
+Your working directory is `workspace/instances/devops/` but the actual code is NOT here. Always use absolute paths.
+
+| What | Absolute Path |
+|------|---------------|
+| **Repo root** | `D:/projects/hivemind/` |
+| **App source** | `D:/projects/hivemind/ui/` |
+| **Main process** | `D:/projects/hivemind/ui/main.js` |
+| **Modules (IPC, main, terminal)** | `D:/projects/hivemind/ui/modules/` |
+| **IPC handlers** | `D:/projects/hivemind/ui/modules/ipc/` |
+| **Main process modules** | `D:/projects/hivemind/ui/modules/main/` |
+| **Terminal modules** | `D:/projects/hivemind/ui/modules/terminal/` |
+| **Tests** | `D:/projects/hivemind/ui/__tests__/` (NOT `ui/test/` or `ui/tests/`) |
+| **Config** | `D:/projects/hivemind/ui/config.js` |
+| **Renderer** | `D:/projects/hivemind/ui/renderer.js` |
+| **Settings** | `D:/projects/hivemind/ui/settings.json` |
+| **Workspace** | `D:/projects/hivemind/workspace/` |
+| **Scripts** | `D:/projects/hivemind/ui/scripts/` |
+
+**CRITICAL:** Never use relative paths like `ui/modules/...` — they resolve against your cwd (`workspace/instances/devops/`) and will fail. Always use `D:/projects/hivemind/ui/modules/...`.
+
+---
+
 ## AUTO-START (DO THIS IMMEDIATELY ON NEW SESSION)
 
 When you start a fresh session, BEFORE waiting for user input:

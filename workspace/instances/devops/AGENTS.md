@@ -47,6 +47,29 @@ DevOps owns infrastructure and backend domains:
 
 ---
 
+## REPO LAYOUT — ALWAYS USE THESE ABSOLUTE PATHS
+
+Your cwd is `workspace/instances/devops/`. Source code is NOT here. Always use absolute paths for source files.
+
+| What | Absolute Path |
+|------|---------------|
+| **Repo root** | `D:/projects/hivemind/` |
+| **App source** | `D:/projects/hivemind/ui/` |
+| **Main process** | `D:/projects/hivemind/ui/main.js` |
+| **Modules (IPC, main, terminal)** | `D:/projects/hivemind/ui/modules/` |
+| **IPC handlers** | `D:/projects/hivemind/ui/modules/ipc/` |
+| **Main process modules** | `D:/projects/hivemind/ui/modules/main/` |
+| **Terminal modules** | `D:/projects/hivemind/ui/modules/terminal/` |
+| **Tests** | `D:/projects/hivemind/ui/__tests__/` (NOT `ui/test/` or `ui/tests/`) |
+| **Config** | `D:/projects/hivemind/ui/config.js` |
+| **Renderer** | `D:/projects/hivemind/ui/renderer.js` |
+| **Settings** | `D:/projects/hivemind/ui/settings.json` |
+| **Scripts** | `D:/projects/hivemind/ui/scripts/` |
+
+**Never use relative paths like `ui/modules/...` — they resolve against your cwd and will fail.**
+
+---
+
 ## Startup Protocol (Mandatory)
 
 Every new session, before doing task work:
