@@ -1,29 +1,24 @@
 {
   "schema_version": 1,
   "review": {
-    "reviewer": "Reviewer (Claude Opus)",
+    "reviewer": "Architect (Claude Opus)",
     "model": "claude-opus-4-6",
     "author": "DevOps (Codex)",
     "author_model": "codex",
     "change_type": "routine",
     "result": "approved",
     "findings": [
-      "APPROVED — Memory leak fixes: 5 changes targeting idle memory creep.",
-      "Watcher feedback loop broken: context-snapshots/ added to ignored patterns with cross-platform regex.",
-      "Polling interval raised from 1s to 5s — trigger watcher (300ms) is separate and unaffected.",
-      "ContextCompressor refresh raised to 300s with idle skip (>30s no output).",
-      "Transcript tail read bounded by 2000 lines / 512KB — FD properly closed in finally block.",
-      "closeSharedRuntime() added to shutdown after consumers, before transport teardown.",
-      "119 suites / 3364 tests passing."
+      "APPROVED — ERR-008 Enter delay scaling: small, focused fix.",
+      "computeScaledEnterDelayMs adds byte-proportional delay for trusted-enter Claude panes only.",
+      "Base 50ms + 1ms per 64 bytes over 256B threshold, capped at +250ms extra (300ms max total).",
+      "Non-trusted enter methods (Gemini PTY, Codex exec) correctly bypass scaling.",
+      "payloadBytes computation moved up to shared scope — no duplication.",
+      "2 new tests added (short-message base delay, long-message scaled delay). 96 tests pass across injection suites."
     ],
     "tests_touched": [
-      "watcher.test.js",
-      "context-compressor.test.js",
-      "memory-summarizer.test.js",
-      "memory-store.test.js",
-      "hivemind-app.test.js"
+      "injection.test.js"
     ],
-    "timestamp": "2026-02-12T05:25:00Z"
+    "timestamp": "2026-02-12T06:40:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
