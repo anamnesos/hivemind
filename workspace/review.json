@@ -1,23 +1,21 @@
 {
   "schema_version": 1,
   "review": {
-    "reviewer": "Reviewer + Analyst",
-    "model": "claude-opus-4-6 + gemini",
-    "author": "DevOps",
-    "author_model": "codex",
-    "change_type": "concurrency",
+    "reviewer": "Reviewer",
+    "model": "claude-opus-4-6",
+    "author": "Frontend",
+    "author_model": "claude-opus-4-6",
+    "change_type": "routine",
     "result": "approved",
     "findings": [
-      "H2: ACK gate strictly enforced — messages wait for trigger-delivery-ack before marking delivered",
-      "H2: Retry with exponential backoff (500ms-10s), timer cleanup on shutdown via clearPendingMessageDeliveries",
-      "H2: No silent drop path — failed deliveries retry indefinitely until watcher stops",
-      "H1: codexExecAndWait replaces fire-and-forget — requestId matching correct in daemon-client and terminal-daemon",
-      "H1: Timeout cleanup removes pending entries, disconnect bulk-rejects all pending",
-      "H1: Claude injection path verified untouched — only codex branch modified",
-      "Cross-model verified by Analyst (Gemini): integration wiring and runtime reachability confirmed"
+      "Reset decoration width changed from contentLen to terminal.cols — prevents bleed on appended text",
+      "Reset no longer gated by matchEnd < contentLen — covers tag-only lines",
+      "Fallback (terminal.cols || contentLen) handles undefined cols edge case",
+      "Memory leak guard from ba529e6 preserved — no extra decorations created",
+      "New test validates bleed prevention with cols=120"
     ],
     "tests_touched": true,
-    "timestamp": "2026-02-13T02:50:00Z"
+    "timestamp": "2026-02-13T03:50:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
