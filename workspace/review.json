@@ -5,20 +5,20 @@
     "model": "claude-opus-4-6",
     "author": "DevOps",
     "author_model": "codex",
-    "change_type": "concurrency",
+    "change_type": "recovery",
     "result": "approved",
     "findings": [
-      "M3: 2-layer deduplication — delivery-check primary guard + trigger messageId marker safety net",
-      "delivery-check query in hm-send prevents ACK-loss → false fallback to trigger file",
-      "Trigger fallback prepends [HM-MESSAGE-ID:...] marker, handleTriggerFile strips + dedupes",
-      "Bounded TTL map for recent trigger IDs prevents unbounded growth",
-      "Existing hm-send tests updated, new delivery-check test added (6/6 pass)",
-      "triggers-full.test.js extended with dedup test coverage",
-      "websocket-delivery.test.js extended with delivery-check protocol test",
+      "M4: desired-state recovery model with exponential backoff auto-restart on unexpected worker exit",
+      "Race condition handling: restartInFlightPromise single-flight gate prevents concurrent restart attempts",
+      "Backoff math correct: base * 2^(attempt-1) capped at max, reset on success",
+      "Intentional stop cleanly cancels timers, resets state, desiredRunning=false is authoritative signal",
+      "ensureRunning in send APIs bounded — one attempt per call, no infinite retry loop",
+      "No resource leaks — clearRestartTimer called in all exit paths, promise cleared via .finally()",
+      "M2/M3 compatible — queue persistence survives restart, delivery-check stateless per-request",
       "Cross-model satisfied: Reviewer (Claude) != Author (Codex)"
     ],
     "tests_touched": true,
-    "timestamp": "2026-02-13T04:10:00Z"
+    "timestamp": "2026-02-13T04:18:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
