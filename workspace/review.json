@@ -1,21 +1,23 @@
 {
   "schema_version": 1,
   "review": {
-    "reviewer": "Architect",
-    "model": "claude-opus-4-6",
-    "author": "Analyst",
-    "author_model": "gemini",
-    "change_type": "routine",
+    "reviewer": "Reviewer + Analyst",
+    "model": "claude-opus-4-6 + gemini",
+    "author": "DevOps",
+    "author_model": "codex",
+    "change_type": "concurrency",
     "result": "approved",
     "findings": [
-      "Advisory file locking via mkdir (atomic on all platforms) added to both arch-hooks.js and ana-hooks.js",
-      "30-second stale lock timeout prevents deadlock from crashed processes",
-      "Lock/unlock wraps all session-handoff.json reads: getSessionNumber() and syncSessionToLedger()",
-      "Consistent pattern across both hook files",
-      "Evidence ledger integration (S121) included — queryLedger, formatLedgerContext, syncSessionToLedger, priority chain in SessionStart"
+      "H2: ACK gate strictly enforced — messages wait for trigger-delivery-ack before marking delivered",
+      "H2: Retry with exponential backoff (500ms-10s), timer cleanup on shutdown via clearPendingMessageDeliveries",
+      "H2: No silent drop path — failed deliveries retry indefinitely until watcher stops",
+      "H1: codexExecAndWait replaces fire-and-forget — requestId matching correct in daemon-client and terminal-daemon",
+      "H1: Timeout cleanup removes pending entries, disconnect bulk-rejects all pending",
+      "H1: Claude injection path verified untouched — only codex branch modified",
+      "Cross-model verified by Analyst (Gemini): integration wiring and runtime reachability confirmed"
     ],
-    "tests_touched": false,
-    "timestamp": "2026-02-13T02:12:00Z"
+    "tests_touched": true,
+    "timestamp": "2026-02-13T02:50:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
