@@ -5,21 +5,20 @@
     "model": "claude-opus-4-6",
     "author": "DevOps",
     "author_model": "codex",
-    "change_type": "architectural",
+    "change_type": "concurrency",
     "result": "approved",
     "findings": [
-      "Durable file-based outbound queue with atomic .tmp+rename writes",
-      "Dual flush paths: targeted (register/heartbeat) + global (30s timer). Timer is unref'd.",
-      "Queue normalization handles corrupt files, missing fields, TTL expiry, max-entries pruning",
-      "Flush reentrancy guard prevents concurrent flush overlap",
-      "sendToTarget/sendToPane boolean return contract preserved",
-      "persistIfOffline:false opt-out for internal routing prevents double-delivery",
-      "Env-configurable: max entries, max age, flush interval, file path",
-      "3 integration tests cover queue-flush-register, survive-restart, max-entries enforcement",
+      "M3: 2-layer deduplication — delivery-check primary guard + trigger messageId marker safety net",
+      "delivery-check query in hm-send prevents ACK-loss → false fallback to trigger file",
+      "Trigger fallback prepends [HM-MESSAGE-ID:...] marker, handleTriggerFile strips + dedupes",
+      "Bounded TTL map for recent trigger IDs prevents unbounded growth",
+      "Existing hm-send tests updated, new delivery-check test added (6/6 pass)",
+      "triggers-full.test.js extended with dedup test coverage",
+      "websocket-delivery.test.js extended with delivery-check protocol test",
       "Cross-model satisfied: Reviewer (Claude) != Author (Codex)"
     ],
     "tests_touched": true,
-    "timestamp": "2026-02-13T04:06:00Z"
+    "timestamp": "2026-02-13T04:10:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
