@@ -1,23 +1,36 @@
 # Active Errors
 
 ## Triage Snapshot
-- Last Updated: 2026-02-10 19:35 (local)
-- Severity Counts: CRITICAL 0 | HIGH 0 | MEDIUM 1 | LOW 0
+- Last Updated: 2026-02-13 06:33 (local)
+- Severity Counts: CRITICAL 0 | HIGH 0 | MEDIUM 1 | LOW 1
 - Top 3 Priorities:
-  1. [ERR-006] Auto-submit failure on pane 1 injection (MEDIUM) — investigating
+  1. ERR-011 — pane 1 startup prompt not injected (MEDIUM)
+  2. ERR-005 — memory leak CLOSED, cosmetic color bleed remains (task #5)
 
 ---
 
 ## ACTIVE (Max 5)
 
-- [ERR-006] **Auto-submit failure on incoming agent message to pane 1** (MEDIUM) — S110. Root cause: CLI busy-state ignored dispatched Enter. Injection reports success without verifying CLI accepted submit. Single occurrence. Recommended fix (Ana): 2-phase submit — Enter dispatched → submit accepted verification (prompt/input-state transition signal) with 1 retry+backoff if no acceptance, and/or defer Enter while pane reports active generation. Monitoring for recurrence before prioritizing fix.
+- [ERR-011] MEDIUM — Pane 1 (Architect) startup injection fires but submit verification rejects it. S122.
+  * Symptom: Pane 1 sat idle after app launch; panes 2+5 auto-started. User had to manually type.
+  * Root Cause: `injection.js:279` verifySubmitAccepted requires prompt transition when `promptWasReady=true`. Startup injection produces `output_transition_only` + `promptTransition=no` → rejected after 2 attempts → pane marked stuck. Panes 2+5 use Codex/Gemini paths with `verifySubmitAccepted=false`, so they succeed.
+  * Fix: Startup injections should bypass or relax strict submit verification (similar to non-Claude paths).
+  * Owner: DevOps (fix)
+
+- [ERR-005] LOW — Memory leak CLOSED S120. Validated: peak 267MB, stable 207MB after 10 min. Remaining cosmetic: agent color bleed still visible briefly on new messages.
+  * Root Cause: `agent-colors.js` fails to scan back to the origin tag line for long wrapped messages once `lastScannedLine` advances. Also, reset decorations are too narrow (only covering current text) and omitted if the line ends exactly at the tag.
+  * Suggested Fix: 
+    1. Update `scanStart` to back up to the nearest non-wrapped line.
+    2. Always apply reset decoration after a tag with `width: terminal.cols` to cover future appends.
+    3. Ensure continuation lines are always covered in the rescan loop.
+  * Owner: Analyst (Investigation), Frontend (Implementation)
 
 ---
 
 ## Recently Resolved (Last 3 only)
-- [ERR-005] Memory leak — RESOLVED S110. v1: ringBuffer cap (55fd3fa). v2: terminal queue cap (55fd3fa). v3: xterm.js scrollback cap 5000 lines (b14b8e2). v4: pendingWarRoomMessages cap 500 (6a783b5). Runtime validated S110: 16-min monitor, baseline 655MB → idle floor 584MB (no ratchet, delta -70MB). SUCCESS/GREEN.
-- [ERR-004] Large message cursor-state corruption — commit 74fd0cd — RUNTIME VALIDATED S109.
-- [ERR-001] Trigger file message delivery split/mangled - fixed by atomic temp+rename in hm-send.js fallback + stable-size watcher guard in watcher.js - commit 32b9993 - runtime validated S109.
+- [ERR-005] Memory leak — CLOSED S120. 5 fixes across S119-S120. Primary cause: duplicate xterm decoration creation on unchanged cursor (ba529e6). Validated at runtime: 207MB stable over 10 min.
+- [ERR-010] Runaway IPC polling — MISDIAGNOSIS S119.
+- [ERR-009] Auto-submit false-positive — RESOLVED S119. Fix ca0bc44 validated at runtime.
 
 ---
 

@@ -1,23 +1,23 @@
 {
   "schema_version": 1,
   "review": {
-    "reviewer": "Analyst",
-    "model": "gemini",
-    "author": "Frontend",
-    "author_model": "claude-opus-4-6",
-    "change_type": "architectural",
+    "reviewer": "Reviewer",
+    "model": "claude-opus-4-6",
+    "author": "DevOps",
+    "author_model": "codex",
+    "change_type": "state",
     "result": "approved",
     "findings": [
-      "CSS variable architecture correct: data-cli selectors in base.css define --agent-color, --agent-color-rgb, --agent-color-hover",
-      "All hardcoded per-pane-id color rules removed — no orphaned rules in layout.css, panes.css",
-      "Pane borders (idle+focused), headers, avatars, titles all migrated to CSS variables",
-      "JS bridge: detectModelFamily parses claude/codex/gemini, setPaneCliAttribute sets data-cli on .pane + .health-strip-pane",
-      "Three code paths set data-cli: initModelSelectors (startup), model-changed IPC (switch), pane-cli-identity (runtime)",
-      "Fallback safe: without data-cli, panes render with default neutral colors",
-      "Cross-model satisfied: Analyst (Gemini) != Author (Claude Opus)"
+      "terminal.js:911 removes redundant embedded CR (already stripped by doSendToPane line 752) and adds verifySubmitAccepted:false for startup identity",
+      "injection.js plumbs per-message override through sendToPane -> queueItem -> processIdleQueue -> doSendToPane via behaviorOverrides parameter",
+      "All 3 references to capabilities.verifySubmitAccepted in doSendToPane consistently replaced with shouldVerifySubmitAccepted",
+      "Override cannot leak to normal messages: only triggerStartupInjection sets it; all other sendToPane callers leave it undefined, typeof undefined !== 'boolean' ensures capabilities default applies",
+      "Test at injection.test.js:1178 validates single Enter attempt, no markPotentiallyStuck, success:true when override active",
+      "No security concerns -- flag is internal-only, no external input path can set it",
+      "Cross-model satisfied: Reviewer (Claude Opus) != Author (Codex)"
     ],
-    "tests_touched": false,
-    "timestamp": "2026-02-13T05:25:00Z"
+    "tests_touched": true,
+    "timestamp": "2026-02-12T12:00:00.000Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
