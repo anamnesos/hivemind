@@ -3,19 +3,23 @@
   "review": {
     "reviewer": "Reviewer",
     "model": "claude-opus-4-6",
-    "author": "Frontend",
-    "author_model": "claude-opus-4-6",
-    "change_type": "routine",
+    "author": "DevOps",
+    "author_model": "codex",
+    "change_type": "architectural",
     "result": "approved",
     "findings": [
-      "Reset decoration width changed from contentLen to terminal.cols — prevents bleed on appended text",
-      "Reset no longer gated by matchEnd < contentLen — covers tag-only lines",
-      "Fallback (terminal.cols || contentLen) handles undefined cols edge case",
-      "Memory leak guard from ba529e6 preserved — no extra decorations created",
-      "New test validates bleed prevention with cols=120"
+      "Durable file-based outbound queue with atomic .tmp+rename writes",
+      "Dual flush paths: targeted (register/heartbeat) + global (30s timer). Timer is unref'd.",
+      "Queue normalization handles corrupt files, missing fields, TTL expiry, max-entries pruning",
+      "Flush reentrancy guard prevents concurrent flush overlap",
+      "sendToTarget/sendToPane boolean return contract preserved",
+      "persistIfOffline:false opt-out for internal routing prevents double-delivery",
+      "Env-configurable: max entries, max age, flush interval, file path",
+      "3 integration tests cover queue-flush-register, survive-restart, max-entries enforcement",
+      "Cross-model satisfied: Reviewer (Claude) != Author (Codex)"
     ],
     "tests_touched": true,
-    "timestamp": "2026-02-13T03:50:00Z"
+    "timestamp": "2026-02-13T04:06:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
