@@ -4,7 +4,9 @@
  * Usage: node hm-sms.js "Hey James, build passed!"
  */
 
+const path = require('path');
 const https = require('https');
+require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
 
 function usage() {
   console.log('Usage: node hm-sms.js <message>');
