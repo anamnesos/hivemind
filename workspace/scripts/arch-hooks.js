@@ -65,10 +65,11 @@ function readAllIntents() {
 function readStdin() {
   return new Promise((resolve) => {
     let input = '';
+    let resolved = false;
+    const done = (val) => { if (!resolved) { resolved = true; resolve(val); } };
+    const timer = setTimeout(() => { process.stdin.destroy(); done(input); }, 2000);
     process.stdin.on('data', chunk => { input += chunk; });
-    process.stdin.on('end', () => resolve(input));
-    // Timeout after 2s in case stdin doesn't close
-    setTimeout(() => resolve(input), 2000);
+    process.stdin.on('end', () => { clearTimeout(timer); done(input); });
   });
 }
 
