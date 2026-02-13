@@ -5,20 +5,22 @@
     "model": "claude-opus-4-6",
     "author": "DevOps + Frontend",
     "author_model": "codex + claude-opus-4-6",
-    "change_type": "routine",
+    "change_type": "architectural",
     "result": "approved",
     "findings": [
-      "hm-sms.js: raw HTTPS POST to Twilio, Basic Auth, env-driven config, no cred leaks in output",
-      "sms-poller.js: timestamp + bounded SID set (50) dedup, pollTimer.unref(), graceful stop clears all state",
-      "hivemind-app.js: poller starts after comms, stops on shutdown, injects via sendDirectMessage to pane 1",
-      "index.html: Twilio fields in collapsible dropdown, SID/auth=password, phones=text, IDs match JS refs",
-      "api-keys.js: load/save/clear for 4 Twilio fields, toggle handler with cleanup",
-      "settings-handlers.js: 4 keys added to get/set, validators (AC prefix, + prefix)",
-      "Cross-file env var names consistent across all modules",
-      "130 suites / 3442 tests all passing"
+      "P0: enableMode/disableMode lifecycle is clean — mount/unmount organic UI, hide/restore PTY layout, start/stop sessions. Startup path reuses same pattern. No split-brain.",
+      "P1: Delivery truthfulness check (result===true || result?.success===true) handles both legacy boolean and new object shapes. Failed state shows reason. Consistent across daemon-handlers, broadcast, targeted send.",
+      "P2: sdk-renderer.appendMessage now returns messageId (line 589). sdk-handlers broadcast returns real sdkBridge.broadcast() result instead of hardcoded true.",
+      "P3.1: Double-render guard at renderer.js:2003 (if !organicUIInstance) prevents SDK responses from rendering in both organic UI and sdk-renderer. Note: user-input messages at lines 1242/1281 still write to both — acceptable since sdk-renderer containers are invisible when organic UI is mounted.",
+      "P3.2: DOM retention cap MAX_MESSAGES_PER_PANE=200 in sdk-renderer.js. Oldest messages removed via while loop. Edge case: worst-case 201 before trim, acceptable.",
+      "P4.1-4.4: 3-agent layout correct (2x2 grid, Architect spans top). Bubble UI with avatars, colors, timestamps, slide-in. Responsive at 1200/800/500px breakpoints. Agent SVG icons in colored badges.",
+      "P4.5: Stale '4 Claude sessions' replaced with '3 agent sessions' in index.html lines 92 and 98.",
+      "PTY mode: No regression — all organic UI code gated behind organicUIInstance/sdkMode checks.",
+      "Tests: 130 suites, 3443 tests all passing. organic-ui.test.js covers agent config, state updates, text display, war room messages, visibility, responsive layout structure.",
+      "Minor note: AGENT_CONFIG hardcodes 3 agents — if PANE_IDS changes in config.js, organic-ui.js needs manual sync. Acceptable for now."
     ],
     "tests_touched": true,
-    "timestamp": "2026-02-13T07:37:00.000Z"
+    "timestamp": "2026-02-13T10:25:00.000Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
