@@ -5,20 +5,19 @@
     "model": "claude-opus-4-6",
     "author": "DevOps",
     "author_model": "codex",
-    "change_type": "recovery",
+    "change_type": "concurrency",
     "result": "approved",
     "findings": [
-      "M4: desired-state recovery model with exponential backoff auto-restart on unexpected worker exit",
-      "Race condition handling: restartInFlightPromise single-flight gate prevents concurrent restart attempts",
-      "Backoff math correct: base * 2^(attempt-1) capped at max, reset on success",
-      "Intentional stop cleanly cancels timers, resets state, desiredRunning=false is authoritative signal",
-      "ensureRunning in send APIs bounded — one attempt per call, no infinite retry loop",
-      "No resource leaks — clearRestartTimer called in all exit paths, promise cleared via .finally()",
-      "M2/M3 compatible — queue persistence survives restart, delivery-check stateless per-request",
+      "L1: _withReadTransaction uses deferred BEGIN — shared read locks only, no write lock risk",
+      "All 7 SELECT chain groups wrapped in single transaction — snapshot-consistent reads guaranteed",
+      "ROLLBACK on error with inner try/catch — no leaked transactions possible",
+      "No nested transaction issues — inner helper methods use direct prepared statements",
+      "No deadlock risk — deferred transactions + single-threaded Node.js + synchronous better-sqlite3",
+      "Test coverage: success path (BEGIN→COMMIT) + error path (BEGIN→ROLLBACK)",
       "Cross-model satisfied: Reviewer (Claude) != Author (Codex)"
     ],
     "tests_touched": true,
-    "timestamp": "2026-02-13T04:18:00Z"
+    "timestamp": "2026-02-13T05:08:00Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
