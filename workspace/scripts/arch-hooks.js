@@ -1,10 +1,40 @@
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 
 const WORKSPACE_ROOT = 'D:/projects/hivemind/workspace';
 const INTENT_DIR = path.join(WORKSPACE_ROOT, 'intent');
 const INTENT_FILE = path.join(INTENT_DIR, '1.json');
 const HANDOFF_FILE = path.join(WORKSPACE_ROOT, 'session-handoff.json');
+const HANDOFF_LOCK = HANDOFF_FILE + '.lock';
+const HM_MEMORY_SCRIPT = 'D:/projects/hivemind/ui/scripts/hm-memory.js';
+
+function acquireLock(maxRetries = 10, delay = 100) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      fs.mkdirSync(HANDOFF_LOCK);
+      return true;
+    } catch (e) {
+      if (e.code === 'EEXIST') {
+        try {
+          const stats = fs.statSync(HANDOFF_LOCK);
+          if (Date.now() - stats.mtimeMs > 30000) {
+            try { fs.rmdirSync(HANDOFF_LOCK); } catch (rmErr) {}
+          }
+        } catch (stErr) {}
+        const start = Date.now();
+        while (Date.now() - start < delay) {}
+        continue;
+      }
+      throw e;
+    }
+  }
+  return false;
+}
+
+function releaseLock() {
+  try { fs.rmdirSync(HANDOFF_LOCK); } catch (e) {}
+}
 
 function readIntent(file) {
   try {
@@ -36,10 +66,13 @@ function writeIntent(intent) {
 }
 
 function getSessionNumber() {
+  if (!acquireLock()) return 0;
   try {
     const handoff = JSON.parse(fs.readFileSync(HANDOFF_FILE, 'utf8'));
+    releaseLock();
     return handoff.session || 0;
   } catch (e) {
+    releaseLock();
     return 0;
   }
 }
@@ -60,6 +93,127 @@ function readAllIntents() {
     }
   }
   return lines.join('\n');
+}
+
+/**
+ * Query the Evidence Ledger via hm-memory.js CLI.
+ * Uses execFileSync to avoid shell quoting issues on Windows.
+ * Returns parsed JSON or null on failure.
+ */
+function queryLedger(command, args = []) {
+  try {
+    const result = execFileSync('node', [HM_MEMORY_SCRIPT, command, '--timeout', '3000', ...args], {
+      timeout: 5000,
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true,
+    });
+    return JSON.parse(result);
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Format ledger context JSON as markdown for Claude's additionalContext.
+ * Combines ledger data (persistent) with intent board (real-time team state).
+ */
+function formatLedgerContext(ctx, teamState) {
+  const lines = [];
+  lines.push('## Context Restoration (auto-generated)');
+  lines.push(`Generated: ${new Date().toISOString()} | Session ${ctx.session || '?'} | Source: evidence-ledger`);
+  lines.push('');
+
+  // Team status from intent files (real-time)
+  if (teamState) {
+    lines.push('### Team Status');
+    lines.push(teamState);
+    lines.push('');
+  }
+
+  // Recent completions
+  const completions = Array.isArray(ctx.completed) ? ctx.completed : [];
+  if (completions.length > 0) {
+    lines.push('### Recent Completions');
+    for (const c of completions.slice(0, 10)) {
+      lines.push(`- ${c}`);
+    }
+    lines.push('');
+  }
+
+  // Active issues
+  const issues = ctx.known_issues && typeof ctx.known_issues === 'object' ? ctx.known_issues : {};
+  const issueEntries = Object.entries(issues);
+  if (issueEntries.length > 0) {
+    lines.push('### Known Issues');
+    for (const [k, v] of issueEntries.slice(0, 8)) {
+      lines.push(`- ${k}: ${v}`);
+    }
+    lines.push('');
+  }
+
+  // Roadmap / not yet done
+  const roadmap = Array.isArray(ctx.not_yet_done) ? ctx.not_yet_done : [];
+  if (roadmap.length > 0) {
+    lines.push('### Roadmap');
+    for (const r of roadmap.slice(0, 5)) {
+      lines.push(`- ${r}`);
+    }
+    lines.push('');
+  }
+
+  // Key directives
+  const directives = Array.isArray(ctx.important_notes) ? ctx.important_notes : [];
+  if (directives.length > 0) {
+    lines.push('### Key Directives');
+    for (const d of directives.slice(0, 8)) {
+      lines.push(`- ${d}`);
+    }
+    lines.push('');
+  }
+
+  // Stats
+  const stats = ctx.stats && typeof ctx.stats === 'object' ? ctx.stats : {};
+  if (stats.test_suites || stats.tests_passed) {
+    lines.push('### Stats');
+    lines.push(`Tests: ${stats.test_suites || '?'} suites, ${stats.tests_passed || '?'} passed`);
+    lines.push('');
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Snapshot session-handoff.json to the Evidence Ledger.
+ * Ensures the session exists first, then saves a context snapshot.
+ */
+function syncSessionToLedger(sessionNum) {
+  if (!acquireLock()) return;
+  try {
+    const handoff = JSON.parse(fs.readFileSync(HANDOFF_FILE, 'utf8'));
+    releaseLock();
+    
+    const num = sessionNum || handoff.session || 0;
+    if (num <= 0) return;
+    const sessionId = `s_${num}`;
+
+    // Ensure session exists in ledger (ignore conflict if already registered)
+    queryLedger('session-start', [
+      '--number', String(num),
+      '--mode', String(handoff.mode || 'PTY'),
+      '--session', sessionId,
+    ]);
+
+    // Snapshot the full session state
+    queryLedger('snapshot', [
+      '--session', sessionId,
+      '--trigger', 'session_end',
+      '--content-json', JSON.stringify(handoff),
+    ]);
+  } catch (e) {
+    releaseLock();
+    // Non-critical — don't block session lifecycle
+  }
 }
 
 function readStdin() {
@@ -88,21 +242,33 @@ async function main() {
       intent.intent = "Initializing session...";
       writeIntent(intent);
 
-      // Try compressed context snapshot first (generated by Electron app)
+      const teamState = readAllIntents();
       let additionalContext = null;
-      const snapshotPath = path.join(WORKSPACE_ROOT, 'context-snapshots', '1.md');
-      try {
-        const snapshot = fs.readFileSync(snapshotPath, 'utf8');
-        if (snapshot.trim()) {
-          additionalContext = snapshot;
+
+      // Priority 1: Evidence Ledger (persistent cross-session memory)
+      const ledgerCtx = queryLedger('context', ['--prefer-snapshot', '--timeout', '3000']);
+      if (ledgerCtx && typeof ledgerCtx === 'object' && ledgerCtx.ok !== false) {
+        // Check ledger has meaningful data (session number present)
+        if (ledgerCtx.session && ledgerCtx.session >= sessionNum - 1) {
+          additionalContext = formatLedgerContext(ledgerCtx, teamState);
         }
-      } catch {
-        // Snapshot not available — fall through to intent-only fallback
       }
 
-      // Fallback: current behavior (intent files only)
+      // Priority 2: Electron-generated context snapshot
       if (!additionalContext) {
-        const teamState = readAllIntents();
+        const snapshotPath = path.join(WORKSPACE_ROOT, 'context-snapshots', '1.md');
+        try {
+          const snapshot = fs.readFileSync(snapshotPath, 'utf8');
+          if (snapshot.trim()) {
+            additionalContext = snapshot;
+          }
+        } catch {
+          // Snapshot not available
+        }
+      }
+
+      // Priority 3: Intent files only
+      if (!additionalContext) {
         additionalContext = `[INTENT BOARD — Team State]\n${teamState}`;
       }
 
@@ -121,6 +287,9 @@ async function main() {
       intent.active_files = [];
       intent.teammates = "Frontend not spawned, Reviewer not spawned";
       writeIntent(intent);
+
+      // Sync session state to Evidence Ledger for next startup
+      syncSessionToLedger(getSessionNumber());
       break;
     }
 
@@ -143,6 +312,9 @@ async function main() {
       // Save current state before context compression
       intent.last_findings = `Pre-compaction snapshot at ${new Date().toISOString()}`;
       writeIntent(intent);
+
+      // Snapshot to ledger before compaction (preserves state if session doesn't end cleanly)
+      syncSessionToLedger(getSessionNumber());
 
       // Write compaction marker so the compressor can prioritize recent context
       const markerPath = path.join(WORKSPACE_ROOT, 'context-snapshots', '1.compacted');

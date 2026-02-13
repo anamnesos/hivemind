@@ -4,6 +4,34 @@ const path = require('path');
 const EVENT = process.argv[2];
 const INTENT_FILE = path.join('D:/projects/hivemind/workspace/intent/5.json');
 const HANDOFF_FILE = path.join('D:/projects/hivemind/workspace/session-handoff.json');
+const HANDOFF_LOCK = HANDOFF_FILE + '.lock';
+
+function acquireLock(maxRetries = 10, delay = 100) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      fs.mkdirSync(HANDOFF_LOCK);
+      return true;
+    } catch (e) {
+      if (e.code === 'EEXIST') {
+        try {
+          const stats = fs.statSync(HANDOFF_LOCK);
+          if (Date.now() - stats.mtimeMs > 30000) {
+            try { fs.rmdirSync(HANDOFF_LOCK); } catch (rmErr) {}
+          }
+        } catch (stErr) {}
+        const start = Date.now();
+        while (Date.now() - start < delay) {}
+        continue;
+      }
+      throw e;
+    }
+  }
+  return false;
+}
+
+function releaseLock() {
+  try { fs.rmdirSync(HANDOFF_LOCK); } catch (e) {}
+}
 
 function readIntent() {
   try {
@@ -29,10 +57,13 @@ function writeIntent(intent) {
 }
 
 function getSessionNumber() {
+  if (!acquireLock()) return 0;
   try {
     const handoff = JSON.parse(fs.readFileSync(HANDOFF_FILE, 'utf8'));
+    releaseLock();
     return handoff.session;
   } catch (e) {
+    releaseLock();
     return 0;
   }
 }
