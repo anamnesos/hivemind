@@ -42,8 +42,10 @@ If a choice exists between "elegant but complex" and "simple but works" — choo
 
 **When you start a fresh session, BEFORE waiting for user input:**
 
-1. **Read `workspace/app-status.json`** — Check mode and restart time
-2. **Read `workspace/session-handoff.json`** — Primary session state
+**Note:** The SessionStart hook (`workspace/scripts/arch-hooks.js`) auto-injects context from the Evidence Ledger — recent completions, known issues, roadmap, directives, and team status are already in your system prompt. You do NOT need to read `session-handoff.json` on startup.
+
+1. **Read `workspace/app-status.json`** — Check restart time
+2. **Review the hook-injected context** — already in your system prompt (look for "Context Restoration" section)
 3. Read `workspace/build/blockers.md` — Active blockers only
 4. Read `workspace/build/errors.md` — Active errors only
 5. **Read all intent files** — `workspace/intent/1.json`, `2.json`, `5.json` (see SHARED INTENT BOARD)
@@ -283,27 +285,21 @@ Start sequence numbers from `#1` each session.
 
 ---
 
-## MANDATORY: Update Context BEFORE Saying "Restart"
+## Session Handoff (Auto-Synced via Evidence Ledger)
 
 **You are a fresh instance every restart. You will NOT remember this session.**
 
-Before EVER telling the user to restart, you MUST:
+**The SessionEnd hook auto-syncs `session-handoff.json` to the Evidence Ledger.** The next session's startup hook reads it back. You do NOT need to manually prep handoffs for restart.
 
-1. **Update `workspace/session-handoff.json`** — Primary session state (tasks, roadmap, issues, stats)
+Before telling the user to restart, you MUST:
+
+1. **Update `workspace/session-handoff.json`** — Keep it current as you work (completed tasks, issues, roadmap). The SessionEnd hook snapshots this to the Evidence Ledger automatically.
 2. **Update `workspace/build/status.md`** — Mark completed tasks
 3. **Shut down teammates** — SendMessage shutdown_request to both
 4. **Clean up team** — Teammate cleanup operation
-5. **Run the RESTART HANDOFF CHECKLIST**
-6. ONLY THEN tell the user "ready to restart"
+5. THEN tell the user "ready to restart"
 
-### RESTART HANDOFF CHECKLIST
-
-- [ ] **WHAT** needs to be verified is explicitly stated
-- [ ] **HOW** to verify is documented (concrete steps)
-- [ ] **SUCCESS** criteria defined
-- [ ] **FAILURE** criteria defined
-
-**Self-test:** "If I were a fresh instance with no memory, would I know EXACTLY what to do?"
+**No manual restart prep needed.** The hook handles the ledger sync on SessionEnd. Just keep session-handoff.json updated during the session.
 
 ---
 

@@ -1,11 +1,9 @@
 {
-  "pane": "5",
-  "role": "Analyst",
-  "session": 85,
+  "session": 123,
+  "role": "analyst",
   "intent": "Initializing session...",
-  "active_files": [],
-  "teammates": null,
-  "last_findings": "Oracle report desync: misidentified 5 panes in PTY mode due to status/shell titles.",
-  "blockers": "none",
-  "last_update": "2026-02-07T22:56:11.249Z"
+  "status": "waiting_assignment",
+  "last_action": "Received ARCH #8 FYI: spec v0.3-final signed, Phase 0 complete, Phase 1 delegated, schema updates noted (session TEXT, claim_evidence.added_by, decisions.decided_by, normalized belief_contradictions).",
+  "pane": "5",
+  "last_update": "2026-02-13T21:49:20.625Z"
 }

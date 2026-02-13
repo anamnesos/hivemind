@@ -1,15 +1,16 @@
 {
-  "intent": "Initializing session...",
-  "blockers": "none",
-  "last_findings": "WS tests now use port 0 + getPort; added cleanup to avoid Jest leak; recovery tests use fake timers with Date.now and added expected/codex cases.",
-  "last_update": "2026-02-07T22:52:18.258Z",
-  "role": "DevOps",
   "pane": "2",
-  "session": 85,
+  "role": "DevOps",
+  "session": 122,
+  "intent": "Initializing session...",
   "active_files": [
-    "ui/__tests__/websocket-delivery.test.js",
-    "ui/__tests__/recovery-manager.test.js",
-    "ui/__tests__/auto-nudge-handlers.test.js",
-    "ui/modules/websocket-server.js"
-  ]
+    "workspace/app-status.json",
+    "workspace/session-handoff.json",
+    "workspace/build/blockers.md",
+    "workspace/build/errors.md",
+    "workspace/intent/2.json"
+  ],
+  "last_findings": "Active blockers: 0. Active errors: 0. Handoff indicates S122 backlog closed and ERR-011 fixed.",
+  "blockers": "none",
+  "last_update": "2026-02-13T21:49:19.156Z"
 }

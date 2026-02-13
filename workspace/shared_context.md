@@ -17,11 +17,13 @@
 - Runtime Mode: PTY (current default)
 - Config source of truth: `ui/config.js` → PANE_ROLES, PANE_IDS, ROLE_ID_MAP, TRIGGER_TARGETS
 
-| Pane | Agent | Role | CLI | Trigger |
-|------|-------|------|-----|---------|
-| 1 | Claude (Opus) | Architect + Frontend/Reviewer teammates | claude | architect.txt |
-| 2 | Codex | DevOps (Infra + Backend combined) | codex | devops.txt |
-| 5 | Codex | Analyst (switched from Gemini S101) | codex | analyst.txt |
+| Pane | Role | Trigger | CLI |
+|------|------|---------|-----|
+| 1 | Architect + Frontend/Reviewer teammates | architect.txt | _see settings.json_ |
+| 2 | DevOps (Infra + Backend combined) | devops.txt | _see settings.json_ |
+| 5 | Analyst | analyst.txt | _see settings.json_ |
+
+_Models are runtime config — check `ui/settings.json` → `paneCommands` for current assignments._
 
 Panes 3, 4, 6 removed (S77/S79). Frontend and Reviewer run as Agent Teams teammates inside Pane 1.
 
@@ -32,22 +34,22 @@ Panes 3, 4, 6 removed (S77/S79). Frontend and Reviewer run as Agent Teams teamma
 ### [PRI-001] Transition Objects / Transition Ledger
 - Severity: HIGH
 - Owner: Shared (DevOps scaffold, Analyst spec, Architect coordination)
-- Last Verified: 2026-02-10 10:00 by Architect
+- Last Verified: 2026-02-13 09:30 by Analyst
 - STALE: NO
 - Stale Since: n/a
 - Why It Matters: Team independently converged — most bugs are invisible handoff failures between correct components
-- Current State: Team consensus achieved S107. DevOps ready to scaffold, Analyst ready to formalize spec.
-- Next Milestone: Schema + lifecycle enum + evidence classes drafted
+- Current State: Spec formalized by Analyst (docs/transition-ledger-spec.md). Scaffold exists in ui/modules/transition-ledger.js.
+- Next Milestone: Implementation review and integration burn-in.
 
 ### [PRI-002] Doc Hygiene Overhaul
 - Severity: MEDIUM
 - Owner: Shared (DevOps templates, Analyst validation, Architect apply)
-- Last Verified: 2026-02-10 10:00 by Architect
+- Last Verified: 2026-02-13 09:30 by Analyst
 - STALE: NO
 - Stale Since: n/a
 - Why It Matters: Status docs are history books, not dashboards — slows triage under pressure
-- Current State: Templates drafted by DevOps, being applied by Architect, Ana pressure-testing
-- Next Milestone: All three docs migrated, Ana validates triage flow
+- Current State: Triage documents (status, blockers, errors) migrated to new format and validated by Analyst.
+- Next Milestone: Maintain hygiene through session-end automation.
 
 ### [PRI-003] Comms Reliability Protocol
 - Severity: MEDIUM

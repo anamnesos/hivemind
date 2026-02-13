@@ -1,7 +1,7 @@
 # Blockers
 
 ## Triage Snapshot
-- Last Updated: 2026-02-10 10:00 (local)
+- Last Updated: 2026-02-13 09:30 (local)
 - Active Blockers: 0
 - Severity Counts: CRITICAL 0 | HIGH 0 | MEDIUM 0 | LOW 0
 - Top 3 Priorities:

@@ -636,6 +636,32 @@ setTimeout(() => {
 
 ---
 
+### Feb 9 2026 - review - Reviewer approved CSS changes without verifying styles were loaded
+
+**What happened**: Screenshots panel had 3 issues (massive images, broken delete, layout squeeze). Frontend fixed all 3. Reviewer approved with HIGH confidence. After restart, nothing worked. Root cause: `@import` statements in `tabs.css` were after regular CSS rules — silently ignored per CSS spec. `screenshots.css` was never loaded. All our fixes were correct but invisible. Took 3 restart cycles to discover.
+
+**Root cause**:
+1. Reviewer verified CSS class names, selectors, and values in `screenshots.css` — all correct
+2. Reviewer NEVER checked whether `screenshots.css` was actually loaded in the browser
+3. Opening `tabs.css` (the importer) would have immediately revealed the `@import` at the bottom
+4. This is the SAME anti-pattern as the SDK V2 review failure (Session 71) — checking files in isolation without tracing the integration chain
+
+**Resolution**:
+1. Moved `@import` to top of `tabs.css` (commit bfc3683)
+2. Issued behavior correction to Reviewer with new mandatory steps
+
+**Pattern**: YES — same pattern as SDK V2 (Jan 25) and persisted settings override (Feb 1). Reviewer checks the changed file but not its runtime reachability.
+
+**Severity**: HIGH — 3 restart cycles wasted, user trust damaged.
+
+**Improvement**:
+1. **CSS reviews MUST trace the import chain** from index.html → the changed file
+2. **All reviews MUST verify runtime reachability** — "Is this code actually loaded/executed?"
+3. **When a fix targets a symptom, verify the fix is reachable** — not just syntactically correct
+4. This is the third time this pattern has occurred. If it happens again, the review process itself needs structural change (automated reachability checks).
+
+---
+
 ### Feb 1 2026 - coordination - Analyst messages to Architect lost (REGRESSION)
 
 **What happened**: Architect accused Analyst of ignoring mandatory status reports. Actually, Analyst WAS sending replies (#26, #28, #30, #31) but messages never arrived. Analyst used shared_context.md to report issue.

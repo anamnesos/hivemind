@@ -1,22 +1,23 @@
 {
-  "session": 112,
-  "date": "2026-02-11",
+  "session": 123,
+  "date": "2026-02-13",
   "mode": "PTY",
-  "status": "READY",
+  "status": "COMPLETED",
 
   "completed": [
-    "S112: Runtime validated focus-deferral fix (b7a7d73) — PASS. Ana sent 7 rapid probes while broadcastInput focused; all delivered in-order, no focus-block signatures. Delays (85ms→7.6s) from active-output deferral, not focus lock.",
-    "S112: Runtime validated PTY write race fix (86c4ccd) — PASS. DevOps sent 39-line payload; 34 lines arrived intact, in-order, zero corruption. Truncation at transport char limit only. Latency pings ~350ms, no stalls.",
-    "S112: ERR-006 + ERR-007 CLOSED — runtime validated.",
-    "S112: Dead module cleanup — 5 unused modules deleted (~2,700 lines). Commit 5d40084. 108 suites / 3300 tests.",
-    "S112: Evidence Ledger spec approved — flagship Slice 1 blueprint. Two complementary specs: infra/storage (DevOps) + query/investigation (Ana).",
-    "S112: Evidence Ledger Phase A committed (d282717) — store + ingestion modules.",
-    "S112: Evidence Ledger Phase B committed (6e49bc0) — end-to-end traceId propagation through 7 files.",
-    "S112: Evidence Ledger Phase C committed (214b593) — config flag evidenceLedgerEnabled + degradation guardrails.",
-    "S112: Query contract tests committed (178b6b4) — 12 tests (TC-ENV, Q1, Q2, Q3).",
-    "S112: Integration test committed (feee53a) — end-to-end traceId continuity verification.",
-    "S112: README + MAP.md updated (665aaa5) — current architecture, removed dead refs, added Event Kernel + Evidence Ledger sections.",
-    "S112: EVIDENCE LEDGER SLICE 1 COMPLETE — all 3 phases + 27 new tests. 113 suites / 3327 tests."
+    "S123: SDK mode PURGED — complete removal from codebase (ad447de)",
+    "S123: 51 files changed, 13,100 lines deleted, 15 SDK-only files removed",
+    "S123: All shared source files cleaned (daemon-handlers, terminal, triggers, renderer, etc.)",
+    "S123: All SDK test files removed/cleaned (125 suites, 3158 tests passing)",
+    "S123: CLAUDE.md updated — SDK references removed, PTY is only mode",
+    "S123: Peer consensus (all 3 agents) — PTY superior, SDK needs clean-slate rebuild"
+  ],
+
+  "not_yet_done": [],
+
+  "roadmap": [
+    "SDK mode future: separate project folder, clean-slate rebuild, reintegrate when mature",
+    "No other open roadmap items — session backlog fully cleared"
   ],
 
   "architecture": {
@@ -29,48 +30,33 @@
     "config_source": "ui/config.js → PANE_ROLES, PANE_IDS, ROLE_ID_MAP, TRIGGER_TARGETS",
     "instance_dirs": "arch (pane 1), devops (pane 2), ana (pane 5)",
     "panes_removed": "3, 4, 6 — fully removed from config, HTML, source, tests, docs",
-    "review_gate": "workspace/review.json + pre-commit Gate 7. Cross-model review required for non-routine changes. Doc-lint gate also enforces template invariants on staged docs.",
-    "event_kernel": "Phase 4 complete — FULL EVENT KERNEL DEPLOYED. Lane A (interaction kernel): contracts, state vector, injection/terminal/renderer events. Lane B (telemetry): ring buffer with query API, health strip. Daemon bridge. Bridge tab (S110): user-facing dashboard surfacing agent status, system metrics, and live event stream.",
-    "transition_ledger": "S110 — 4 spec gaps closed (owner scope, preconditions, evidenceSpec signals, early timeout). 21 tests. Module at ui/modules/transition-ledger.js. Remaining: Gap A (cancelled phase not wired) is LOW priority.",
-    "comms_reliability": "S111 — Full stack: ACK-timeout-resend, server dedup, trigger fallback, heartbeat health, chunked PTY writes with ack barrier (86c4ccd), focus-deferral on active typing only (b7a7d73), comms metrics in health strip, kernel comms events.",
-    "compaction_gate": "S108 VERIFIED — Lexical evidence required for confirmed state, chunk-inactivity decay (5s quiet), MAX_COMPACTION_DEFER_MS=8s safety valve. Runtime validated: 122-727ms injection latency (was ~26s).",
-    "doc_hygiene": "S107+S110 — ui/scripts/doc-lint.js validates errors.md/blockers.md/status.md: active cap <=5, required metadata fields, stale-marker computation by severity. Pre-commit gate + npm lint:docs. All 3 docs now pass.",
+    "sdk_status": "PURGED (S123, ad447de). PTY is the only mode. SDK will be rebuilt separately.",
+    "review_gate": "workspace/review.json + pre-commit Gate 7. Cross-model review required for non-routine changes.",
+    "event_kernel": "Phase 4 complete — FULL EVENT KERNEL DEPLOYED.",
+    "evidence_ledger": "RUNTIME ACTIVE (S116). Store + ingest (Slice 1) + investigator (Slice 2) + memory module (Slice 3). S121: Wired into Architect hooks.",
+    "process_isolation": "ALL 3 PHASES SHIPPED.",
+    "memory_management": "VALIDATED S120 — 207MB stable.",
+    "promotion_engine": "FULLY SHIPPED.",
+    "comms_reliability": "S122: ALL ITEMS CLOSED. H1+H2+M2+M3+M4 shipped.",
+    "context_restoration": "S122: L1 CLOSED. Atomic read transaction in getLatestContext.",
+    "colors_follow_model": "S122: SHIPPED (ce08315). CSS variable architecture with data-cli attribute.",
+    "startup_injection": "S122: ERR-011 FIXED (f8a7e2a). Per-message verifySubmitAccepted override for Claude panes.",
     "hooks": {
       "architect": "workspace/scripts/arch-hooks.js → SessionStart, SessionEnd, PostToolUse, PreCompact",
       "analyst": "workspace/scripts/ana-hooks.js → SessionStart, SessionEnd, AfterTool",
-      "devops": "No hooks — current CLI has no lifecycle hooks. Uses Skills/SKILL.md instead"
+      "devops": "No hooks — current CLI has no lifecycle hooks"
     }
   },
 
-  "not_yet_done": [
-    "Linux dual-boot setup checklist — ON HOLD (chilling)",
-    "Promotion engine not wired at runtime (backlog — day-1 contracts are enforced, no impact)",
-    "Transition Ledger Gap A: cancelled phase not wired (LOW priority)",
-    "node-pty upgrade: 1.1.0 → latest (21 commits behind, includes upstream PR#831 data corruption fix)"
-  ],
-
-  "roadmap": [
-    "EVIDENCE LEDGER — Slice 1 COMPLETE (S112). Next: Slice 2 (investigator workspace — incidents, hypotheses, verdicts).",
-    "Evidence Ledger Slice 2: investigator workspace (incidents, hypotheses, verdicts)",
-    "Evidence Ledger Slice 3: cross-session decision memory (queryable causal narrative replacing handoff JSON)",
-    "Ctrl+U message swallowing: injection pipeline clears CLI input (Ctrl+U) before each PTY write. Architectural flaw — deferred.",
-    "Process isolation: user suggested offloading heavy work to external background processes (WebSocket pipe exists). 64GB RAM + RTX 5090 available."
-  ],
-
   "known_issues": {
-    "ERR-004: Long message cursor rotation": "CLOSED — RUNTIME VALIDATED S109.",
-    "ERR-005: Memory leak": "CLOSED — RUNTIME VALIDATED S110. v1-v4 fixes. Idle floor stable.",
-    "ERR-006: Auto-submit failure on pane 1": "CLOSED — RUNTIME VALIDATED S112. 2-phase submit (0c1a452) + PTY race fix (86c4ccd).",
-    "ERR-007: Focus-deferral blocking messages": "CLOSED — RUNTIME VALIDATED S112. Active-typing deferral (b7a7d73).",
-    "WebSocket routing to panes 2+5": "MITIGATED S107 — ACK-timeout-resend + trigger fallback. WS goes stale after ~60s idle.",
-    "Codex exit bug (#10511)": "MEDIUM — upgraded to 0.99.0-alpha.10, monitor",
-    "node-pty 1.1.0 behind upstream": "LOW — missing PR#831 data corruption fix. Upgrade when convenient.",
-    "Jest worker leak warning (cosmetic)": "LOW — 36 handlers now have unregister, 1 residual leak from timer"
+    "ERR-005": "CLOSED S122. Cosmetic color bleed fixed (c38b9c5). Memory leak closed S120.",
+    "ERR-011": "FIXED S122 (f8a7e2a). Pane 1 startup injection now bypasses strict submit verification.",
+    "Codex exit bug (#10511)": "MEDIUM — monitor"
   },
 
   "stats": {
-    "test_suites": 113,
-    "tests_passed": 3327
+    "test_suites": 125,
+    "tests_passed": 3158
   },
 
   "important_notes": [
@@ -81,25 +67,15 @@
     "When user asks for image gen/send message/etc — JUST DO IT, don't pre-check.",
     "Gate 7 pre-commit: workspace/review.json must have result=approved",
     "James reads ONLY pane 1 — all comms route through Architect. DO NOT override.",
-    "EVENT KERNEL FULLY DEPLOYED — Phases 1-4 complete.",
-    "COMMS RELIABILITY v3 S111 — chunk ack barrier + active-typing deferral.",
-    "COMPACTION GATE VERIFIED S108 — injection latency 122-727ms (was ~26s).",
-    "DOC HYGIENE — all 3 build docs pass doc-lint as of S110.",
-    "MODELS ARE RUNTIME CONFIG — any pane can run any CLI. Check ui/settings.json → paneCommands. Never assume a pane is permanently bound to a model.",
-    "ERR-005 CLOSED S110 — all 4 vectors fixed and runtime validated. Idle floor stable.",
-    "CLI processes are native binaries (not Node.js) — V8 flags don't apply to them",
-    "User hardware: 64GB RAM + RTX 5090. xterm.js WebGL already enabled.",
-    "Memory: 2500MB during active session is mostly CLI context growth, not a leak. Inherent to native CLI processes."
+    "MODELS ARE RUNTIME CONFIG — check ui/settings.json → paneCommands before assuming who runs what.",
+    "Don't ask user 'want to restart?' — just prep handoff and say it's ready.",
+    "Shut down teammates IMMEDIATELY after use — lingering teammates freeze the app.",
+    "Screenshots tab stores files in workspace/screenshots/ — latest.png is always the most recent upload.",
+    "SDK MODE PURGED (S123) — PTY is the only mode. SDK rebuild is a separate future project."
   ],
 
   "commits_this_session": [
-    "5d40084 - chore: remove 5 dead modules (~2,694 lines)",
-    "665aaa5 - docs: update README and MAP to reflect current architecture",
-    "d282717 - feat: Evidence Ledger Phase A — durable store + ingestion normalizer",
-    "6e49bc0 - feat: Evidence Ledger Phase B — end-to-end traceId propagation",
-    "178b6b4 - test: Evidence Ledger query contract tests (12 tests)",
-    "214b593 - feat: Evidence Ledger Phase C — config flag + degradation guardrails",
-    "feee53a - test: Evidence Ledger integration test — end-to-end traceId continuity"
+    "ad447de refactor: purge SDK mode — PTY is the only mode"
   ],
 
   "cli_setup": {
@@ -113,12 +89,5 @@
     "2": { "role": "DevOps", "status": "online" },
     "5": { "role": "Analyst", "status": "online" },
     "_note": "CLI/model per pane is runtime config — check ui/settings.json → paneCommands"
-  },
-
-  "verify_after_restart": {
-    "what": "Evidence Ledger Slice 1 is complete. Next session: start Slice 2 (investigator workspace). No runtime verification needed — all S111 fixes already validated in S112.",
-    "how": "Read evidence-ledger-slice1-spec.md and evidence-ledger-query-spec.md for Slice 1 context. Draft Slice 2 spec (incidents, hypotheses, verdicts) then assign implementation.",
-    "success": "Slice 2 spec drafted, implementation phases assigned, tests passing.",
-    "failure": "N/A — no runtime verification pending."
   }
 }
