@@ -1,10 +1,9 @@
 {
-  "started": "2026-02-07T11:06:42.763Z",
-  "sdkMode": false,
+  "started": "2026-02-13T17:49:59.811Z",
   "dryRun": false,
   "autoSpawn": true,
   "version": "0.1.0",
   "platform": "win32",
   "nodeVersion": "v18.18.2",
-  "lastUpdated": "2026-02-07T11:06:42.763Z"
+  "lastUpdated": "2026-02-13T17:49:59.811Z"
 }
