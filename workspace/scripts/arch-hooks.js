@@ -2,97 +2,137 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
-const WORKSPACE_ROOT = 'D:/projects/hivemind/workspace';
-const INTENT_DIR = path.join(WORKSPACE_ROOT, 'intent');
-const INTENT_FILE = path.join(INTENT_DIR, '1.json');
-const HANDOFF_FILE = path.join(WORKSPACE_ROOT, 'session-handoff.json');
-const HANDOFF_LOCK = HANDOFF_FILE + '.lock';
+const PROJECT_ROOT = 'D:/projects/hivemind';
+const COORD_ROOT = path.join(PROJECT_ROOT, '.hivemind');
+const LEGACY_WORKSPACE_ROOT = path.join(PROJECT_ROOT, 'workspace');
 const HM_MEMORY_SCRIPT = 'D:/projects/hivemind/ui/scripts/hm-memory.js';
+const PANE_IDS = ['1', '2', '5'];
 
-function acquireLock(maxRetries = 10, delay = 100) {
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      fs.mkdirSync(HANDOFF_LOCK);
-      return true;
-    } catch (e) {
-      if (e.code === 'EEXIST') {
-        try {
-          const stats = fs.statSync(HANDOFF_LOCK);
-          if (Date.now() - stats.mtimeMs > 30000) {
-            try { fs.rmdirSync(HANDOFF_LOCK); } catch (rmErr) {}
-          }
-        } catch (stErr) {}
-        const start = Date.now();
-        while (Date.now() - start < delay) {}
-        continue;
-      }
-      throw e;
-    }
+function resolveCoordFile(relPath, options = {}) {
+  const normalizedRelPath = String(relPath || '').replace(/^[\\/]+/, '').replace(/[\\/]+/g, path.sep);
+  const preferred = path.join(COORD_ROOT, normalizedRelPath);
+  const legacy = path.join(LEGACY_WORKSPACE_ROOT, normalizedRelPath);
+
+  if (options.forWrite !== true) {
+    if (fs.existsSync(preferred)) return preferred;
+    if (fs.existsSync(legacy)) return legacy;
   }
-  return false;
+
+  return preferred;
 }
 
-function releaseLock() {
-  try { fs.rmdirSync(HANDOFF_LOCK); } catch (e) {}
+function ensureParentDir(filePath) {
+  const dir = path.dirname(filePath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
 }
 
-function readIntent(file) {
+function readJsonFile(filePath) {
   try {
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
-  } catch (e) {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch {
     return null;
   }
 }
 
+function getIntentDir() {
+  return resolveCoordFile('intent', { forWrite: true });
+}
+
+function getOwnIntentPath() {
+  return path.join(getIntentDir(), '1.json');
+}
+
 function readOwnIntent() {
-  const intent = readIntent(INTENT_FILE);
+  const intent = readJsonFile(getOwnIntentPath());
   if (intent) return intent;
   return {
-    pane: "1",
-    role: "Architect",
+    pane: '1',
+    role: 'Architect',
     session: 0,
-    intent: "Idle",
+    intent: 'Idle',
     active_files: [],
-    teammates: "Frontend not spawned, Reviewer not spawned",
-    last_findings: "",
-    blockers: "none",
-    last_update: new Date().toISOString()
+    teammates: 'Frontend not spawned, Reviewer not spawned',
+    last_findings: '',
+    blockers: 'none',
+    last_update: new Date().toISOString(),
   };
 }
 
 function writeIntent(intent) {
+  const filePath = getOwnIntentPath();
+  ensureParentDir(filePath);
   intent.last_update = new Date().toISOString();
-  fs.writeFileSync(INTENT_FILE, JSON.stringify(intent, null, 2));
+  fs.writeFileSync(filePath, JSON.stringify(intent, null, 2));
 }
 
-function getSessionNumber() {
-  if (!acquireLock()) return 0;
+function parseSessionNumberFromText(content) {
+  const text = String(content || '');
+  const patterns = [
+    /Session:\s*(\d+)/i,
+    /\|\s*Session\s+(\d+)\b/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (!match) continue;
+    const parsed = Number.parseInt(match[1], 10);
+    if (Number.isInteger(parsed) && parsed > 0) return parsed;
+  }
+
+  return 0;
+}
+
+function getSessionNumberFromSnapshot() {
+  const snapshotPath = resolveCoordFile(path.join('context-snapshots', '1.md'));
   try {
-    const handoff = JSON.parse(fs.readFileSync(HANDOFF_FILE, 'utf8'));
-    releaseLock();
-    return handoff.session || 0;
-  } catch (e) {
-    releaseLock();
+    const content = fs.readFileSync(snapshotPath, 'utf8');
+    return parseSessionNumberFromText(content);
+  } catch {
     return 0;
   }
 }
 
-function readAllIntents() {
-  const panes = ['1', '2', '5'];
-  const roles = { '1': 'Architect', '2': 'DevOps', '5': 'Analyst' };
-  const lines = [];
-  for (const p of panes) {
-    const intent = readIntent(path.join(INTENT_DIR, `${p}.json`));
-    if (intent) {
-      const stale = intent.session < getSessionNumber() ? ' [STALE]' : '';
-      const files = Array.isArray(intent.active_files) && intent.active_files.length > 0 ? intent.active_files.join(', ') : 'none';
-      lines.push(`Pane ${p} (${intent.role || roles[p]}${stale}): ${intent.intent || 'unknown'} | Files: ${files} | Blockers: ${intent.blockers || 'none'}`);
-      if (intent.teammates) lines.push(`  Teammates: ${intent.teammates}`);
-      if (intent.last_findings || intent.last_action) lines.push(`  Findings: ${intent.last_findings || intent.last_action}`);
-    } else {
-      lines.push(`Pane ${p} (${roles[p]}): No intent file found`);
+function getSessionNumber() {
+  const intentDir = getIntentDir();
+  let maxIntentSession = 0;
+
+  for (const paneId of PANE_IDS) {
+    const intent = readJsonFile(path.join(intentDir, `${paneId}.json`));
+    const parsed = Number.parseInt(intent?.session, 10);
+    if (Number.isInteger(parsed) && parsed > maxIntentSession) {
+      maxIntentSession = parsed;
     }
   }
+
+  const snapshotSession = getSessionNumberFromSnapshot();
+  return Math.max(maxIntentSession, snapshotSession, 0);
+}
+
+function readAllIntents() {
+  const roles = { '1': 'Architect', '2': 'DevOps', '5': 'Analyst' };
+  const lines = [];
+  const intentDir = getIntentDir();
+  const currentSession = getSessionNumber();
+
+  for (const paneId of PANE_IDS) {
+    const intent = readJsonFile(path.join(intentDir, `${paneId}.json`));
+    if (!intent) {
+      lines.push(`Pane ${paneId} (${roles[paneId]}): No intent file found`);
+      continue;
+    }
+
+    const stale = Number(intent.session || 0) < currentSession ? ' [STALE]' : '';
+    const files = Array.isArray(intent.active_files) && intent.active_files.length > 0
+      ? intent.active_files.join(', ')
+      : 'none';
+
+    lines.push(`Pane ${paneId} (${intent.role || roles[paneId]}${stale}): ${intent.intent || 'unknown'} | Files: ${files} | Blockers: ${intent.blockers || 'none'}`);
+    if (intent.teammates) lines.push(`  Teammates: ${intent.teammates}`);
+    if (intent.last_findings || intent.last_action) lines.push(`  Findings: ${intent.last_findings || intent.last_action}`);
+  }
+
   return lines.join('\n');
 }
 
@@ -134,14 +174,12 @@ function formatLedgerContext(ctx, teamState) {
   lines.push(`Generated: ${new Date().toISOString()} | Session ${ctx.session || '?'} | Source: evidence-ledger`);
   lines.push('');
 
-  // Team status from intent files (real-time)
   if (teamState) {
     lines.push('### Team Status');
     lines.push(teamState);
     lines.push('');
   }
 
-  // Recent completions
   const completions = Array.isArray(ctx.completed) ? ctx.completed : [];
   if (completions.length > 0) {
     lines.push('### Recent Completions');
@@ -151,7 +189,6 @@ function formatLedgerContext(ctx, teamState) {
     lines.push('');
   }
 
-  // Active issues
   const issues = ctx.known_issues && typeof ctx.known_issues === 'object' ? ctx.known_issues : {};
   const issueEntries = Object.entries(issues);
   if (issueEntries.length > 0) {
@@ -162,7 +199,6 @@ function formatLedgerContext(ctx, teamState) {
     lines.push('');
   }
 
-  // Roadmap / not yet done
   const roadmap = Array.isArray(ctx.not_yet_done) ? ctx.not_yet_done : [];
   if (roadmap.length > 0) {
     lines.push('### Roadmap');
@@ -172,7 +208,6 @@ function formatLedgerContext(ctx, teamState) {
     lines.push('');
   }
 
-  // Key directives
   const directives = Array.isArray(ctx.important_notes) ? ctx.important_notes : [];
   if (directives.length > 0) {
     lines.push('### Key Directives');
@@ -182,7 +217,6 @@ function formatLedgerContext(ctx, teamState) {
     lines.push('');
   }
 
-  // Stats
   const stats = ctx.stats && typeof ctx.stats === 'object' ? ctx.stats : {};
   if (stats.test_suites || stats.tests_passed) {
     lines.push('### Stats');
@@ -193,47 +227,87 @@ function formatLedgerContext(ctx, teamState) {
   return lines.join('\n');
 }
 
+function parseList(value) {
+  if (!value) return [];
+  return String(value)
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function buildLedgerSnapshotContext(sessionNum = 0) {
+  const snapshotPath = resolveCoordFile(path.join('context-snapshots', '1.md'));
+  const fallbackSession = Number.isInteger(sessionNum) && sessionNum > 0 ? sessionNum : getSessionNumber();
+
+  try {
+    const raw = fs.readFileSync(snapshotPath, 'utf8');
+    const lines = raw.split(/\r?\n/);
+    const completedLine = lines.find((line) => /^Completed:\s*/i.test(line));
+    const nextLine = lines.find((line) => /^Next:\s*/i.test(line));
+    const testsLine = lines.find((line) => /^Tests:\s*/i.test(line));
+    const parsedSession = parseSessionNumberFromText(raw);
+    const testMatch = testsLine ? testsLine.match(/(\d+)\s+suites,\s*(\d+)\s+tests/i) : null;
+
+    return {
+      session: parsedSession || fallbackSession || 0,
+      mode: 'PTY',
+      completed: completedLine ? parseList(completedLine.replace(/^Completed:\s*/i, '')) : [],
+      roadmap: nextLine ? parseList(nextLine.replace(/^Next:\s*/i, '')) : [],
+      not_yet_done: nextLine ? parseList(nextLine.replace(/^Next:\s*/i, '')) : [],
+      stats: testMatch
+        ? {
+            test_suites: Number.parseInt(testMatch[1], 10) || 0,
+            tests_passed: Number.parseInt(testMatch[2], 10) || 0,
+          }
+        : {},
+      source: 'context-snapshot',
+      source_path: snapshotPath,
+      timestamp: new Date().toISOString(),
+    };
+  } catch {
+    return {
+      session: fallbackSession || 0,
+      mode: 'PTY',
+      completed: [],
+      roadmap: [],
+      not_yet_done: [],
+      stats: {},
+      source: 'intent-session',
+      timestamp: new Date().toISOString(),
+    };
+  }
+}
+
 /**
- * Snapshot session-handoff.json to the Evidence Ledger.
- * Ensures the session exists first, then saves a context snapshot.
+ * Snapshot context state to the Evidence Ledger.
+ * Ensures the session exists first, then saves a context snapshot payload.
  */
 function syncSessionToLedger(sessionNum) {
-  if (!acquireLock()) {
-    process.stderr.write(`[arch-hooks] syncSessionToLedger: failed to acquire lock\n`);
+  const snapshotContext = buildLedgerSnapshotContext(Number.parseInt(sessionNum, 10));
+  const num = Number.parseInt(snapshotContext.session, 10);
+
+  if (!Number.isInteger(num) || num <= 0) {
+    process.stderr.write('[arch-hooks] syncSessionToLedger: invalid session number\n');
     return;
   }
-  try {
-    const handoff = JSON.parse(fs.readFileSync(HANDOFF_FILE, 'utf8'));
-    releaseLock();
 
-    const num = sessionNum || handoff.session || 0;
-    if (num <= 0) {
-      process.stderr.write(`[arch-hooks] syncSessionToLedger: invalid session num ${num}\n`);
-      return;
-    }
-    const sessionId = `s_${num}`;
+  const sessionId = `s_${num}`;
 
-    // Ensure session exists in ledger (ignore conflict if already registered)
-    const startResult = queryLedger('session-start', [
-      '--number', String(num),
-      '--mode', String(handoff.mode || 'PTY'),
-      '--session', sessionId,
-    ]);
-    process.stderr.write(`[arch-hooks] session-start(${sessionId}): ${JSON.stringify(startResult)}\n`);
+  const startResult = queryLedger('session-start', [
+    '--number', String(num),
+    '--mode', String(snapshotContext.mode || 'PTY'),
+    '--session', sessionId,
+  ]);
+  process.stderr.write(`[arch-hooks] session-start(${sessionId}): ${JSON.stringify(startResult)}\n`);
 
-    // Snapshot the full session state
-    const contentJson = JSON.stringify(handoff);
-    process.stderr.write(`[arch-hooks] snapshot content length: ${contentJson.length}\n`);
-    const snapResult = queryLedger('snapshot', [
-      '--session', sessionId,
-      '--trigger', 'session_end',
-      '--content-json', contentJson,
-    ]);
-    process.stderr.write(`[arch-hooks] snapshot(${sessionId}): ${JSON.stringify(snapResult)}\n`);
-  } catch (e) {
-    releaseLock();
-    process.stderr.write(`[arch-hooks] syncSessionToLedger error: ${e.message}\n`);
-  }
+  const contentJson = JSON.stringify(snapshotContext);
+  process.stderr.write(`[arch-hooks] snapshot content length: ${contentJson.length}\n`);
+  const snapResult = queryLedger('snapshot', [
+    '--session', sessionId,
+    '--trigger', 'session_end',
+    '--content-json', contentJson,
+  ]);
+  process.stderr.write(`[arch-hooks] snapshot(${sessionId}): ${JSON.stringify(snapResult)}\n`);
 }
 
 function readStdin() {
@@ -259,7 +333,7 @@ async function main() {
     case 'SessionStart': {
       const sessionNum = getSessionNumber();
       intent.session = sessionNum || intent.session;
-      intent.intent = "Initializing session...";
+      intent.intent = 'Initializing session...';
       writeIntent(intent);
 
       const teamState = readAllIntents();
@@ -268,15 +342,14 @@ async function main() {
       // Priority 1: Evidence Ledger (persistent cross-session memory)
       const ledgerCtx = queryLedger('context', ['--prefer-snapshot', '--timeout', '3000']);
       if (ledgerCtx && typeof ledgerCtx === 'object' && ledgerCtx.ok !== false) {
-        // Check ledger has meaningful data (session number present)
         if (ledgerCtx.session && ledgerCtx.session >= sessionNum - 1) {
           additionalContext = formatLedgerContext(ledgerCtx, teamState);
         }
       }
 
-      // Priority 2: Electron-generated context snapshot
+      // Priority 2: context snapshot markdown
       if (!additionalContext) {
-        const snapshotPath = path.join(WORKSPACE_ROOT, 'context-snapshots', '1.md');
+        const snapshotPath = resolveCoordFile(path.join('context-snapshots', '1.md'));
         try {
           const snapshot = fs.readFileSync(snapshotPath, 'utf8');
           if (snapshot.trim()) {
@@ -289,12 +362,12 @@ async function main() {
 
       // Priority 3: Intent files only
       if (!additionalContext) {
-        additionalContext = `[INTENT BOARD — Team State]\n${teamState}`;
+        additionalContext = `[INTENT BOARD - Team State]\n${teamState}`;
       }
 
       const output = {
         hookSpecificOutput: {
-          hookEventName: "SessionStart",
+          hookEventName: 'SessionStart',
           additionalContext,
         }
       };
@@ -303,22 +376,21 @@ async function main() {
     }
 
     case 'SessionEnd': {
-      intent.intent = "Idle";
+      intent.intent = 'Idle';
       intent.active_files = [];
-      intent.teammates = "Frontend not spawned, Reviewer not spawned";
+      intent.teammates = 'Frontend not spawned, Reviewer not spawned';
       writeIntent(intent);
 
-      // Sync session state to Evidence Ledger for next startup
       syncSessionToLedger(getSessionNumber());
       break;
     }
 
     case 'PostToolUse': {
       const toolInput = data.tool_input || {};
-      let fileAffected = toolInput.file_path || null;
+      const fileAffected = toolInput.file_path || null;
 
       if (fileAffected) {
-        const normalized = path.relative('D:/projects/hivemind', path.resolve(fileAffected)).replace(/\\/g, '/');
+        const normalized = path.relative(PROJECT_ROOT, path.resolve(fileAffected)).replace(/\\/g, '/');
         if (!intent.active_files.includes(normalized)) {
           intent.active_files.push(normalized);
           if (intent.active_files.length > 3) intent.active_files.shift();
@@ -329,26 +401,20 @@ async function main() {
     }
 
     case 'PreCompact': {
-      // Save current state before context compression
       intent.last_findings = `Pre-compaction snapshot at ${new Date().toISOString()}`;
       writeIntent(intent);
 
-      // Snapshot to ledger before compaction (preserves state if session doesn't end cleanly)
       syncSessionToLedger(getSessionNumber());
 
-      // Write compaction marker so the compressor can prioritize recent context
-      const markerPath = path.join(WORKSPACE_ROOT, 'context-snapshots', '1.compacted');
+      const markerPath = resolveCoordFile(path.join('context-snapshots', '1.compacted'), { forWrite: true });
       try {
-        const markerDir = path.dirname(markerPath);
-        if (!fs.existsSync(markerDir)) {
-          fs.mkdirSync(markerDir, { recursive: true });
-        }
+        ensureParentDir(markerPath);
         fs.writeFileSync(markerPath, JSON.stringify({
           timestamp: new Date().toISOString(),
           messageCount: data.transcript?.length || 0,
         }));
       } catch {
-        // Non-critical — ignore marker write failures
+        // Non-critical - ignore marker write failures
       }
       break;
     }

@@ -59,7 +59,7 @@ This includes:
 Every agent, every model, every pane follows this structure:
 
 1. Read `workspace/app-status.json` — runtime state
-2. Read `workspace/session-handoff.json` — primary session state (~300 tokens, has everything)
+2. Read latest context snapshot (`.hivemind/context-snapshots/1.md`, fallback `workspace/context-snapshots/1.md`)
 3. Glance at `workspace/build/blockers.md` and `errors.md` — active counts only
 4. Read intent files — `workspace/intent/1.json`, `2.json`, `5.json`
 5. Update YOUR intent file with current session and status
@@ -67,7 +67,7 @@ Every agent, every model, every pane follows this structure:
 7. **STOP. Wait for Architect to assign work.**
 
 ### What NOT to do on startup
-- DO NOT read `shared_context.md` or `status.md` — handoff JSON covers it
+- DO NOT read `shared_context.md` or `status.md` during startup triage
 - DO NOT re-verify closed errors or resolved blockers
 - DO NOT review/approve/formalize specs unless asked
 - DO NOT audit modules, check logs, or validate previous fixes
