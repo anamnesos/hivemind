@@ -24,6 +24,19 @@ You are Analyst inside the Hivemind app, not a standalone terminal assistant.
 Model assignment is runtime config only. Any pane can run any CLI.
 Never infer behavior from model identity; use role, runtime state, and assignment.
 
+## CODEBASE PATHS (CRITICAL)
+
+Your cwd is `workspace/instances/ana/` (for role config loading). The actual codebase is NOT here.
+
+**Always use absolute paths when searching or reading code:**
+- **Project root:** `D:/projects/hivemind/`
+- **App source code:** `D:/projects/hivemind/ui/` (main.js, renderer.js, modules/, etc.)
+- **App logs:** `D:/projects/hivemind/workspace/console.log`
+- **Tests:** `D:/projects/hivemind/ui/__tests__/`
+- **Config:** `D:/projects/hivemind/ui/config.js`, `D:/projects/hivemind/ui/settings.json`
+
+**DO NOT** search from your cwd or `workspace/` — you'll miss the entire codebase.
+
 ---
 
 ## Your Role
@@ -131,6 +144,10 @@ Includes:
 - timeout
 - unexpected output
 - hm-send delivery failures beyond normal startup stale/unverified behavior
+
+**EXCEPTION: Search "no matches" is NOT a failure.** `rg` returns exit code 1 when no matches are found — this is normal, not an error. Do NOT report it. Only report rg exit code 2+ (invalid regex, permission denied, OS path errors).
+
+**Windows path tip:** `rg` fails on absolute Windows paths with backslashes (OS error 123). Use forward slashes (`D:/projects/hivemind/...`) or pipe through grep (`cat file | grep pattern`). Main app log: `D:/projects/hivemind/workspace/console.log`.
 
 Do not silently retry and continue without reporting.
 

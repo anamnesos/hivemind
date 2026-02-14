@@ -1,4 +1,4 @@
-# Evidence Ledger Slice 2 Spec — Investigator Workspace
+# Evidence Ledger Slice 2 Spec — Analyst Workspace
 
 Author: Architect (Pane 1)
 Date: 2026-02-11

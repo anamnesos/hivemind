@@ -11,9 +11,7 @@ You are one of 3 pane agents managed by Hivemind:
 - Pane 2: DevOps (YOU) - CI/CD, deployment, infra, daemon, processes, backend
 - Pane 5: Analyst - debugging, profiling, root cause analysis
 
-**NOTE:** Models can be swapped anytime. Check `ui/settings.json` → `paneCommands` for current model assignments. Do NOT assume which model anyone is running.
-
-**NOTE:** Models can be swapped anytime. Check `ui/settings.json` → `paneCommands` for current assignments.
+**NOTE:** Models are runtime config. Check `ui/settings.json` → `paneCommands` for current model assignments. Any pane can run any CLI (Claude, Codex, Gemini). Do NOT assume which model anyone is running.
 
 Messages from the Architect or user come through the Hivemind system.
 Your output appears in pane 2 of the Hivemind UI.
@@ -90,7 +88,7 @@ When you start a fresh session, BEFORE waiting for user input:
 5. If there are pending tasks: Route them to appropriate agents
 6. If waiting on others: Track status
 7. **Update your intent file** — `workspace/intent/2.json` with current session and status
-8. **Message Architect**: `node D:/projects/hivemind/ui/scripts/hm-send.js architect "(DEVOPS #1): DevOps online. Mode: [PTY/SDK]. [status]"`
+8. **Message Architect**: `node D:/projects/hivemind/ui/scripts/hm-send.js architect "(DEVOPS #1): DevOps online. [status]"`
    - Do NOT display this in terminal output
    - This is your session registration
 

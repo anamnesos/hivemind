@@ -7,43 +7,58 @@ Last updated: 2026-02-12
 ## Triage Snapshot
 - Last Updated: 2026-02-13 (local)
 - Active Priorities: 2
-- Focus: PRI-002 (Team Memory Runtime)
+- Focus: Roadmap items (Team Memory + Experiments shipped)
 
 ---
 
 ## Current Priorities (Max 5)
 
-- **PRI-002: Team Memory Runtime** — Spec v0.3-final signed off by DevOps. Phase 0 delegated. Implementation in progress.
+- **PRI-002: Team Memory Runtime** — SHIPPED S123 (bd54e81). All 6 phases complete.
+- **PRI-003: Experiment Engine** — SHIPPED S123 (8fa5872). Phase 6a-6d complete.
 - **PRI-001: Transition Objects** — Spec formalized. Implementation review pending.
+- **GitHub/VSCode integration** — Transition Ledger → PR logic. Discussed, not specced.
 - **SDK future rebuild** — Separate project folder, clean-slate. No timeline.
 
 ---
 
 ## Session History
 
-### Session 123 - SDK Mode Purge (Feb 13, 2026)
+### Session 123 - SDK Purge + Team Memory Runtime + Experiment Engine (Feb 13, 2026)
 
 | Task | Owner | Status |
 |------|-------|--------|
 | Peer assessment: SDK vs PTY mode | All 3 agents | DONE — unanimous PTY superior |
-| Ana audit: all SDK code in codebase | Analyst | DONE |
-| Phase 1: Clean SDK branches from shared source files | DevOps + Frontend | DONE |
-| Phase 2: Delete SDK-only files (15 files) | Architect | DONE |
-| Phase 3: Clean SDK refs from test files | Architect | DONE |
-| Phase 4: Full test suite verification | Architect | DONE (125 suites, 3158 tests) |
-| Phase 5: Git commit | Architect | DONE (ad447de) |
-| Phase 6: Full re-audit for remnants | Architect | DONE — zero SDK refs remain |
-| CLAUDE.md SDK references removed | Architect | DONE |
+| SDK purge — complete removal from codebase | DevOps + Architect | DONE (ad447de) |
+| Team Memory spec v0.3-final + schema refinements | Architect + DevOps | DONE |
+| Phase 0: Schema + migrations + scaffold | DevOps | DONE |
+| Phase 1: Claim Graph (CRUD + state machine + evidence binding) | DevOps | DONE |
+| Phase 2: Search & Retrieval (FTS5 + confidence ranking) | DevOps | DONE |
+| Phase 3: Consensus & Belief (positions + snapshots + contradictions) | DevOps | DONE |
+| Phase 4: Pattern Engine (hybrid hook/worker mining + guards) | DevOps | DONE |
+| Phase 5: Control Plane (IPC handlers + CLI + app wiring) | DevOps | DONE |
+| Team Memory commit (45 files, +7,276 lines) | Architect | DONE (bd54e81) |
+| Experiment Engine spec (Section 12 of team-memory-spec.md) | Architect + DevOps | DONE |
+| Phase 6a: Foundation (worker pair, PTY spawn, profiles, migrations) | DevOps | DONE |
+| Phase 6b: Evidence Chain (ledger events, auto-attach, pending_proof) | DevOps | DONE |
+| Phase 6c: CLI + IPC (hm-experiment.js, handlers) | DevOps | DONE |
+| Phase 6d: Tests (isolation, profiles, guards) | DevOps | DONE |
+| Experiment Engine commit (21 files, +3,371 lines) | Architect | DONE (8fa5872) |
 
-**Commit:** `ad447de refactor: purge SDK mode — PTY is the only mode`
-**Test suite:** 125 suites / 3158 tests (all passing)
-**Scope:** 51 files changed, 54 insertions, 13,100 deletions
+**Commits:**
+- `ad447de refactor: purge SDK mode — PTY is the only mode` (51 files, -13,100 lines)
+- `bd54e81 feat: Team Memory Runtime — 5-layer multi-agent shared memory system` (45 files, +7,276 lines)
+- `8fa5872 feat: Experiment Engine — executable evidence for contested claims` (21 files, +3,371 lines)
+
+**Test suite:** 139 suites / 3204 tests (all passing) — up from 125/3158
 
 **Key decisions:**
-- All 3 agents independently concluded PTY is superior today; SDK needs clean-slate rebuild
-- SDK code completely removed — no conditionals, no shims, no dead imports
-- Future SDK rebuild will be in a separate project folder, reintegrated when mature
-- CLAUDE.md updated: "PTY is the only mode" replaces "SDK mode is primary path"
+- SDK purge: all 3 agents concluded PTY superior; SDK needs clean-slate rebuild
+- Team Memory: 5-layer architecture (Claim Graph → Search → Consensus → Patterns → Control Plane)
+- CLAIM lifecycle: proposed → confirmed → contested → deprecated (+ pending_proof for experiments)
+- Schema refinements from James: `session TEXT` (not INTEGER), `added_by`/`decided_by` attribution, normalized `belief_contradictions` table
+- Experiment Engine: isolated PTY execution, named profiles (no raw shell), tamper-evident evidence chain (SHA-256 → Evidence Ledger → claim_evidence)
+- Cross-DB integrity checker validates evidence_ref references between Team Memory and Evidence Ledger
+- Hybrid hook/worker split: hooks append to JSONL spool (<5ms), worker does heavy processing async
 
 ---
 
@@ -183,7 +198,7 @@ Last updated: 2026-02-12
 | Task | Owner | Status |
 |------|-------|--------|
 | Evidence Ledger Slice 2 spec | Architect | DONE |
-| Slice 2 Phase A: schema + investigator module (16 CRUD methods) | DevOps | DONE |
+| Slice 2 Phase A: schema + analyst module (16 CRUD methods) | DevOps | DONE |
 | Slice 2 Phase B: stale detection + binding validation | DevOps | DONE |
 | Slice 2 Phase C: IPC handlers + CLI script + integration test | DevOps | DONE |
 | Agent modularity: shared-agent-rules.md (universal rules) | Architect | DONE |
@@ -222,7 +237,7 @@ Last updated: 2026-02-12
 
 **Key decisions:**
 - Evidence Ledger uses SQLite WAL, single writer, canonical envelope with legacy alias support
-- 3-slice roadmap: Slice 1 (pipeline ledger) → Slice 2 (investigator workspace) → Slice 3 (replaces handoff JSON)
+- 3-slice roadmap: Slice 1 (pipeline ledger) → Slice 2 (analyst workspace) → Slice 3 (replaces handoff JSON)
 - Config flag `evidenceLedgerEnabled` gates the feature with graceful degradation
 - ERR-006 and ERR-007 CLOSED after runtime validation
 

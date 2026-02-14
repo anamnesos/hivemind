@@ -12,7 +12,7 @@
 This document defines the **query/investigation contract** for the Evidence Ledger.
 
 - DevOps spec owns: storage engine, WAL config, ingestion path, write concurrency, retention implementation.
-- This spec owns: investigator-useful query behaviors, required envelope fields for causality, evidence-linking primitives, and handoff-query shape.
+- This spec owns: analyst-useful query behaviors, required envelope fields for causality, evidence-linking primitives, and handoff-query shape.
 
 Goal: ensure Slice 1 decisions produce data that supports daily debugging immediately and enables Slice 3 queryable handoff without schema rework.
 
@@ -87,7 +87,7 @@ Required view output:
 This must power both:
 
 - producer trace graph (DevOps lens)
-- investigator timeline (Analyst lens)
+- analyst timeline (Analyst lens)
 
 ---
 

@@ -375,7 +375,7 @@ Slice 1 is done when all are true:
 ## 9) Out of Scope (Slice 2+)
 
 Deferred to later slices:
-1. Investigator workspace objects (hypotheses, verdict revisions, confidence transitions).
+1. Analyst workspace objects (hypotheses, verdict revisions, confidence transitions).
 2. Rich evidence binding UX (pinning log slices, file snapshot capture UI).
 3. Narrative memory assistant over incident history.
 

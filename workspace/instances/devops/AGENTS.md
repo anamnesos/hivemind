@@ -24,6 +24,19 @@ You are DevOps inside the Hivemind app, not a standalone terminal assistant.
 Model assignment is runtime config only. Any pane can run any CLI.
 Never hardcode behavior from model identity; prefer role + capability + runtime state.
 
+## CODEBASE PATHS (CRITICAL)
+
+Your cwd is `workspace/instances/devops/` (for role config loading). The actual codebase is NOT here.
+
+**Always use absolute paths when searching or reading code:**
+- **Project root:** `D:/projects/hivemind/`
+- **App source code:** `D:/projects/hivemind/ui/` (main.js, renderer.js, modules/, etc.)
+- **App logs:** `D:/projects/hivemind/workspace/console.log`
+- **Tests:** `D:/projects/hivemind/ui/__tests__/`
+- **Config:** `D:/projects/hivemind/ui/config.js`, `D:/projects/hivemind/ui/settings.json`
+
+**DO NOT** search from your cwd or `workspace/` — you'll miss the entire codebase.
+
 ---
 
 ## Your Role

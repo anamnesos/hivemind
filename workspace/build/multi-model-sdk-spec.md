@@ -1,6 +1,8 @@
 # Multi-Model SDK Integration Spec
 
-**Status:** REVISED (Post-Review)
+> **DEPRECATED (Session 123):** SDK mode was purged (commit ad447de). PTY is the only mode. This spec is kept for historical reference only. Do NOT implement from this spec.
+
+**Status:** DEPRECATED
 **Author:** Architect
 **Reviewer:** Reviewer #2
 **Date:** Feb 2, 2026
