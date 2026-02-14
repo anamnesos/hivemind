@@ -1,11 +1,20 @@
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 
 const PROJECT_ROOT = 'D:/projects/hivemind';
 const COORD_ROOT = path.join(PROJECT_ROOT, '.hivemind');
 const LEGACY_WORKSPACE_ROOT = path.join(PROJECT_ROOT, 'workspace');
+const EVIDENCE_LEDGER_DB_PATH = path.join(PROJECT_ROOT, 'workspace', 'runtime', 'evidence-ledger.db');
+const HM_MEMORY_SCRIPT = 'D:/projects/hivemind/ui/scripts/hm-memory.js';
 const EVENT = process.argv[2];
-const PANE_IDS = ['1', '2', '5'];
+
+let DatabaseSync = null;
+try {
+  ({ DatabaseSync } = require('node:sqlite'));
+} catch {
+  DatabaseSync = null;
+}
 
 function resolveCoordFile(relPath, options = {}) {
   const normalizedRelPath = String(relPath || '').replace(/^[\\/]+/, '').replace(/[\\/]+/g, path.sep);
@@ -18,42 +27,6 @@ function resolveCoordFile(relPath, options = {}) {
   }
 
   return preferred;
-}
-
-function getIntentFile() {
-  return resolveCoordFile(path.join('intent', '5.json'), { forWrite: true });
-}
-
-function ensureParentDir(filePath) {
-  const dir = path.dirname(filePath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-}
-
-function readIntent() {
-  try {
-    return JSON.parse(fs.readFileSync(getIntentFile(), 'utf8'));
-  } catch (e) {
-    return {
-      pane: '5',
-      role: 'Analyst',
-      session: 0,
-      intent: 'Idle',
-      active_files: [],
-      teammates: null,
-      last_findings: '',
-      blockers: 'none',
-      last_update: new Date().toISOString()
-    };
-  }
-}
-
-function writeIntent(intent) {
-  const filePath = getIntentFile();
-  ensureParentDir(filePath);
-  intent.last_update = new Date().toISOString();
-  fs.writeFileSync(filePath, JSON.stringify(intent, null, 2));
 }
 
 function parseSessionNumberFromText(content) {
@@ -75,74 +48,164 @@ function parseSessionNumberFromText(content) {
 
 function getSessionNumberFromSnapshot() {
   try {
-    const content = fs.readFileSync(resolveCoordFile(path.join('context-snapshots', '1.md')), 'utf8');
+    const content = fs.readFileSync(resolveCoordFile(path.join('context-snapshots', '5.md')), 'utf8');
     return parseSessionNumberFromText(content);
   } catch {
     return 0;
   }
 }
 
-function getSessionNumber() {
-  const intentDir = resolveCoordFile('intent', { forWrite: true });
-  let maxIntentSession = 0;
+function getSessionNumberFromLedger() {
+  if (typeof DatabaseSync !== 'function') return 0;
+  if (!fs.existsSync(EVIDENCE_LEDGER_DB_PATH)) return 0;
 
-  for (const paneId of PANE_IDS) {
+  let db = null;
+  try {
+    db = new DatabaseSync(EVIDENCE_LEDGER_DB_PATH);
+    const row = db.prepare(`
+      SELECT MAX(session_number) AS latest
+      FROM ledger_sessions
+      WHERE session_number IS NOT NULL
+        AND session_number > 0
+    `).get();
+    const parsed = Number.parseInt(row?.latest, 10);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : 0;
+  } catch {
+    return 0;
+  } finally {
     try {
-      const intent = JSON.parse(fs.readFileSync(path.join(intentDir, `${paneId}.json`), 'utf8'));
-      const parsed = Number.parseInt(intent?.session, 10);
-      if (Number.isInteger(parsed) && parsed > maxIntentSession) {
-        maxIntentSession = parsed;
-      }
+      db?.close?.();
     } catch {
-      // Missing or invalid intent file
+      // best effort
     }
   }
+}
 
-  return Math.max(maxIntentSession, getSessionNumberFromSnapshot(), 0);
+function getSessionNumber() {
+  const ledgerSession = getSessionNumberFromLedger();
+  const snapshotSession = getSessionNumberFromSnapshot();
+  return Math.max(ledgerSession, snapshotSession, 0);
+}
+
+function parseList(value) {
+  if (!value) return [];
+  return String(value)
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function queryLedger(command, args = []) {
+  try {
+    const result = execFileSync('node', [HM_MEMORY_SCRIPT, command, '--timeout', '3000', ...args], {
+      timeout: 5000,
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true,
+    });
+    return JSON.parse(result);
+  } catch (e) {
+    const stdout = e.stdout ? e.stdout.toString().trim() : '';
+    if (stdout) {
+      try {
+        return JSON.parse(stdout);
+      } catch {
+        // fallthrough to null
+      }
+    }
+    return null;
+  }
+}
+
+function buildLedgerSnapshotContext(sessionNum = 0) {
+  const snapshotPath = resolveCoordFile(path.join('context-snapshots', '5.md'));
+  const fallbackSession = Number.isInteger(sessionNum) && sessionNum > 0 ? sessionNum : getSessionNumber();
+
+  try {
+    const raw = fs.readFileSync(snapshotPath, 'utf8');
+    const lines = raw.split(/\r?\n/);
+    const completedLine = lines.find((line) => /^Completed:\s*/i.test(line));
+    const nextLine = lines.find((line) => /^Next:\s*/i.test(line));
+    const testsLine = lines.find((line) => /^Tests:\s*/i.test(line));
+    const parsedSession = parseSessionNumberFromText(raw);
+    const testMatch = testsLine ? testsLine.match(/(\d+)\s+suites,\s*(\d+)\s+tests/i) : null;
+
+    return {
+      session: parsedSession || fallbackSession || 0,
+      mode: 'PTY',
+      completed: completedLine ? parseList(completedLine.replace(/^Completed:\s*/i, '')) : [],
+      roadmap: nextLine ? parseList(nextLine.replace(/^Next:\s*/i, '')) : [],
+      not_yet_done: nextLine ? parseList(nextLine.replace(/^Next:\s*/i, '')) : [],
+      stats: testMatch
+        ? {
+            test_suites: Number.parseInt(testMatch[1], 10) || 0,
+            tests_passed: Number.parseInt(testMatch[2], 10) || 0,
+          }
+        : {},
+      source: 'context-snapshot',
+      source_path: snapshotPath,
+      timestamp: new Date().toISOString(),
+    };
+  } catch {
+    return {
+      session: fallbackSession || 0,
+      mode: 'PTY',
+      completed: [],
+      roadmap: [],
+      not_yet_done: [],
+      stats: {},
+      source: 'ledger-session',
+      timestamp: new Date().toISOString(),
+    };
+  }
+}
+
+function syncSessionToLedger(sessionNum) {
+  const snapshotContext = buildLedgerSnapshotContext(Number.parseInt(sessionNum, 10));
+  const num = Number.parseInt(snapshotContext.session, 10);
+
+  if (!Number.isInteger(num) || num <= 0) {
+    return;
+  }
+
+  const sessionId = `s_${num}`;
+  queryLedger('session-start', [
+    '--number', String(num),
+    '--mode', String(snapshotContext.mode || 'PTY'),
+    '--session', sessionId,
+  ]);
+
+  queryLedger('snapshot', [
+    '--session', sessionId,
+    '--trigger', 'session_end',
+    '--content-json', JSON.stringify(snapshotContext),
+  ]);
 }
 
 async function handleEvent() {
-  const intent = readIntent();
-
   switch (EVENT) {
-    case 'SessionStart':
-      intent.session = getSessionNumber() || intent.session;
-      intent.intent = 'Initializing session...';
-      writeIntent(intent);
-      break;
-
-    case 'SessionEnd':
-      intent.intent = 'Idle';
-      intent.active_files = [];
-      writeIntent(intent);
-      break;
-
-    case 'AfterTool': {
-      let input = '';
-      process.stdin.on('data', chunk => { input += chunk; });
-      process.stdin.on('end', () => {
-        try {
-          const data = JSON.parse(input);
-          const args = data.arguments || {};
-
-          let fileAffected = null;
-          if (args.file_path) fileAffected = args.file_path;
-          else if (args.path) fileAffected = args.path;
-
-          if (fileAffected) {
-            const normalized = path.relative(PROJECT_ROOT, path.resolve(fileAffected)).replace(/\\/g, '/');
-            if (!intent.active_files.includes(normalized)) {
-              intent.active_files.push(normalized);
-              if (intent.active_files.length > 3) intent.active_files.shift();
-              writeIntent(intent);
-            }
-          }
-        } catch {
-          // Ignore parse errors
-        }
-      });
+    case 'SessionStart': {
+      const sessionNum = getSessionNumber();
+      if (sessionNum > 0) {
+        queryLedger('session-start', [
+          '--number', String(sessionNum),
+          '--mode', 'PTY',
+          '--session', `s_${sessionNum}`,
+        ]);
+      }
       break;
     }
+
+    case 'SessionEnd':
+      syncSessionToLedger(getSessionNumber());
+      break;
+
+    case 'AfterTool':
+      // Intent-file tracking removed. Hook retained for compatibility.
+      break;
+
+    default:
+      break;
   }
 }
 

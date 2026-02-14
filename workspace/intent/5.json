@@ -1,9 +1,0 @@
-{
-  "session": 123,
-  "role": "analyst",
-  "intent": "Initializing session...",
-  "status": "waiting_assignment",
-  "last_action": "Received ARCH #8 FYI: spec v0.3-final signed, Phase 0 complete, Phase 1 delegated, schema updates noted (session TEXT, claim_evidence.added_by, decisions.decided_by, normalized belief_contradictions).",
-  "pane": "5",
-  "last_update": "2026-02-13T21:49:20.625Z"
-}

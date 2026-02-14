@@ -61,10 +61,9 @@ Every agent, every model, every pane follows this structure:
 1. Read `workspace/app-status.json` — runtime state
 2. Read latest context snapshot (`.hivemind/context-snapshots/1.md`, fallback `workspace/context-snapshots/1.md`)
 3. Glance at `workspace/build/blockers.md` and `errors.md` — active counts only
-4. Read intent files — `workspace/intent/1.json`, `2.json`, `5.json`
-5. Update YOUR intent file with current session and status
-6. Message Architect via hm-send.js: online status + active blocker/error count
-7. **STOP. Wait for Architect to assign work.**
+4. Verify auto-injected context (sourced from Evidence Ledger + Team Memory DB)
+5. Message Architect via hm-send.js: online status + active blocker/error count
+6. **STOP. Wait for Architect to assign work.**
 
 ### What NOT to do on startup
 - DO NOT read `shared_context.md` or `status.md` during startup triage
