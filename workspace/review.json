@@ -3,19 +3,20 @@
   "review": {
     "reviewer": "Analyst",
     "model": "gemini-2.5-pro",
-    "author": "DevOps + Architect",
-    "author_model": "codex-gpt-5.3 + claude-opus-4-6",
+    "author": "DevOps",
+    "author_model": "codex",
     "change_type": "architectural",
     "result": "approved",
     "findings": [
-      "Task 1 (Event Pipe): DevOps dual-write in team-memory appendPatternHookEvent mirrors pattern events to ledger_events. 6 suites/29 tests pass.",
-      "Task 2 (Timestamps): evidence-ledger-memory.js and evidence-ledger-investigator.js now treat null/undefined/blank as fallback to Date.now(). 17 tests pass.",
-      "Task 3 (Worker Lifecycle): Handler re-setup passes re-register flag, evidence-ledger unregister skips closeSharedRuntime during re-setup. 7 tests pass.",
-      "Tasks 4+6+7 (Docs): 15+ config/doc files fixed — hardcoded model-to-role mappings removed, stale SDK refs updated, Investigator→Analyst nomenclature synced.",
-      "Cross-model verified: Ana (Gemini) confirmed DevOps (Codex) code fixes via BACKEND VERIFIED Level 1. Full test suite 141/141, 3232 tests pass."
+      "Chunk 1: activity/usage/message-state rewired through resolveCoordPath. Backup include paths coord-root-aware.",
+      "Chunk 2: Legacy fallback warning telemetry verified — warns once per file when workspace/ used while .hivemind/ exists.",
+      "Chunk 3: ROLES.md canonical role source verified. CLAUDE.md/GEMINI.md/CODEX.md are thin quirk-only shims.",
+      "Chunk 4: All 10 tracked instance files deleted. Empty dirs locked by running processes — cleared on restart.",
+      "Chunk 5: Integration guard test prevents coordination path joins escaping resolveCoordPath wrappers.",
+      "Cross-model: Ana (Gemini) reviewed all 5 DevOps (Codex) chunks. 3235/3235 tests green."
     ],
     "tests_touched": true,
-    "timestamp": "2026-02-14T09:45:00.000Z"
+    "timestamp": "2026-02-14T11:30:00.000Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
