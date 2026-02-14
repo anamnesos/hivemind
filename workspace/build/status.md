@@ -1,27 +1,69 @@
 # Build Status
 
-Last updated: 2026-02-12
-
-**For older sessions (1-69):** See `status-archive.md`
+Last updated: 2026-02-14
 
 ## Triage Snapshot
-- Last Updated: 2026-02-13 (local)
+- Last Updated: 2026-02-14
 - Active Priorities: 2
-- Focus: Roadmap items (Team Memory + Experiments shipped)
+- Focus: Transition Objects, GitHub/VSCode integration
 
 ---
 
 ## Current Priorities (Max 5)
 
-- **PRI-002: Team Memory Runtime** — SHIPPED S123 (bd54e81). All 6 phases complete.
-- **PRI-003: Experiment Engine** — SHIPPED S123 (8fa5872). Phase 6a-6d complete.
 - **PRI-001: Transition Objects** — Spec formalized. Implementation review pending.
 - **GitHub/VSCode integration** — Transition Ledger → PR logic. Discussed, not specced.
-- **SDK future rebuild** — Separate project folder, clean-slate. No timeline.
+- **PRI-002: Team Memory Runtime** — SHIPPED S123. Event pipe wired S126. DONE.
+- **PRI-003: Experiment Engine** — SHIPPED S123. Phase 6a-6d complete. DONE.
+- **Workspace simplification** — DONE S127. Phases 1-5 committed. S128: full workspace cleanup.
 
 ---
 
 ## Session History
+
+### Session 126 - Memory System Wiring + Documentation Purge (Feb 14, 2026)
+
+| Task | Owner | Status |
+|------|-------|--------|
+| Fix Evidence Ledger event pipe (dual-write to ledger_events) | DevOps | DONE |
+| Fix timestamp coercion (asMs() null→0 bug) | DevOps | DONE |
+| Fix worker lifecycle (IPC re-setup kills worker) | DevOps | DONE |
+| Audit all config files (CLAUDE.md, AGENTS.md, GEMINI.md) | Ana | DONE |
+| Verify end-to-end memory flow | Ana | DONE (BACKEND VERIFIED Level 1) |
+| Fix all config/doc violations from audit | Architect | DONE |
+| Audit ALL markdown docs for conflicts/stale refs | Ana | DONE |
+| Apply all markdown audit fixes | Architect | DONE |
+
+**Commits:** `e67182d`, `ee25116`
+**Test suite:** 141 suites, **3232 tests** (all passing)
+
+**Key accomplishments:**
+- Memory system event pipe finally wired — pattern events now dual-write to Evidence Ledger
+- Timestamp coercion fixed — null/undefined falls back to Date.now() instead of epoch 0
+- Worker lifecycle fixed — IPC re-setup no longer kills Evidence Ledger worker
+- 15+ config/doc files cleaned: hardcoded model-to-role mappings purged everywhere
+- Root GEMINI.md rewritten to be role-generic (identity from instance config)
+- Investigator→Analyst nomenclature synced across all active specs
+- Created missing arch/AGENTS.md
+- Deprecated multi-model-sdk-spec.md (SDK purged S123)
+
+**Needs restart to verify at runtime:** Event pipe dual-write, startup injection fix
+
+---
+
+### Session 125 - Startup Injection Fix + Evidence Ledger Snapshot Fix (Feb 14, 2026)
+
+| Task | Owner | Status |
+|------|-------|--------|
+| Fix startup injection (sendToPane+sendTrustedEnter) | DevOps | DONE |
+| Fix SessionStart hook crash (defensive checks) | Architect | DONE |
+| Fix Evidence Ledger stale snapshot | Architect | DONE |
+| Agent codebase access (CODEBASE PATHS sections) | Architect | DONE |
+| Ana tool failure noise (rg exit code 1 exception) | Architect | DONE |
+
+**Commits:** `8e9e382`, `5f38819`, `9a1f435`, `84e555d`, `309f215`
+
+---
 
 ### Session 123 - SDK Purge + Team Memory Runtime + Experiment Engine (Feb 13, 2026)
 
@@ -425,10 +467,6 @@ Last updated: 2026-02-12
 ---
 
 ## Backlog
-
-### Delete stale workspace/instances/infra/ directory
-- **Priority:** LOW
-- **Status:** Blocked — directory locked by running Pane 2 agent. Clean up after next restart.
 
 ### Runtime verification of 3-pane UI
 - **Priority:** MEDIUM

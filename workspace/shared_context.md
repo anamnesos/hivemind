@@ -93,7 +93,6 @@ node D:/projects/hivemind/ui/scripts/hm-send.js <target> "(ROLE #N): message"
 - Active blockers: `workspace/build/blockers.md`
 - Active errors: `workspace/build/errors.md`
 - Event kernel spec: `docs/event-kernel-spec.md`
-- Session handoff: `workspace/session-handoff.json`
 
 ---
 
