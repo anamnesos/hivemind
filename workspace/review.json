@@ -3,24 +3,19 @@
   "review": {
     "reviewer": "Reviewer",
     "model": "claude-opus-4-6",
-    "author": "DevOps + Frontend",
-    "author_model": "codex + claude-opus-4-6",
-    "change_type": "architectural",
+    "author": "DevOps",
+    "author_model": "codex",
+    "change_type": "routine",
     "result": "approved",
     "findings": [
-      "P0: enableMode/disableMode lifecycle is clean — mount/unmount organic UI, hide/restore PTY layout, start/stop sessions. Startup path reuses same pattern. No split-brain.",
-      "P1: Delivery truthfulness check (result===true || result?.success===true) handles both legacy boolean and new object shapes. Failed state shows reason. Consistent across daemon-handlers, broadcast, targeted send.",
-      "P2: sdk-renderer.appendMessage now returns messageId (line 589). sdk-handlers broadcast returns real sdkBridge.broadcast() result instead of hardcoded true.",
-      "P3.1: Double-render guard at renderer.js:2003 (if !organicUIInstance) prevents SDK responses from rendering in both organic UI and sdk-renderer. Note: user-input messages at lines 1242/1281 still write to both — acceptable since sdk-renderer containers are invisible when organic UI is mounted.",
-      "P3.2: DOM retention cap MAX_MESSAGES_PER_PANE=200 in sdk-renderer.js. Oldest messages removed via while loop. Edge case: worst-case 201 before trim, acceptable.",
-      "P4.1-4.4: 3-agent layout correct (2x2 grid, Architect spans top). Bubble UI with avatars, colors, timestamps, slide-in. Responsive at 1200/800/500px breakpoints. Agent SVG icons in colored badges.",
-      "P4.5: Stale '4 Claude sessions' replaced with '3 agent sessions' in index.html lines 92 and 98.",
-      "PTY mode: No regression — all organic UI code gated behind organicUIInstance/sdkMode checks.",
-      "Tests: 130 suites, 3443 tests all passing. organic-ui.test.js covers agent config, state updates, text display, war room messages, visibility, responsive layout structure.",
-      "Minor note: AGENT_CONFIG hardcodes 3 agents — if PANE_IDS changes in config.js, organic-ui.js needs manual sync. Acceptable for now."
+      "A) Heartbeat dead code cleanup: roleHeartbeats/paneHeartbeats maps, touchHeartbeat, clearHeartbeatForClient, heartbeat handler all removed from websocket-runtime.js. markClientSeen retained for client lastSeen tracking. External callers cleaned: comms-worker-client, comms-worker, websocket-server, hm-send. Grep audit confirms zero remaining references.",
+      "B) Teardown bug fix: unregisterTeamMemoryHandlers no longer calls closeTeamMemoryRuntime. Runtime close only runs during app shutdown. Correct separation of concerns.",
+      "B) Sweep startup: All 3 sweeps (integrity, belief, pattern) changed from immediate:false to immediate:true. Sweep functions guard on options.immediate !== false, so this fires first run on startup.",
+      "Minor: hm-send.test.js has 6 dead heartbeat mock handlers — harmless, opportunistic cleanup.",
+      "141 suites, 3222 tests all passing."
     ],
-    "tests_touched": true,
-    "timestamp": "2026-02-13T10:25:00.000Z"
+    "tests_touched": false,
+    "timestamp": "2026-02-14T02:50:00.000Z"
   },
   "_docs": {
     "change_type": "routine | architectural | state | concurrency | recovery",
