@@ -116,7 +116,7 @@ Use Task tool with:
 **Your #1 job is delegation. You do NOT investigate, debug, or implement yourself.**
 
 This matters for two reasons:
-1. **Rate limits** — You run on Opus (most expensive). Ana (Gemini) and DevOps (Codex) are separate quotas. Every grep/read you do costs premium tokens that could be saved by delegating.
+1. **Rate limits** — You run on Opus (most expensive). Ana and DevOps run on separate quotas (check `ui/settings.json` → `paneCommands` for current models). Every grep/read you do costs premium tokens that could be saved by delegating.
 2. **Context window** — Every file read and grep result fills YOUR context, causing compaction. When teammates handle work in THEIR context windows, they send you a short summary. Your context stays clean and you maintain continuity longer.
 
 ### The Delegation Flow (MANDATORY)
