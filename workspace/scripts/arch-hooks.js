@@ -85,9 +85,10 @@ function readAllIntents() {
     const intent = readIntent(path.join(INTENT_DIR, `${p}.json`));
     if (intent) {
       const stale = intent.session < getSessionNumber() ? ' [STALE]' : '';
-      lines.push(`Pane ${p} (${intent.role}${stale}): ${intent.intent} | Files: ${intent.active_files.length > 0 ? intent.active_files.join(', ') : 'none'} | Blockers: ${intent.blockers}`);
+      const files = Array.isArray(intent.active_files) && intent.active_files.length > 0 ? intent.active_files.join(', ') : 'none';
+      lines.push(`Pane ${p} (${intent.role || roles[p]}${stale}): ${intent.intent || 'unknown'} | Files: ${files} | Blockers: ${intent.blockers || 'none'}`);
       if (intent.teammates) lines.push(`  Teammates: ${intent.teammates}`);
-      if (intent.last_findings) lines.push(`  Findings: ${intent.last_findings}`);
+      if (intent.last_findings || intent.last_action) lines.push(`  Findings: ${intent.last_findings || intent.last_action}`);
     } else {
       lines.push(`Pane ${p} (${roles[p]}): No intent file found`);
     }
@@ -110,6 +111,15 @@ function queryLedger(command, args = []) {
     });
     return JSON.parse(result);
   } catch (e) {
+    // hm-memory.js exits with code 1 for {ok: false} results (e.g., conflict on session-start).
+    // Try to parse stdout — the JSON result may still be useful.
+    const stdout = e.stdout ? e.stdout.toString().trim() : '';
+    if (stdout) {
+      try {
+        return JSON.parse(stdout);
+      } catch {}
+    }
+    process.stderr.write(`[arch-hooks] queryLedger(${command}) FAILED: ${e.message.slice(0, 100)}\n`);
     return null;
   }
 }
@@ -188,31 +198,41 @@ function formatLedgerContext(ctx, teamState) {
  * Ensures the session exists first, then saves a context snapshot.
  */
 function syncSessionToLedger(sessionNum) {
-  if (!acquireLock()) return;
+  if (!acquireLock()) {
+    process.stderr.write(`[arch-hooks] syncSessionToLedger: failed to acquire lock\n`);
+    return;
+  }
   try {
     const handoff = JSON.parse(fs.readFileSync(HANDOFF_FILE, 'utf8'));
     releaseLock();
-    
+
     const num = sessionNum || handoff.session || 0;
-    if (num <= 0) return;
+    if (num <= 0) {
+      process.stderr.write(`[arch-hooks] syncSessionToLedger: invalid session num ${num}\n`);
+      return;
+    }
     const sessionId = `s_${num}`;
 
     // Ensure session exists in ledger (ignore conflict if already registered)
-    queryLedger('session-start', [
+    const startResult = queryLedger('session-start', [
       '--number', String(num),
       '--mode', String(handoff.mode || 'PTY'),
       '--session', sessionId,
     ]);
+    process.stderr.write(`[arch-hooks] session-start(${sessionId}): ${JSON.stringify(startResult)}\n`);
 
     // Snapshot the full session state
-    queryLedger('snapshot', [
+    const contentJson = JSON.stringify(handoff);
+    process.stderr.write(`[arch-hooks] snapshot content length: ${contentJson.length}\n`);
+    const snapResult = queryLedger('snapshot', [
       '--session', sessionId,
       '--trigger', 'session_end',
-      '--content-json', JSON.stringify(handoff),
+      '--content-json', contentJson,
     ]);
+    process.stderr.write(`[arch-hooks] snapshot(${sessionId}): ${JSON.stringify(snapResult)}\n`);
   } catch (e) {
     releaseLock();
-    // Non-critical — don't block session lifecycle
+    process.stderr.write(`[arch-hooks] syncSessionToLedger error: ${e.message}\n`);
   }
 }
 
