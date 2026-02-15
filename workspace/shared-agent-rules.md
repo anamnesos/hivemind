@@ -14,9 +14,9 @@ node D:/projects/hivemind/ui/scripts/hm-send.js <target> "(ROLE #N): Your messag
 
 | Target | Reaches |
 |--------|---------|
-| `architect` | Pane 1 (Architect) |
-| `devops` | Pane 2 (DevOps) |
-| `analyst` | Pane 5 (Analyst) |
+| `architect` | Pane 1 (Architect / Director) |
+| `builder` | Pane 2 (Builder) |
+| `oracle` | Pane 5 (Oracle) |
 
 ### Rules
 - **hm-send.js is the ONLY way to message other agents.** Terminal output is visible ONLY to the user glancing at your pane — other agents cannot see it.
@@ -97,7 +97,7 @@ Pane 1 has **Agent Teams** (Claude-only feature). Architect spawns internal team
 ## 6. Source Code Rules
 
 - **Read your role-specific CLAUDE.md/GEMINI.md/AGENTS.md** for what files you can edit
-- **Analyst is READ-ONLY** — investigates, never edits source code
+- **Oracle is READ-ONLY** — investigates, never edits source code
 - **All code changes go through Reviewer** before commit
 - **Cross-model review required** for non-routine changes (architectural, state, concurrency)
 
