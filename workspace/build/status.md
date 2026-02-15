@@ -1,25 +1,69 @@
 # Build Status
 
-Last updated: 2026-02-14
+Last updated: 2026-02-15
 
 ## Triage Snapshot
-- Last Updated: 2026-02-14
-- Active Priorities: 2
-- Focus: Transition Objects, GitHub/VSCode integration
+- Last Updated: 2026-02-15
+- Active Priorities: 0
+- Focus: All current priorities complete
 
 ---
 
 ## Current Priorities (Max 5)
 
-- **PRI-001: Transition Objects** — Spec formalized. Implementation review pending.
-- **GitHub/VSCode integration** — Transition Ledger → PR logic. Discussed, not specced.
+- **PRI-001: Transition Objects** — DONE S139. 7 spec fixes, observability layer, IPC+CLI.
+- **GitHub integration** — DONE S139. hm-github.js CLI, auto-PR body from Transition Ledger + git log. Commits: 61d718e, 1e1d506.
+- **Colors-follow-model** — DONE. CSS vars driven by data-cli attribute (Claude=orange, Codex=cyan, Gemini=purple).
 - **PRI-002: Team Memory Runtime** — SHIPPED S123. Event pipe wired S126. DONE.
 - **PRI-003: Experiment Engine** — SHIPPED S123. Phase 6a-6d complete. DONE.
-- **Workspace simplification** — DONE S127. Phases 1-5 committed. S128: full workspace cleanup.
 
 ---
 
 ## Session History
+
+### Session 139 - Transition Objects Complete + Pane Control + Screenshots (Feb 14, 2026)
+
+| Task | Owner | Status |
+|------|-------|--------|
+| Codex injection fix (raw PTY Enter for submit) | DevOps | DONE |
+| Transition Ledger spec audit (7 deviations found) | Ana | DONE |
+| Transition Ledger 7 spec fixes (FIX-1..FIX-7) | DevOps | DONE |
+| Re-verify all 7 fixes against spec | Ana | DONE |
+| Observability layer (IPC handlers + hm-transition.js CLI) | DevOps | DONE |
+| Pane control service + hm-pane.js CLI (enter, interrupt, restart, nudge) | DevOps | DONE |
+| Programmatic screenshot capture + hm-screenshot.js CLI | DevOps | DONE |
+
+**Commits:** `d68d179`, `31304b7`, `d854eb2`, `f310ae2`
+**Test suite:** 143 suites, 2715 tests (all passing)
+
+**Key accomplishments:**
+- PRI-001 Transition Objects CLOSED — all 7 spec deviations fixed (causationId, REQUIRED_FIELDS, NONE classification, risked_pass, timed_out, pruning skip-open, getByCorrelation includeClosed)
+- Codex injection fixed — sendTrustedEnter (focus-based) replaced with raw PTY Enter for Codex panes
+- Transition Ledger observability: 4 IPC channels (list, get-by-id, get-by-correlation, get-stats) + hm-transition.js CLI
+- hm-pane.js: remote pane button control with model-aware submit (Claude=sendTrustedEnter, Codex=raw PTY)
+- hm-screenshot.js: programmatic screenshot capture (full window or per-pane region via Electron capturePage)
+- Needs restart to activate: pane control + screenshot features use IPC/WebSocket through running app
+
+---
+
+### Session 131 - S130 Verification + WS Dedup Fix (Feb 14, 2026)
+
+| Task | Owner | Status |
+|------|-------|--------|
+| Verify S130 fixes at runtime (3 commits) | Ana | DONE |
+| Diagnose duplicate "Analyst online" messages | DevOps | DONE |
+| Server-side WS reconnect dedup (signature hash, 15s TTL) | DevOps | DONE |
+
+**Commits:** `12d86e3`
+**Test suite:** 137 suites, 2753 tests (all passing)
+
+**Key accomplishments:**
+- All 3 S130 fixes verified working: UTC→local date coercion, ACK timeout alignment, explicit failure delivery outcome
+- Diagnosed duplicate agent messages: WS reconnect path re-sent payloads with new messageIds
+- Fixed with server-side content-based signature dedup (SHA-1 of sender/target/content, 15s TTL)
+- Pending-signature handling collapses in-flight duplicates during routing
+
+---
 
 ### Session 126 - Memory System Wiring + Documentation Purge (Feb 14, 2026)
 
