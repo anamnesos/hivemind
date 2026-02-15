@@ -58,8 +58,8 @@ This includes:
 
 Every agent, every model, every pane follows this structure:
 
-1. Read `workspace/app-status.json` — runtime state
-2. Read latest context snapshot (`.hivemind/context-snapshots/1.md`, fallback `workspace/context-snapshots/1.md`)
+1. Read `.hivemind/app-status.json` — runtime state (fallback `workspace/app-status.json`)
+2. Read latest context snapshot (`.hivemind/context-snapshots/1.md`)
 3. Glance at `workspace/build/blockers.md` and `errors.md` — active counts only
 4. Verify auto-injected context (sourced from Evidence Ledger + Team Memory DB)
 5. Message Architect via hm-send.js: online status + active blocker/error count
