@@ -31,7 +31,7 @@ describe('hm-sms', () => {
   });
 
   test('parseMessage joins argument tokens', () => {
-    expect(hmSms.parseMessage(['Hey', 'James,', 'build', 'passed!'])).toBe('Hey James, build passed!');
+    expect(hmSms.parseMessage(['Hey,', 'build', 'passed!'])).toBe('Hey, build passed!');
   });
 
   test('getMissingConfigKeys reports required env vars', () => {
