@@ -138,7 +138,7 @@ Last updated: 2026-02-14
 **Test suite:** 127 suites / 3412 tests (all passing)
 
 **Key decisions:**
-- Evidence Ledger wired into arch-hooks.js: SessionStart reads context from ledger (Priority 1), falls back to Electron snapshot (P2), then intents (P3). SessionEnd + PreCompact auto-snapshot session-handoff.json to ledger.
+- Evidence Ledger wired into arch-hooks.js: SessionStart reads context from ledger (Priority 1), falls back to Electron snapshot (P2). SessionEnd + PreCompact auto-snapshot to ledger.
 - No manual restart handoff prep needed — hook handles it automatically.
 - Colors-follow-model needs comprehensive implementation (all color elements, not just header border) — deferred to Frontend teammate.
 - Startup injection regression traced to `fa868e7` (S120 memory leak fix) — fixed with `isProcessRunning(pid)` + reattach arming for pane 1.
@@ -332,7 +332,7 @@ Last updated: 2026-02-14
 | Task | Owner | Status |
 |------|-------|--------|
 | Shared Intent Board protocol (3 CLAUDE.md files) | Architect | ✅ DONE |
-| Intent seed files (workspace/intent/*.json) | Architect | ✅ DONE |
+| Intent seed files (workspace/intent/*.json) | Architect | ✅ DONE → REMOVED S129 |
 | Gemini CLI hooks (ana-hooks.js) | Analyst | ✅ DONE |
 | Claude Code hooks (arch-hooks.js) | Architect | ✅ DONE |
 | Agent capabilities reference doc | All 3 agents | ✅ DONE |
