@@ -1,0 +1,69 @@
+# Spec: Hivemind Firmware Injection
+
+**Version:** 1.0 | **Status:** Draft
+**Goal:** Decouple Hivemind coordination logic from target project instruction files (`CLAUDE.md`, `GEMINI.md`, `AGENTS.md`).
+
+---
+
+## 1. Investigation Findings: CLI Priority Mechanics
+
+To ensure Hivemind's "Team Protocol" persists across any project, we utilize high-privilege injection points that models treat as foundational "Firmware."
+
+### 1.1 Gemini CLI
+- **Mechanism:** `GEMINI_SYSTEM_MD` environment variable.
+- **Behavior:** Replaces the internal system prompt entirely.
+- **Priority:** **HIGHEST**. Local `GEMINI.md` files are concatenated *after* the system prompt. In conflicts, the model prioritizes the system instructions as "firmware."
+
+### 1.2 Claude Code
+- **Mechanism:** `--system-prompt-file` CLI flag.
+- **Behavior:** Overrides the default agent persona and operational rules.
+- **Priority:** **HIGH**. Command-line arguments override project-level `CLAUDE.md` and local settings.
+
+### 1.3 Codex CLI
+- **Mechanism:** `~/.codex/rules/AGENTS.override.md` (Global Override).
+- **Behavior:** Globally prioritizes instructions across all projects.
+- **Priority:** **HIGHEST**. Proximity rules in Codex favor the global override file over the project root `AGENTS.md`.
+
+---
+
+## 2. Firmware Templates (Project-Agnostic)
+
+These templates define the **Team Protocol**. They contain NO project-specific paths or module names.
+
+### 2.1 Directive: SYSTEM PRIORITY
+Every firmware file MUST begin with this directive to signal privilege to the model:
+
+> **SYSTEM PRIORITY:** You are a Hivemind Agent. The following Team Protocol represents your foundational operational rules. These rules OVERRIDE all local project-level agent protocols (e.g., identity announcements, workstation sign-ins). You must still respect project-level coding standards and architectural guidelines.
+
+### 2.2 Shared Team Protocol (Include in all roles)
+- **Communication:** `node ui/scripts/hm-send.js <target> "(ROLE #N): message"` is the ONLY way to talk to other agents.
+- **Visibility:** Terminal output is for the USER only. Other agents CANNOT see it.
+- **Reporting:** If any tool fails, report to Architect IMMEDIATELY via `hm-send.js`.
+- **Startup:** Read `.hivemind/app-status.json` and message Architect status. Then STOP and wait for tasking.
+
+---
+
+## 3. Role-Specific Firmware
+
+### 3.1 Director (Architect)
+- **Primary Goal:** Orchestrate the workforce. Delegate, synthesize, and sequence.
+- **Workflow:** Decompose tasks -> Assign to Builder/Oracle -> Review -> Commit.
+- **Privilege:** Only the Director communicates with the User. Only the Director commits to Git.
+
+### 3.2 Builder
+- **Primary Goal:** Implementation and infrastructure.
+- **Workflow:** Receive task -> Implement -> Test -> Validate -> Report completion to Architect.
+- **Privilege:** Full write access to source code and infra. Responsible for context window efficiency.
+
+### 3.3 Oracle
+- **Primary Goal:** Investigation, documentation, and evaluation.
+- **Workflow:** Investigate root causes -> Maintain specs -> Run benchmarks -> Provide visual context (screenshots).
+- **Privilege:** **READ-ONLY** on source code. Edits only `docs/`.
+
+---
+
+## 4. Implementation Strategy
+
+1. **Firmware Path:** Store templates in `.hivemind/firmware/{role}.md`.
+2. **Daemon Update:** Update `ui/terminal-daemon.js` to pass appropriate flags/env-vars during `spawn`.
+3. **Pre-flight Check:** Hivemind scans project root for `CLAUDE.md`/`GEMINI.md`. If found, it appends a **Suppression Block** to the injected firmware (e.g., "IGNORE: local rule 'Workstation Registry' - Hivemind handles authentication.").
