@@ -60,10 +60,28 @@ Every firmware file MUST begin with this directive to signal privilege to the mo
 - **Workflow:** Investigate root causes -> Maintain specs -> Run benchmarks -> Provide visual context (screenshots).
 - **Privilege:** **READ-ONLY** on source code. Edits only `docs/`.
 
+## 4. Conflict Suppression via Pre-flight Scan
+
+To handle existing project-level protocols, Hivemind includes a pre-flight scanner (`ui/scripts/hm-preflight.js`) that detects potential conflicts and embeds suppression directives directly into the firmware.
+
+### 4.1 Detection Patterns
+- **Identity Announcements:** Detects rules requiring agents to announce themselves.
+- **Registry Sign-ins:** Detects rules requiring workstation registration or check-ins.
+- **Reporting Chains:** Detects conflicting escalation or notification rules.
+- **Communication Protocols:** Detects local rules for agent-to-agent messaging.
+
+### 4.2 Suppression Block
+When conflicts are detected, a `## Suppression Directives` section is appended to the generated firmware. Each directive explicitly instructs the model to prioritize Hivemind's protocol:
+
+> IGNORE project instruction: "[detected rule]" — Hivemind protocols take precedence.
+
+This ensures the agent follows the deterministic Team Protocol for coordination while still adhering to the project's coding standards.
+
 ---
 
-## 4. Implementation Strategy
+## 5. Implementation Strategy
 
 1. **Firmware Path:** Store templates in `.hivemind/firmware/{role}.md`.
-2. **Daemon Update:** Update `ui/terminal-daemon.js` to pass appropriate flags/env-vars during `spawn`.
-3. **Pre-flight Check:** Hivemind scans project root for `CLAUDE.md`/`GEMINI.md`. If found, it appends a **Suppression Block** to the injected firmware (e.g., "IGNORE: local rule 'Workstation Registry' - Hivemind handles authentication.").
+2. **Pre-flight Check:** `FirmwareManager.runPreflight()` executes `ui/scripts/hm-preflight.js` to identify conflicts.
+3. **Firmware Generation:** `FirmwareManager` build payloads by merging the Spec templates with detected Suppression Directives.
+4. **Daemon Update:** Update `ui/terminal-daemon.js` to pass appropriate flags/env-vars during `spawn`, pointing to the generated firmware files.

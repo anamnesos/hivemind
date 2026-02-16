@@ -2,11 +2,11 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
-const PROJECT_ROOT = 'D:/projects/hivemind';
+const PROJECT_ROOT = path.resolve(__dirname, '..', '..');
 const COORD_ROOT = path.join(PROJECT_ROOT, '.hivemind');
 const LEGACY_WORKSPACE_ROOT = path.join(PROJECT_ROOT, 'workspace');
 const EVIDENCE_LEDGER_DB_PATH = path.join(PROJECT_ROOT, 'workspace', 'runtime', 'evidence-ledger.db');
-const HM_MEMORY_SCRIPT = 'D:/projects/hivemind/ui/scripts/hm-memory.js';
+const HM_MEMORY_SCRIPT = path.join(PROJECT_ROOT, 'ui', 'scripts', 'hm-memory.js');
 const EVENT = process.argv[2];
 
 let DatabaseSync = null;
