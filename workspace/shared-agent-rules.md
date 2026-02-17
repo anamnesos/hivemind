@@ -58,10 +58,10 @@ This includes:
 
 Every agent, every model, every pane follows this structure:
 
-1. Read `.hivemind/app-status.json` — runtime state (fallback `workspace/app-status.json`)
-2. Read latest context snapshot (`.hivemind/context-snapshots/1.md`)
+1. Read session handoff index at `workspace/handoffs/session.md` (auto-materialized from `comms_journal`)
+2. Read `.hivemind/app-status.json` — runtime state (fallback `workspace/app-status.json`)
 3. Glance at `workspace/build/blockers.md` and `errors.md` — active counts only
-4. Verify auto-injected context (sourced from Evidence Ledger + Team Memory DB)
+4. **Architect only:** Await the automated **Startup Briefing** (summarizes Comm Journal, open Tasks, unresolved Claims)
 5. Message Architect via hm-send.js: online status + active blocker/error count
 6. **STOP. Wait for Architect to assign work.**
 
