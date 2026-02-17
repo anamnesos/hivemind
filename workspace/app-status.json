@@ -1,9 +1,13 @@
 {
-  "started": "2026-02-13T17:49:59.811Z",
+  "started": "2026-02-17T06:15:00.000Z",
+  "mode": "pty",
   "dryRun": false,
   "autoSpawn": true,
   "version": "0.1.0",
   "platform": "win32",
   "nodeVersion": "v18.18.2",
-  "lastUpdated": "2026-02-13T17:49:59.811Z"
+  "lastUpdated": "2026-02-17T07:30:00.000Z",
+  "session": 158,
+  "sessionSource": "daemon",
+  "note": "S158: Enter fix (b252d6e), developer mode CWD leak + firmware preflight fix (1304596), P1/P2 project mode improvements pending commit"
 }
