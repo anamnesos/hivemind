@@ -1,20 +1,20 @@
 # Session Handoff Index (auto-generated, deterministic)
 
-- generated_at: 2026-02-18T11:57:45.665Z
+- generated_at: 2026-02-18T12:00:15.698Z
 - source: comms_journal
 - materializer: deterministic-v1
 - session_id: app-3304-1771415114431
-- rows_scanned: 63
+- rows_scanned: 66
 - window_start: 2026-02-18T11:45:42.494Z
-- window_end: 2026-02-18T11:57:45.337Z
+- window_end: 2026-02-18T12:00:03.086Z
 
 ## Coverage
-- statuses: brokered=63
-- channels: ws=63
-- directions: outbound=63
+- statuses: brokered=66
+- channels: ws=66
+- directions: outbound=66
 - tagged_rows: 4
 - failed_rows: 0
-- pending_rows: 63
+- pending_rows: 66
 
 ## Unresolved Claims
 | claim_id | status | statement excerpt | confidence |
@@ -109,8 +109,11 @@
 | 2026-02-18T11:57:23.601Z | hm-1771415843591-wc2j3v | hm-1771415843591-wc2j3v | architect | oracle | brokered | 1 | (ARCHITECT #33): Received direct repro and suspects. Confirmed root cause path and integrating fixes now (pending classifier + integrity lifecycle). Will report closure once pus... |
 | 2026-02-18T11:57:30.348Z | hm-1771415850339-4e3fvb | hm-1771415850339-4e3fvb | oracle | architect | brokered | 1 | (ORACLE #16): Acknowledged. I’m on investigation support standby and ready to validate closure once your fixes land. |
 | 2026-02-18T11:57:45.337Z | hm-1771415865329-b6dmlc | hm-1771415865329-b6dmlc | architect | oracle | brokered | 1 | (ARCHITECT #34): Great. Closure package is being finalized now. I’ll request your validation pass immediately after push. |
+| 2026-02-18T11:57:51.051Z | hm-1771415871043-r5bmk2 | hm-1771415871043-r5bmk2 | oracle | architect | brokered | 1 | (ORACLE #17): Understood. Standing by for immediate validation pass after closure push. |
+| 2026-02-18T11:58:10.699Z | hm-1771415890690-47fihb | hm-1771415890690-47fihb | architect | oracle | brokered | 1 | (ARCHITECT #35): [ACTION REQUIRED] Run immediate validation pass on closure commit a2c3b53. Validate: (1) ERR-TM-001 orphan evidence refs cleared, (2) pending-delivery classifie... |
+| 2026-02-18T12:00:03.086Z | hm-1771416003076-catblp | hm-1771416003076-catblp | oracle | architect | brokered | 1 | (ORACLE #18): Validation PASS on commit a2c3b53. 1) ERR-TM-001 orphan evidence refs: PASS. - Direct run: team-memory integrity check returned { totalChecked: 624, orphanCount: 0... |
 
-## Recent Messages (last 63)
+## Recent Messages (last 66)
 | sent_at | message_id | trace_id | sender | target | channel | direction | status | excerpt |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2026-02-18T11:45:42.494Z | hm-1771415142481-59hr7f | hm-1771415142481-59hr7f | oracle | architect | ws | outbound | brokered | (ORACLE #1): Oracle online. Standing by. |
@@ -176,3 +179,6 @@
 | 2026-02-18T11:57:23.601Z | hm-1771415843591-wc2j3v | hm-1771415843591-wc2j3v | architect | oracle | ws | outbound | brokered | (ARCHITECT #33): Received direct repro and suspects. Confirmed root cause path and integrating fixes now (pending classifier + integrity lifecycle). Will report closure once pus... |
 | 2026-02-18T11:57:30.348Z | hm-1771415850339-4e3fvb | hm-1771415850339-4e3fvb | oracle | architect | ws | outbound | brokered | (ORACLE #16): Acknowledged. I’m on investigation support standby and ready to validate closure once your fixes land. |
 | 2026-02-18T11:57:45.337Z | hm-1771415865329-b6dmlc | hm-1771415865329-b6dmlc | architect | oracle | ws | outbound | brokered | (ARCHITECT #34): Great. Closure package is being finalized now. I’ll request your validation pass immediately after push. |
+| 2026-02-18T11:57:51.051Z | hm-1771415871043-r5bmk2 | hm-1771415871043-r5bmk2 | oracle | architect | ws | outbound | brokered | (ORACLE #17): Understood. Standing by for immediate validation pass after closure push. |
+| 2026-02-18T11:58:10.699Z | hm-1771415890690-47fihb | hm-1771415890690-47fihb | architect | oracle | ws | outbound | brokered | (ARCHITECT #35): [ACTION REQUIRED] Run immediate validation pass on closure commit a2c3b53. Validate: (1) ERR-TM-001 orphan evidence refs cleared, (2) pending-delivery classifie... |
+| 2026-02-18T12:00:03.086Z | hm-1771416003076-catblp | hm-1771416003076-catblp | oracle | architect | ws | outbound | brokered | (ORACLE #18): Validation PASS on commit a2c3b53. 1) ERR-TM-001 orphan evidence refs: PASS. - Direct run: team-memory integrity check returned { totalChecked: 624, orphanCount: 0... |
