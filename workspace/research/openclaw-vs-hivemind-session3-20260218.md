@@ -2,6 +2,7 @@
 
 > **Session:** 3 | **Date:** 2026-02-18 | **Agents:** Architect, Builder, Oracle (all three)
 > **Requested by:** James | **Purpose:** Full research on OpenClaw + honest head-to-head comparison with Hivemind
+> **Rev 2 corrections:** Factual errors identified by Windows-side team and corrected 2026-02-18
 
 ---
 
@@ -17,7 +18,7 @@
 8. [Security Comparison — Deep Dive](#8-security-comparison--deep-dive)
 9. [Hivemind Security Hardening Punch List](#9-hivemind-security-hardening-punch-list)
 10. [Value Differentiation & Strategic Positioning](#10-value-differentiation--strategic-positioning)
-11. [Roadmap: What Makes Hivemind Untouchable](#11-roadmap-what-makes-hivemind-untouchable)
+11. [Roadmap: Potential Differentiators](#11-roadmap-potential-differentiators-aspirational-not-proven)
 12. [Industry Data Supporting Our Direction](#12-industry-data-supporting-our-direction)
 13. [Key Positioning Statement](#13-key-positioning-statement)
 14. [Sources](#14-sources)
@@ -163,7 +164,7 @@ All credentials stored as plaintext files in `~/.openclaw/`:
 ## 6. Where OpenClaw Beats Hivemind
 
 ### 1. Scale of Engineering Systems
-- 1,270 test files vs our zero
+- 1,270 test files vs our 164 — meaningful coverage but still ~8x behind in scale
 - Multi-platform CI (Linux/Windows/macOS/iOS/Android) with coverage gates
 - Strict TypeScript throughout vs our plain JavaScript
 
@@ -200,14 +201,14 @@ All credentials stored as plaintext files in `~/.openclaw/`:
 - Comms journal pre-records every send attempt BEFORE delivery — guaranteed audit trail even on crash
 - OpenClaw's `sessions_send/list/history` is basic by comparison
 
-### 2. Team Memory (Genuinely Novel — No One Else Has This)
+### 2. Team Memory (Strong Differentiator — Architecturally Unique, Not Yet Proven at Scale)
 - Claim graph with consensus model (support/challenge/abstain per agent per claim)
 - Negative knowledge — what failed and why, queryable by scope
 - Contradiction detection across agent belief snapshots
 - Pattern detection (handoff loops, escalation spirals, stalls)
 - Memory-driven runtime guards
 - OpenClaw has persistent memory but it's vector-search based — no structured consensus, no negative knowledge, no claim lifecycle
-- 2026-02-13 research survey confirmed no existing system (LangGraph, CrewAI, AutoGen, OpenClaw, Mem0) combines these capabilities
+- 2026-02-13 research survey found no existing system combining all these capabilities — but this is an architectural advantage, not yet a proven operational one. Team Memory has been mostly empty in practice; the claim graph needs real-world usage data before competitive advantage claims are credible
 
 ### 3. Evidence-Based Decision Making
 - Every message, delivery, and agent action flows through a causal DAG with tamper-evident SHA-256 hashing
@@ -221,14 +222,15 @@ All credentials stored as plaintext files in `~/.openclaw/`:
 - Comms metrics (ack latency, dedupe hits) emitted from WebSocket runtime
 
 ### 5. Human Visibility
-- Three terminal panes, all visible, all real-time
-- No AI doing things behind your back at 3am
+- Agent coding work visible in three terminal panes in real-time
+- Background workers, Telegram/SMS pollers, and integrations operate outside PTY visibility
+- Not fully "glass box" — but significantly more visible than OpenClaw's silent background execution
 - OpenClaw agents execute silently in background
 
 ### 6. Structural Security Advantage
-- No network attack surface (localhost WebSocket only, no external service)
-- No untrusted content ingestion (agents talk to each other via local IPC only)
-- No plugin marketplace (zero supply chain attack surface)
+- **Smaller** network attack surface — localhost WebSocket (unauthenticated), Telegram poller, SMS poller, outbound integrations. Not zero, but significantly narrower than OpenClaw's 50+ channel surface
+- **Limited** external content ingestion — Telegram and SMS pollers accept inbound messages, which are potential prompt injection vectors. Much narrower than OpenClaw but not zero
+- No plugin marketplace (zero supply chain attack surface from third-party extensions)
 - No autonomous external communication (can't email strangers or buy cars)
 - Hivemind doesn't store credentials — CLI agents manage their own auth
 
@@ -240,14 +242,14 @@ All credentials stored as plaintext files in `~/.openclaw/`:
 
 | Attack Surface | Hivemind | OpenClaw |
 |---|---|---|
-| **Network exposure** | Zero. Localhost WebSocket only, no external service | Port 18789 exposed. 30,000+ instances found internet-facing |
+| **Network exposure** | Small — unauthenticated localhost WebSocket + Telegram/SMS pollers + outbound integrations. No public-facing gateway | Port 18789 exposed. 30,000+ instances found internet-facing |
 | **Authentication** | No external auth needed — no external-facing service | Token/password available but localhost auto-trusted by default |
-| **Prompt injection surface** | Narrow — agents only process messages from other local agents | Massive — ingests from WhatsApp, Telegram, email, web, ClawHub skills |
+| **Prompt injection surface** | Limited — Telegram/SMS pollers accept inbound external messages; localhost WebSocket accepts unauthenticated local connections. Narrower than OpenClaw but not zero | Massive — ingests from WhatsApp, Telegram, email, web, ClawHub skills |
 | **Supply chain** | Zero — no plugin marketplace | ClawHavoc: 1,184 malicious packages, 20% of ClawHub poisoned |
-| **Autonomous external comms** | None — agents can't email/message outside the system | Core feature — autonomous contact with external parties |
+| **Autonomous external comms** | Limited — Telegram and SMS outbound channels exist; agents can send external messages via these paths | Core feature — autonomous contact via 50+ channels with full autonomy |
 | **Credential storage** | Hivemind doesn't store credentials — CLI agents manage own auth | Plaintext files in `~/.openclaw/` |
 | **CVEs** | None (not yet public/audited) | CVE-2026-25253 (CVSS 8.8) + 83 advisories total |
-| **Visibility** | All agent actions visible in real-time PTY panes | Agents execute silently in background |
+| **Visibility** | Most agent actions visible in PTY panes; background workers, Telegram/SMS pollers, and integrations operate outside PTY visibility | Agents execute silently in background |
 | **Sandboxing** | PTY in user terminal context — honest about blast radius | Docker sandbox opt-in, many skip it, container escape demonstrated |
 
 ### Hivemind's Current Security Weaknesses (Honest Assessment)
@@ -363,20 +365,20 @@ Startup self-check that fails closed in `NODE_ENV=production` if unsafe flags ar
 
 ## 10. Value Differentiation & Strategic Positioning
 
-### Where We Already Win (They Can't Easily Copy)
+### Architectural Differentiators (Strong in Design, Needs Operational Proof)
 
 1. **Structured multi-agent coordination** — they route one user to one agent; we run three specialized agents that coordinate, disagree, and reach consensus
 2. **Team Memory with claims** — claims with confidence, evidence, consensus tracking, negative knowledge. Not chat logs. Not vector search.
 3. **Evidence chain** — causal DAG with tamper-evident hashing, every decision traceable
-4. **Human visibility** — everything real-time in terminal panes, no background autonomy
+4. **Human visibility** — core agent work visible in terminal panes (background workers and integrations operate outside PTY)
 
-### Why OpenClaw Can't Follow Us Easily
+### Why OpenClaw Would Need a Category Pivot to Match
 
-OpenClaw's center of gravity is multi-channel personal assistant + gateway/runtime security. Matching our direction would require deep pivot into software-delivery control-plane semantics (repo/CI/deploy provenance, cross-team governance, compliance-grade auditability, delivery SLO ownership). They can add pieces, but full parity means becoming a different product category.
+OpenClaw's center of gravity is multi-channel personal assistant + gateway/runtime security. Matching our direction would require a pivot into software-delivery control-plane semantics (repo/CI/deploy provenance, cross-team governance, compliance-grade auditability, delivery SLO ownership). They could add pieces incrementally, but full parity would mean becoming a different product category. **Caveat:** This is a positioning hypothesis, not a proven moat. Our architectural differentiation is real but our operational proof is thin — Team Memory has been mostly empty in practice, and our test/CI/hardening maturity is well behind theirs.
 
 ---
 
-## 11. Roadmap: What Makes Hivemind Untouchable
+## 11. Roadmap: Potential Differentiators (Aspirational, Not Proven)
 
 Oracle's recommended capabilities that create a hard moat:
 
@@ -396,7 +398,7 @@ Runbook synthesis + guarded experiments + one-click verified rollback pipeline.
 Track "time-to-answer for architecture/history questions" and enforce freshness ownership.
 
 ### Bonus: Multi-Model Arbitrage
-Already model-agnostic (any CLI agent in any pane). Killer feature: run Claude, Gemini, and Codex simultaneously on the same task, use claim graph to resolve disagreements. OpenClaw architecturally can't do this (single-agent).
+Already model-agnostic (any CLI agent in any pane). Potential feature: run Claude, Gemini, and Codex simultaneously on the same task, use claim graph to resolve disagreements. OpenClaw's architecture is single-agent, making this harder to add — but "architecturally can't" is an overstatement; they have multi-agent routing and session tools that could evolve.
 
 ---
 
