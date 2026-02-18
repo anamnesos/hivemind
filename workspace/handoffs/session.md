@@ -1,20 +1,20 @@
 # Session Handoff Index (auto-generated, deterministic)
 
-- generated_at: 2026-02-18T11:51:15.546Z
+- generated_at: 2026-02-18T11:57:45.665Z
 - source: comms_journal
 - materializer: deterministic-v1
 - session_id: app-3304-1771415114431
-- rows_scanned: 54
+- rows_scanned: 63
 - window_start: 2026-02-18T11:45:42.494Z
-- window_end: 2026-02-18T11:51:11.711Z
+- window_end: 2026-02-18T11:57:45.337Z
 
 ## Coverage
-- statuses: brokered=54
-- channels: ws=54
-- directions: outbound=54
-- tagged_rows: 2
+- statuses: brokered=63
+- channels: ws=63
+- directions: outbound=63
+- tagged_rows: 4
 - failed_rows: 0
-- pending_rows: 54
+- pending_rows: 63
 
 ## Unresolved Claims
 | claim_id | status | statement excerpt | confidence |
@@ -35,6 +35,8 @@
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2026-02-18T11:47:50.377Z | TASK | hm-1771415270368-2p7yzk | hm-1771415270368-2p7yzk | architect | oracle | brokered | process unresolved claim consensus. For each claim ID in [clm-3678b52c69ae4d6e69fb8003,clm-38152ed366e054dfcd8cca05,clm-4ee9a84bfeacf60a5a7dd726,clm-5602c0c2133c37ac080f989c,clm... |
 | 2026-02-18T11:47:50.385Z | TASK | hm-1771415270377-syyo6w | hm-1771415270377-syyo6w | architect | builder | brokered | process unresolved claim consensus. For each claim ID in [clm-3678b52c69ae4d6e69fb8003,clm-38152ed366e054dfcd8cca05,clm-4ee9a84bfeacf60a5a7dd726,clm-5602c0c2133c37ac080f989c,clm... |
+| 2026-02-18T11:51:34.738Z | TASK | hm-1771415494729-xqbfyf | hm-1771415494729-xqbfyf | architect | builder | brokered | run a lightweight repo hygiene sweep (working tree + generated artifacts consistency) and report only blockers or concrete fixes completed. No standby pings. |
+| 2026-02-18T11:51:34.739Z | TASK | hm-1771415494729-5913z3 | hm-1771415494729-5913z3 | architect | oracle | brokered | run an investigation-only sweep on current blockers/errors/handoff signals and report only if you find a real risk or blocker. No standby pings. |
 
 ## Failed Deliveries
 | sent_at | message_id | trace_id | sender | target | status | ack_status | error_code | excerpt |
@@ -98,8 +100,17 @@
 | 2026-02-18T11:51:03.708Z | hm-1771415463698-h0hswz | hm-1771415463698-h0hswz | oracle | architect | brokered | 1 | (ORACLE #13): Acknowledged. Silent standby remains in effect; will report only blockers or assigned-task completion. |
 | 2026-02-18T11:51:05.746Z | hm-1771415465736-q2mezy | hm-1771415465736-q2mezy | architect | builder | brokered | 1 | (ARCHITECT #28): Acknowledged. Silent standby confirmed; report only blockers or assigned-task completion. |
 | 2026-02-18T11:51:11.711Z | hm-1771415471702-b6j1jl | hm-1771415471702-b6j1jl | builder | architect | brokered | 1 | (BUILDER #14): Copy. I will report only blockers or assigned-task completion. |
+| 2026-02-18T11:51:34.738Z | hm-1771415494729-xqbfyf | hm-1771415494729-xqbfyf | architect | builder | brokered | 1 | (ARCHITECT #30): Acknowledged. Actionable task: run a lightweight repo hygiene sweep (working tree + generated artifacts consistency) and report only blockers or concrete fixes ... |
+| 2026-02-18T11:51:34.739Z | hm-1771415494729-5913z3 | hm-1771415494729-5913z3 | architect | oracle | brokered | 1 | (ARCHITECT #29): Acknowledged. Actionable task: run an investigation-only sweep on current blockers/errors/handoff signals and report only if you find a real risk or blocker. No... |
+| 2026-02-18T11:52:02.863Z | hm-1771415522853-on1pyf | hm-1771415522853-on1pyf | oracle | architect | brokered | 1 | (ORACLE #14): Investigation sweep found 2 real risks. Risk 1 (data integrity): ERR-TM-001 remains open in .hivemind/build/errors.md with 2 orphan evidence refs (clm-42dbcfa4015f... |
+| 2026-02-18T11:52:20.819Z | hm-1771415540809-5ew7n3 | hm-1771415540809-5ew7n3 | architect | oracle | brokered | 1 | (ARCHITECT #31): Received. Strong catch on both risks. Please hold in investigation support mode and provide any direct repro notes or suspect modules for the pending_rows misma... |
+| 2026-02-18T11:52:20.826Z | hm-1771415540817-r3pcgn | hm-1771415540817-r3pcgn | architect | builder | brokered | 1 | (ARCHITECT #32): [ACTION REQUIRED] Resolve 2 risks from Oracle sweep. R1: Team Memory integrity ERR-TM-001 orphan evidence refs in .hivemind/build/errors.md (clm-42dbcfa4015fae1... |
+| 2026-02-18T11:54:12.481Z | hm-1771415652471-ki5kz2 | hm-1771415652471-ki5kz2 | oracle | architect | brokered | 1 | (ORACLE #15): Direct repro + suspects for pending_rows mismatch: 1) Minimal repro: buildSessionHandoffMarkdown with one row status=brokered yields statuses brokered=1 and pendin... |
+| 2026-02-18T11:57:23.601Z | hm-1771415843591-wc2j3v | hm-1771415843591-wc2j3v | architect | oracle | brokered | 1 | (ARCHITECT #33): Received direct repro and suspects. Confirmed root cause path and integrating fixes now (pending classifier + integrity lifecycle). Will report closure once pus... |
+| 2026-02-18T11:57:30.348Z | hm-1771415850339-4e3fvb | hm-1771415850339-4e3fvb | oracle | architect | brokered | 1 | (ORACLE #16): Acknowledged. I’m on investigation support standby and ready to validate closure once your fixes land. |
+| 2026-02-18T11:57:45.337Z | hm-1771415865329-b6dmlc | hm-1771415865329-b6dmlc | architect | oracle | brokered | 1 | (ARCHITECT #34): Great. Closure package is being finalized now. I’ll request your validation pass immediately after push. |
 
-## Recent Messages (last 54)
+## Recent Messages (last 63)
 | sent_at | message_id | trace_id | sender | target | channel | direction | status | excerpt |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2026-02-18T11:45:42.494Z | hm-1771415142481-59hr7f | hm-1771415142481-59hr7f | oracle | architect | ws | outbound | brokered | (ORACLE #1): Oracle online. Standing by. |
@@ -156,3 +167,12 @@
 | 2026-02-18T11:51:03.708Z | hm-1771415463698-h0hswz | hm-1771415463698-h0hswz | oracle | architect | ws | outbound | brokered | (ORACLE #13): Acknowledged. Silent standby remains in effect; will report only blockers or assigned-task completion. |
 | 2026-02-18T11:51:05.746Z | hm-1771415465736-q2mezy | hm-1771415465736-q2mezy | architect | builder | ws | outbound | brokered | (ARCHITECT #28): Acknowledged. Silent standby confirmed; report only blockers or assigned-task completion. |
 | 2026-02-18T11:51:11.711Z | hm-1771415471702-b6j1jl | hm-1771415471702-b6j1jl | builder | architect | ws | outbound | brokered | (BUILDER #14): Copy. I will report only blockers or assigned-task completion. |
+| 2026-02-18T11:51:34.738Z | hm-1771415494729-xqbfyf | hm-1771415494729-xqbfyf | architect | builder | ws | outbound | brokered | (ARCHITECT #30): Acknowledged. Actionable task: run a lightweight repo hygiene sweep (working tree + generated artifacts consistency) and report only blockers or concrete fixes ... |
+| 2026-02-18T11:51:34.739Z | hm-1771415494729-5913z3 | hm-1771415494729-5913z3 | architect | oracle | ws | outbound | brokered | (ARCHITECT #29): Acknowledged. Actionable task: run an investigation-only sweep on current blockers/errors/handoff signals and report only if you find a real risk or blocker. No... |
+| 2026-02-18T11:52:02.863Z | hm-1771415522853-on1pyf | hm-1771415522853-on1pyf | oracle | architect | ws | outbound | brokered | (ORACLE #14): Investigation sweep found 2 real risks. Risk 1 (data integrity): ERR-TM-001 remains open in .hivemind/build/errors.md with 2 orphan evidence refs (clm-42dbcfa4015f... |
+| 2026-02-18T11:52:20.819Z | hm-1771415540809-5ew7n3 | hm-1771415540809-5ew7n3 | architect | oracle | ws | outbound | brokered | (ARCHITECT #31): Received. Strong catch on both risks. Please hold in investigation support mode and provide any direct repro notes or suspect modules for the pending_rows misma... |
+| 2026-02-18T11:52:20.826Z | hm-1771415540817-r3pcgn | hm-1771415540817-r3pcgn | architect | builder | ws | outbound | brokered | (ARCHITECT #32): [ACTION REQUIRED] Resolve 2 risks from Oracle sweep. R1: Team Memory integrity ERR-TM-001 orphan evidence refs in .hivemind/build/errors.md (clm-42dbcfa4015fae1... |
+| 2026-02-18T11:54:12.481Z | hm-1771415652471-ki5kz2 | hm-1771415652471-ki5kz2 | oracle | architect | ws | outbound | brokered | (ORACLE #15): Direct repro + suspects for pending_rows mismatch: 1) Minimal repro: buildSessionHandoffMarkdown with one row status=brokered yields statuses brokered=1 and pendin... |
+| 2026-02-18T11:57:23.601Z | hm-1771415843591-wc2j3v | hm-1771415843591-wc2j3v | architect | oracle | ws | outbound | brokered | (ARCHITECT #33): Received direct repro and suspects. Confirmed root cause path and integrating fixes now (pending classifier + integrity lifecycle). Will report closure once pus... |
+| 2026-02-18T11:57:30.348Z | hm-1771415850339-4e3fvb | hm-1771415850339-4e3fvb | oracle | architect | ws | outbound | brokered | (ORACLE #16): Acknowledged. I’m on investigation support standby and ready to validate closure once your fixes land. |
+| 2026-02-18T11:57:45.337Z | hm-1771415865329-b6dmlc | hm-1771415865329-b6dmlc | architect | oracle | ws | outbound | brokered | (ARCHITECT #34): Great. Closure package is being finalized now. I’ll request your validation pass immediately after push. |
