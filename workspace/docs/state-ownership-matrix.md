@@ -27,10 +27,11 @@ Scope labels:
 | Shared context file | `shared_context.md` | Project | Agents/operator workflows | `ui/modules/watcher.js`, `ui/modules/ipc-handlers.js` | Collaboration context; not global. |
 | Message queue files | `workspace/messages/queue-*.json` | Legacy/orchestrator-local | `ui/modules/watcher.js` (`sendMessage`) | `ui/modules/watcher.js` (`getMessages`, watcher worker) | Still workspace-local, not under coord root. |
 | Legacy session handoff mirror | `workspace/handoffs/session.md` | Legacy mirror | `ui/modules/main/auto-handoff-materializer.js` (mirror write) | Legacy tooling/docs | Written unless `legacyMirrorPath === false`. |
-| Legacy coord fallback set | `workspace/state.json`, `workspace/activity.json`, `workspace/shared_context.md`, `workspace/runtime/*`, `workspace/context-snapshots/*`, `workspace/triggers/*` | Legacy fallback | Any `resolveCoordPath(...)` writer when coord root is absent | Any `resolveCoordPath(...)` reader (fallback mode) | Transition compatibility path in `ui/config.js` (`getCoordRoots`, `resolveCoordPath`). |
+| Legacy coord fallback set | `workspace/state.json`, `workspace/activity.json`, `workspace/shared_context.md`, `workspace/context-snapshots/*`, `workspace/triggers/*` | Legacy fallback | Any `resolveCoordPath(...)` writer when coord root is absent | Any `resolveCoordPath(...)` reader (fallback mode) | `runtime/*` and `evidence-ledger.db` legacy fallback are intentionally blocked in `ui/config.js` (`shouldBlockLegacyWorkspaceFallback`). |
 
 ## Operator Rules
 
 1. Treat `GLOBAL_STATE_ROOT` files as orchestrator-global truth.
 2. Treat `<project>/.hivemind/` files/DBs as project truth.
 3. Treat `workspace/` copies as compatibility-only unless a component is explicitly still workspace-local.
+4. For memory/journal diagnosis, use `<project>/.hivemind/runtime/evidence-ledger.db` only.

@@ -21,7 +21,7 @@ node ui/scripts/hm-send.js <target> "(ROLE #N): Your message"
 ### Rules
 - **hm-send.js is the ONLY way to message other agents.** Terminal output is visible ONLY to the user glancing at your pane — other agents cannot see it.
 - **James reads ONLY pane 1.** If you are not in pane 1, James will NOT see your output. All user communication flows through Architect.
-- **NEVER read trigger files** (`workspace/triggers/*.txt`). They are write-only and consumed instantly by the file watcher. Reading them will always return "file not found."
+- **NEVER read trigger files** (`.hivemind/triggers/*.txt`, legacy `workspace/triggers/*.txt`). They are write-only and consumed instantly by the file watcher.
 - **hm-send.js may report "unverified" or "health=stale"** on startup. This is normal — WebSocket reconnects slowly. The trigger file fallback is reliable. Trust it and move on.
 - **Message format**: `(ROLE #N): message` — sequence numbers prevent duplicates. Start from `#1` each session.
 
@@ -59,11 +59,17 @@ This includes:
 Every agent, every model, every pane follows this structure:
 
 1. Read session handoff index at `workspace/handoffs/session.md` (auto-materialized from `comms_journal`)
-2. Read `.hivemind/app-status.json` — runtime state (fallback `workspace/app-status.json`)
+2. Read `.hivemind/app-status.json` — runtime state and canonical session number
 3. Glance at `workspace/build/blockers.md` and `errors.md` — active counts only
 4. **Architect only:** Await the automated **Startup Briefing** (summarizes Comm Journal, open Tasks, unresolved Claims)
 5. Message Architect via hm-send.js: online status + active blocker/error count
 6. **STOP. Wait for Architect to assign work.**
+
+### Runtime Truth Checks (Before Calling Something Broken)
+- Treat `.hivemind/runtime/evidence-ledger.db` as canonical live journal DB.
+- Do not diagnose from `.hivemind/evidence-ledger.db` or `workspace/*/evidence-ledger.db` (stale artifact traps).
+- Treat `.hivemind/app-status.json` as session truth; `link.json.session_id` is bootstrap metadata and may lag.
+- Verify live data first, then propose redesigns.
 
 ### What NOT to do on startup
 - DO NOT read `shared_context.md` or `status.md` during startup triage
@@ -98,3 +104,11 @@ Every agent, every model, every pane follows this structure:
 - **Don't ask obvious permissions.** If the next step is obvious, do it.
 - **Check logs yourself.** NEVER ask the user to check DevTools or console.
 - **Models are runtime config.** Any pane can run any CLI. Don't hardcode model assumptions.
+
+## 7. Pre-Restart Gate (Mandatory)
+
+Before any restart approval:
+1. Builder finishes fixes and tests.
+2. Architect verifies independently.
+3. Oracle reviews restart risks.
+4. Oracle updates documentation for changed behavior and lessons learned.

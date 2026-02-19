@@ -8,7 +8,9 @@ Hivemind has multiple session concepts. They are related but not identical.
 
 - Owner: main process (`ui/modules/main/hivemind-app.js`).
 - Created at startup in `initializeStartupSessionScope()`.
-- Format: `app-session-<sessionNumber>-<ledgerSessionId>` (or fallback `app-<pid>-<timestamp>`).
+- Preferred format: `app-session-<sessionNumber>` when app-status provides a session number.
+- Fallback format: `app-session-<sessionNumber>-<ledgerSessionId>` (or `app-<pid>-<timestamp>` if no session number is available).
+- Conflict behavior: if `record-session-start` conflicts for the preferred app-status session number, scope remains pinned to that preferred `app-session-<sessionNumber>` value.
 - Used for:
   - WebSocket runtime session scope (`websocketServer.start({ sessionScopeId })`)
   - Comms journal `session_id` writes (`upsert-comms-journal`)
@@ -24,6 +26,7 @@ This is the authoritative "current app run" session boundary.
   - `deps.getSessionId()` when available, else
   - app-status session fields.
 - Used by `hm-send` to attach project metadata for cross-project routing context.
+- `hm-send` session selection prefers runtime app-status session when both values look like `app-session-*` and disagree.
 
 This is project-attached metadata, not the live in-memory app scope.
 
@@ -71,10 +74,12 @@ Broker journal upsert uses app scope:
 }
 ```
 
-If `link.json` is stale, `metadata.project.session_id` may lag behind app scope until project bootstrap is rewritten.
+If `link.json` is stale, metadata may still carry stale bootstrap values, but send-path session selection should prefer app-status for active `app-session-*` conflicts.
 
 ## Operator Rules
 
 1. For runtime slicing and handoff generation, trust `comms_journal.session_id`.
 2. For sender/project attribution, inspect `metadata.project.*`.
 3. Do not assume unresolved claims are session-scoped in handoff generation; unresolved claim query is currently cross-session.
+4. If app-status/link/session-handoff disagree, treat `.hivemind/app-status.json` as current session truth and verify journal rows directly before escalating.
+5. `session.md` can legitimately show `rows_scanned: 0` while cross-session sections are populated; this indicates scope mismatch or an empty current session, not necessarily an empty journal DB.
