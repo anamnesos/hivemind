@@ -9,7 +9,7 @@
 
 ### How to Message Other Agents
 ```bash
-node D:/projects/hivemind/ui/scripts/hm-send.js <target> "(ROLE #N): Your message"
+node ui/scripts/hm-send.js <target> "(ROLE #N): Your message"
 ```
 
 | Target | Reaches |
@@ -75,17 +75,7 @@ Every agent, every model, every pane follows this structure:
 
 ---
 
-## 4. Pane 1 (Architect) — Special Rules
-
-Pane 1 has **Agent Teams** (Claude-only feature). Architect spawns internal teammates:
-- **Frontend** — UI implementation (CSS, HTML, renderer.js)
-- **Reviewer** — Code review before commits
-
-**If a non-Claude model runs in pane 1:** Agent Teams is unavailable. That model must handle Architect + Frontend + Reviewer roles itself. No internal teammates — just do all three jobs.
-
----
-
-## 5. Role Hierarchy
+## 4. Role Hierarchy
 
 - **Architect (pane 1)** is the coordinator. All agents report to Architect.
 - **Only Architect commits to git.** No other agent touches git.
@@ -94,16 +84,14 @@ Pane 1 has **Agent Teams** (Claude-only feature). Architect spawns internal team
 
 ---
 
-## 6. Source Code Rules
+## 5. Source Code Rules
 
-- **Read your role-specific CLAUDE.md/GEMINI.md/AGENTS.md** for what files you can edit
 - **Oracle is READ-ONLY** — investigates, never edits source code
-- **All code changes go through Reviewer** before commit
-- **Cross-model review required** for non-routine changes (architectural, state, concurrency)
+- **All code changes reviewed by Architect** before commit
 
 ---
 
-## 7. General Behavior
+## 6. General Behavior
 
 - **No content-free acks.** "Received. Standing by." is spam. Add information or stay silent.
 - **Don't rationalize failures.** If something fails, report the error. Don't invent explanations.
