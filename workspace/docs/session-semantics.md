@@ -53,7 +53,7 @@ These can differ.
   "metadata": {
     "project": {
       "name": "hivemind",
-      "path": "D:/projects/hivemind",
+      "path": "<project-root>",
       "session_id": "app-session-145-s_abc123"
     }
   }
