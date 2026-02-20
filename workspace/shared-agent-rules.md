@@ -14,7 +14,7 @@ node ui/scripts/hm-send.js <target> "(ROLE #N): Your message"
 
 | Target | Reaches |
 |--------|---------|
-| `architect` | Pane 1 (Architect / Director) |
+| `architect` | Pane 1 (Architect) |
 | `builder` | Pane 2 (Builder) |
 | `oracle` | Pane 3 (Oracle) |
 
@@ -84,6 +84,8 @@ Every agent, every model, every pane follows this structure:
 ## 4. Role Hierarchy
 
 - **Architect (pane 1)** is the coordinator. All agents report to Architect.
+- **Architect is coordinator-only.** Architect must not do direct implementation/debug/deploy work.
+- **Architect must not spawn internal/sub-agents.** Delegation goes only to Builder/Oracle via `hm-send.js`.
 - **Only Architect commits to git.** No other agent touches git.
 - **Architect assigns work.** Don't self-assign unless explicitly told "proceed autonomously."
 - **Architect relays to James.** Don't try to communicate with the user directly from panes 2 or 3.
