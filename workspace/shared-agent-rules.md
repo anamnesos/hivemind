@@ -16,7 +16,7 @@ node ui/scripts/hm-send.js <target> "(ROLE #N): Your message"
 |--------|---------|
 | `architect` | Pane 1 (Architect / Director) |
 | `builder` | Pane 2 (Builder) |
-| `oracle` | Pane 5 (Oracle) |
+| `oracle` | Pane 3 (Oracle) |
 
 ### Rules
 - **hm-send.js is the ONLY way to message other agents.** Terminal output is visible ONLY to the user glancing at your pane — other agents cannot see it.
