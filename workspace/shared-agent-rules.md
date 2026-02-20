@@ -86,7 +86,7 @@ Every agent, every model, every pane follows this structure:
 - **Architect (pane 1)** is the coordinator. All agents report to Architect.
 - **Only Architect commits to git.** No other agent touches git.
 - **Architect assigns work.** Don't self-assign unless explicitly told "proceed autonomously."
-- **Architect relays to James.** Don't try to communicate with the user directly from panes 2 or 5.
+- **Architect relays to James.** Don't try to communicate with the user directly from panes 2 or 3.
 
 ---
 
