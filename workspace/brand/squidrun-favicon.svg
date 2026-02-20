@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">SquidRun Favicon</title>
+  <desc id="desc">Simplified squid head with two eyes and two tentacle strokes for 16 to 32 pixel display.</desc>
+  <path fill="#1A0A3E" d="M32 6C42 15 46 27 43 35C40 42 36 46 32 48C28 46 24 42 21 35C18 27 22 15 32 6Z"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke="#1A0A3E" stroke-width="8">
+      <path d="M30 44C24 49 20 56 22 61"/>
+      <path d="M34 44C40 49 44 56 42 61"/>
+    </g>
+    <g stroke="#0066FF" stroke-width="4">
+      <path d="M30 44C24 49 20 56 22 61"/>
+      <path d="M34 44C40 49 44 56 42 61"/>
+    </g>
+  </g>
+  <circle cx="27" cy="33" r="2.5" fill="#FFFFFF"/>
+  <circle cx="37" cy="33" r="2.5" fill="#FFFFFF"/>
+</svg>

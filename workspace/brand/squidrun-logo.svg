@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">SquidRun Logo - Full Color</title>
+  <desc id="desc">Minimal front-facing squid mark with pointed mantle, two eyes, and four tentacle strokes.</desc>
+  <path fill="#1A0A3E" d="M256 52C330 120 358 202 338 258C326 292 300 320 256 336C212 320 186 292 174 258C154 202 182 120 256 52Z"/>
+  <path fill="#0066FF" d="M256 90C279 140 289 198 282 246C277 278 268 302 256 322C244 302 235 278 230 246C223 198 233 140 256 90Z"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke="#1A0A3E" stroke-width="44">
+      <path d="M248 300C214 336 188 370 176 414C169 444 184 465 210 470"/>
+      <path d="M252 302C236 344 230 388 236 432C240 456 248 474 258 484"/>
+      <path d="M260 302C276 344 282 388 276 432C272 456 264 474 254 484"/>
+      <path d="M264 300C298 336 324 370 336 414C343 444 328 465 302 470"/>
+    </g>
+    <g stroke="#0066FF" stroke-width="24">
+      <path d="M248 300C214 336 188 370 176 414C169 444 184 465 210 470"/>
+      <path d="M252 302C236 344 230 388 236 432C240 456 248 474 258 484"/>
+      <path d="M260 302C276 344 282 388 276 432C272 456 264 474 254 484"/>
+      <path d="M264 300C298 336 324 370 336 414C343 444 328 465 302 470"/>
+    </g>
+  </g>
+  <circle cx="220" cy="236" r="13" fill="#FFFFFF"/>
+  <circle cx="292" cy="236" r="13" fill="#FFFFFF"/>
+  <circle cx="220" cy="236" r="6" fill="#1A0A3E"/>
+  <circle cx="292" cy="236" r="6" fill="#1A0A3E"/>
+</svg>

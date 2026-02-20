@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">SquidRun Logo - Monochrome White</title>
+  <desc id="desc">White monochrome squid mark for dark backgrounds.</desc>
+  <g fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round">
+    <path fill="#FFFFFF" stroke="none" d="M256 52C330 120 358 202 338 258C326 292 300 320 256 336C212 320 186 292 174 258C154 202 182 120 256 52Z"/>
+    <path d="M248 300C214 336 188 370 176 414C169 444 184 465 210 470" stroke-width="24"/>
+    <path d="M252 302C236 344 230 388 236 432C240 456 248 474 258 484" stroke-width="24"/>
+    <path d="M260 302C276 344 282 388 276 432C272 456 264 474 254 484" stroke-width="24"/>
+    <path d="M264 300C298 336 324 370 336 414C343 444 328 465 302 470" stroke-width="24"/>
+    <circle cx="220" cy="236" r="11" fill="none" stroke-width="12"/>
+    <circle cx="292" cy="236" r="11" fill="none" stroke-width="12"/>
+  </g>
+</svg>
