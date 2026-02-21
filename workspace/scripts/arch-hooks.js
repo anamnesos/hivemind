@@ -3,9 +3,9 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..');
-const COORD_ROOT = path.join(PROJECT_ROOT, '.hivemind');
+const COORD_ROOT = path.join(PROJECT_ROOT, '.squidrun');
 const LEGACY_WORKSPACE_ROOT = path.join(PROJECT_ROOT, 'workspace');
-const EVIDENCE_LEDGER_DB_PATH = path.join(PROJECT_ROOT, 'workspace', 'runtime', 'evidence-ledger.db');
+const EVIDENCE_LEDGER_DB_PATH = path.join(PROJECT_ROOT, '.squidrun', 'runtime', 'evidence-ledger.db');
 const HM_MEMORY_SCRIPT = path.join(PROJECT_ROOT, 'ui', 'scripts', 'hm-memory.js');
 let DatabaseSync = null;
 try {

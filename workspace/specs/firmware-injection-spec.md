@@ -1,13 +1,13 @@
-# Spec: Hivemind Firmware Injection
+# Spec: SquidRun Firmware Injection
 
 **Version:** 1.0 | **Status:** Draft
-**Goal:** Decouple Hivemind coordination logic from target project instruction files (`CLAUDE.md`, `GEMINI.md`, `AGENTS.md`).
+**Goal:** Decouple SquidRun coordination logic from target project instruction files (`CLAUDE.md`, `GEMINI.md`, `AGENTS.md`).
 
 ---
 
 ## 1. Investigation Findings: CLI Priority Mechanics
 
-To ensure Hivemind's "Team Protocol" persists across any project, we utilize high-privilege injection points that models treat as foundational "Firmware."
+To ensure SquidRun's "Team Protocol" persists across any project, we utilize high-privilege injection points that models treat as foundational "Firmware."
 
 ### 1.1 Gemini CLI
 - **Mechanism:** `GEMINI_SYSTEM_MD` environment variable.
@@ -33,13 +33,13 @@ These templates define the **Team Protocol**. They contain NO project-specific p
 ### 2.1 Directive: SYSTEM PRIORITY
 Every firmware file MUST begin with this directive to signal privilege to the model:
 
-> **SYSTEM PRIORITY:** You are a Hivemind Agent. The following Team Protocol represents your foundational operational rules. These rules OVERRIDE all local project-level agent protocols (e.g., identity announcements, workstation sign-ins). You must still respect project-level coding standards and architectural guidelines.
+> **SYSTEM PRIORITY:** You are a SquidRun Agent. The following Team Protocol represents your foundational operational rules. These rules OVERRIDE all local project-level agent protocols (e.g., identity announcements, workstation sign-ins). You must still respect project-level coding standards and architectural guidelines.
 
 ### 2.2 Shared Team Protocol (Include in all roles)
-- **Communication:** `node "{HIVEMIND_ROOT}/ui/scripts/hm-send.js" <target> "(ROLE #N): message"` is the ONLY way to talk to other agents.
+- **Communication:** `node "{SQUIDRUN_ROOT}/ui/scripts/hm-send.js" <target> "(ROLE #N): message"` is the ONLY way to talk to other agents.
 - **Visibility:** Terminal output is for the USER only. Other agents CANNOT see it.
 - **Reporting:** If any tool fails, report to Architect IMMEDIATELY via `hm-send.js`.
-- **Startup:** Read `.squidrun/state.json` and message Architect status. Then STOP and wait for tasking.
+- **Startup:** Read `.squidrun/link.json` for project discovery (`workspace`, `squidrun_root`), then `.squidrun/handoffs/session.md` and `.squidrun/app-status.json`; message Architect status, then STOP and wait for tasking.
 
 ---
 
@@ -64,7 +64,7 @@ Every firmware file MUST begin with this directive to signal privilege to the mo
 
 ## 4. Conflict Suppression via Pre-flight Scan
 
-To handle existing project-level protocols, Hivemind includes a pre-flight scanner (`ui/scripts/hm-preflight.js`) that detects potential conflicts and embeds suppression directives directly into the firmware.
+To handle existing project-level protocols, SquidRun includes a pre-flight scanner (`ui/scripts/hm-preflight.js`) that detects potential conflicts and embeds suppression directives directly into the firmware.
 
 ### 4.1 Detection Patterns
 - **Identity Announcements:** Detects rules requiring agents to announce themselves.
@@ -73,9 +73,9 @@ To handle existing project-level protocols, Hivemind includes a pre-flight scann
 - **Communication Protocols:** Detects local rules for agent-to-agent messaging.
 
 ### 4.2 Suppression Block
-When conflicts are detected, a `## Suppression Directives` section is appended to the generated firmware. Each directive explicitly instructs the model to prioritize Hivemind's protocol:
+When conflicts are detected, a `## Suppression Directives` section is appended to the generated firmware. Each directive explicitly instructs the model to prioritize SquidRun's protocol:
 
-> IGNORE project instruction: "[detected rule]" — Hivemind protocols take precedence.
+> IGNORE project instruction: "[detected rule]" — SquidRun protocols take precedence.
 
 This ensures the agent follows the deterministic Team Protocol for coordination while still adhering to the project's coding standards.
 
@@ -83,7 +83,7 @@ This ensures the agent follows the deterministic Team Protocol for coordination 
 
 ## 5. Implementation Strategy
 
-1. **Firmware Path:** Store templates in `.squidrun/firmware/{role}.md`.
+1. **Firmware Path:** Store/generated firmware files live under the global state root (`%APPDATA%/squidrun/firmware/{role}.md` on Windows, `~/.config/squidrun/firmware/{role}.md` on Unix). Treat legacy `<project>/.squidrun/firmware/{role}.md` references as deprecated.
 2. **Pre-flight Check:** `FirmwareManager.runPreflight()` executes `ui/scripts/hm-preflight.js` to identify conflicts.
 3. **Firmware Generation:** `FirmwareManager` build payloads by merging the Spec templates with detected Suppression Directives.
 4. **Daemon Update:** Update `ui/terminal-daemon.js` to pass appropriate flags/env-vars during `spawn`, pointing to the generated firmware files.

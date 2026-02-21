@@ -4,7 +4,7 @@ Last verified: 2026-02-19
 
 ## Startup Order (Main Process)
 
-1. `HivemindApp.initialize()` loads settings and window (`ui/modules/main/hivemind-app.js`).
+1. `SquidRunApp.initialize()` loads settings and window (`ui/modules/main/squidrun-app.js`).
 2. Daemon connection completes; app status is written (`settings-manager.writeAppStatus`).
 3. If a new app session was spawned, startup records an Evidence Ledger session via `executeEvidenceLedgerOperation('record-session-start', ...)` and sets `this.commsSessionScopeId`.
 4. WebSocket comms starts via `websocketServer.start({ sessionScopeId: this.commsSessionScopeId, ... })`.
@@ -40,7 +40,7 @@ When `select-project`/`switch-project` runs (`ui/modules/ipc/project-handlers.js
 
 ## Shutdown Contract
 
-`HivemindApp.shutdown()` performs:
+`SquidRunApp.shutdown()` performs:
 
 1. stop auto-handoff + context compressor + Team Memory sweeps
 2. close Evidence Ledger runtime

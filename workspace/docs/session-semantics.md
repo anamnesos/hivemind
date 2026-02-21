@@ -2,11 +2,11 @@
 
 Last verified: 2026-02-19
 
-Hivemind has multiple session concepts. They are related but not identical.
+SquidRun has multiple session concepts. They are related but not identical.
 
 ## 1) App Session Scope (`commsSessionScopeId`)
 
-- Owner: main process (`ui/modules/main/hivemind-app.js`).
+- Owner: main process (`ui/modules/main/squidrun-app.js`).
 - Created at startup in `initializeStartupSessionScope()`.
 - Preferred format: `app-session-<sessionNumber>` when app-status provides a session number.
 - Fallback format: `app-session-<sessionNumber>-<ledgerSessionId>` (or `app-<pid>-<timestamp>` if no session number is available).
@@ -52,7 +52,7 @@ These can differ.
   "type": "send",
   "metadata": {
     "project": {
-      "name": "hivemind",
+      "name": "squidrun",
       "path": "<project-root>",
       "session_id": "app-session-145-s_abc123"
     }
