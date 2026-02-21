@@ -5,7 +5,6 @@ Last verified: 2026-02-19
 Scope labels:
 - `Global`: shared across all projects (under `GLOBAL_STATE_ROOT` from `ui/config.js`).
 - `Project`: per selected project (under `<project>/.squidrun/`).
-- `Legacy`: compatibility mirror/fallback still in `workspace/`.
 
 | Concern | Store (path) | Scope | Authoritative writer(s) | Primary reader(s) | Notes |
 | --- | --- | --- | --- | --- | --- |
@@ -25,13 +24,11 @@ Scope labels:
 | Session handoff | `handoffs/session.md` | Project | `ui/modules/main/auto-handoff-materializer.js` | `ui/modules/context-compressor.js`, operators/agents | Auto-generated deterministic handoff index. |
 | Context snapshots | `context-snapshots/*.md` | Project | `ui/modules/context-compressor.js` | Evidence-ledger seed path and operators | Per-pane context restoration artifacts. |
 | Shared context file | `shared_context.md` | Project | Agents/operator workflows | `ui/modules/watcher.js`, `ui/modules/ipc-handlers.js` | Collaboration context; not global. |
-| Message queue files | `workspace/messages/queue-*.json` | Legacy/orchestrator-local | `ui/modules/watcher.js` (`sendMessage`) | `ui/modules/watcher.js` (`getMessages`, watcher worker) | Still workspace-local, not under coord root. |
-| Legacy session handoff mirror | `workspace/handoffs/session.md` | Legacy mirror | `ui/modules/main/auto-handoff-materializer.js` (mirror write) | Legacy tooling/docs | Written unless `legacyMirrorPath === false`. |
-| Legacy coord fallback set | `workspace/state.json`, `workspace/activity.json`, `workspace/shared_context.md`, `workspace/context-snapshots/*`, `workspace/triggers/*` | Legacy fallback | Any `resolveCoordPath(...)` writer when coord root is absent | Any `resolveCoordPath(...)` reader (fallback mode) | `runtime/*` and `evidence-ledger.db` legacy fallback are intentionally blocked in `ui/config.js` (`shouldBlockLegacyWorkspaceFallback`). |
+| Message queue files | `.squidrun/messages/queue-*.json` | Project | `ui/modules/watcher.js` (`sendMessage`) | `ui/modules/watcher.js` (`getMessages`, watcher worker) | Queue artifacts for inter-agent messaging workflows. |
 
 ## Operator Rules
 
 1. Treat `GLOBAL_STATE_ROOT` files as orchestrator-global truth.
 2. Treat `<project>/.squidrun/` files/DBs as project truth.
-3. Treat `workspace/` copies as compatibility-only unless a component is explicitly still workspace-local.
+3. Do not rely on `workspace/` mirrors for runtime truth.
 4. For memory/journal diagnosis, use `<project>/.squidrun/runtime/evidence-ledger.db` only.
