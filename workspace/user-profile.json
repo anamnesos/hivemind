@@ -1,0 +1,20 @@
+{
+  "name": "James",
+  "experience_level": "tinkerer",
+  "communication_style": "terse",
+  "domain_expertise": "Strong JS/Electron, built SquidRun from scratch. No formal dev training.",
+  "notes": "Edit this file to customize how agents interact with you.",
+  "schema": {
+    "experience_level": {
+      "beginner": "Learning to code — explain concepts, avoid jargon, confirm before destructive actions",
+      "tinkerer": "Builds real things but not formally trained — explain architecture decisions, skip basics, use plain language",
+      "developer": "Junior dev, knows fundamentals — use technical terms freely, explain only non-obvious tradeoffs",
+      "expert": "Pro dev — be terse, skip explanations unless asked, assume deep knowledge"
+    },
+    "communication_style": {
+      "detailed": "Explain what you are doing and why",
+      "balanced": "Brief context, focus on action",
+      "terse": "Just do it, minimal commentary"
+    }
+  }
+}
