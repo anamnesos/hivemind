@@ -39,7 +39,7 @@ Every firmware file MUST begin with this directive to signal privilege to the mo
 - **Communication:** `node "{HIVEMIND_ROOT}/ui/scripts/hm-send.js" <target> "(ROLE #N): message"` is the ONLY way to talk to other agents.
 - **Visibility:** Terminal output is for the USER only. Other agents CANNOT see it.
 - **Reporting:** If any tool fails, report to Architect IMMEDIATELY via `hm-send.js`.
-- **Startup:** Read `.hivemind/state.json` and message Architect status. Then STOP and wait for tasking.
+- **Startup:** Read `.squidrun/state.json` and message Architect status. Then STOP and wait for tasking.
 
 ---
 
@@ -83,7 +83,7 @@ This ensures the agent follows the deterministic Team Protocol for coordination 
 
 ## 5. Implementation Strategy
 
-1. **Firmware Path:** Store templates in `.hivemind/firmware/{role}.md`.
+1. **Firmware Path:** Store templates in `.squidrun/firmware/{role}.md`.
 2. **Pre-flight Check:** `FirmwareManager.runPreflight()` executes `ui/scripts/hm-preflight.js` to identify conflicts.
 3. **Firmware Generation:** `FirmwareManager` build payloads by merging the Spec templates with detected Suppression Directives.
 4. **Daemon Update:** Update `ui/terminal-daemon.js` to pass appropriate flags/env-vars during `spawn`, pointing to the generated firmware files.

@@ -1,4 +1,4 @@
-# Audit: Hivemind State Separation (.hivemind/)
+# Audit: Hivemind State Separation (.squidrun/)
 
 **Goal:** Decouple the Hivemind Orchestrator from the target project by separating application-level state from project-level state.
 
@@ -6,7 +6,7 @@
 
 ## 1. Inventory and Classification
 
-The following files and directories were identified within `.hivemind/`. They are classified as either **Orchestrator** (global app state) or **Project** (target-specific state).
+The following files and directories were identified within `.squidrun/`. They are classified as either **Orchestrator** (global app state) or **Project** (target-specific state).
 
 | Path | Classification | Purpose | Responsible Module(s) |
 | :--- | :--- | :--- | :--- |
@@ -26,7 +26,7 @@ The following files and directories were identified within `.hivemind/`. They ar
 
 ## 2. Current Code Path Tracing
 
-Currently, all modules resolve these paths using `resolveCoordPath()` in `ui/config.js`, which defaults to `PROJECT_ROOT/.hivemind/`. This results in **Orchestrator state** being scattered across every project Hivemind touches, rather than being aggregated globally.
+Currently, all modules resolve these paths using `resolveCoordPath()` in `ui/config.js`, which defaults to `PROJECT_ROOT/.squidrun/`. This results in **Orchestrator state** being scattered across every project Hivemind touches, rather than being aggregated globally.
 
 ### Key Observation:
 The `triggers/` directory is essentially a transport layer. While it acts like orchestrator state, it relies on being in a location accessible to all agents. If agents are spawned in the project root, keeping triggers in the project root is the most reliable fallback.
@@ -50,7 +50,7 @@ This ensures that `usage-stats.json` and `app-status.json` are consistent regard
   - `firmware/` (The newly created firmware templates)
 
 ### 3.2 Project-Specific State (Project)
-**Proposed Location:** `.hivemind/` within the **Target Project Root**.
+**Proposed Location:** `.squidrun/` within the **Target Project Root**.
 
 This keeps the metadata (status, blockers, intents) with the code it describes. This allows different projects to have different "memory" and progress states.
 
@@ -64,7 +64,7 @@ This keeps the metadata (status, blockers, intents) with the code it describes. 
 
 ## 4. Migration Strategy (Investigation Only)
 
-1.  **Config Update:** Update `ui/config.js` to define `GLOBAL_STATE_ROOT` (user config dir) vs `PROJECT_COORD_ROOT` (target project `.hivemind`).
+1.  **Config Update:** Update `ui/config.js` to define `GLOBAL_STATE_ROOT` (user config dir) vs `PROJECT_COORD_ROOT` (target project `.squidrun`).
 2.  **Module Redirection:**
     - Update `UsageManager` and `SettingsManager` to use `GLOBAL_STATE_ROOT`.
     - Update `ContextCompressor` and `TerminalDaemon` to continue using `PROJECT_COORD_ROOT`.

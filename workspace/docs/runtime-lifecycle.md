@@ -18,7 +18,7 @@ Last verified: 2026-02-19
 | --- | --- | --- | --- | --- |
 | Evidence Ledger | First `initialize/executeEvidenceLedgerOperation` call (startup session-start usually triggers it) | Module singleton `sharedRuntime` in `ui/modules/ipc/evidence-ledger-runtime.js` (or worker runtime) | `closeSharedRuntime()`, or `initializeEvidenceLedgerRuntime({ forceRuntimeRecreate: true })` | `ui/modules/ipc/project-handlers.js` calls force recreate during `syncProjectRoot(...)`. |
 | Team Memory | First `ensureTeamMemoryInitialized(...)`/operation call | Module singleton `sharedRuntime` in `ui/modules/team-memory/runtime.js` (or worker runtime) | `closeTeamMemoryRuntime()` / `runtime.closeSharedRuntime()`, or `initializeTeamMemoryRuntime({ forceRuntimeRecreate: true })` | `ui/modules/ipc/project-handlers.js` calls force recreate during `syncProjectRoot(...)`. |
-| Watcher workers (workspace/trigger/message) | `initPostLoad()` | Process refs in `ui/modules/watcher.js` (`workspaceWatcher`, `triggerWatcher`, `messageWatcher`) | `stopWatcher()`, `stopTriggerWatcher()`, `stopMessageWatcher()` | Not explicitly restarted on project switch; state/project path is updated via `watcher.writeState(...)` + `setProjectRoot(...)`. |
+| Watcher workers (coord/trigger/message) | `initPostLoad()` | Process refs in `ui/modules/watcher.js` (`workspaceWatcher`, `triggerWatcher`, `messageWatcher`) | `stopWatcher()`, `stopTriggerWatcher()`, `stopMessageWatcher()` | Not explicitly restarted on project switch; state/project path is updated via `watcher.writeState(...)` + `setProjectRoot(...)`. |
 | WebSocket runtime | `websocketServer.start(...)` in app init | Singleton `wss` + in-memory/outbound queue state in `ui/modules/websocket-runtime.js` | `websocketServer.stop()` / `websocket-runtime.stop()` | Not explicitly restarted on project switch. Current session scope remains the app session scope. |
 | Comms worker client/process | When worker mode enabled and `websocketServer.start(...)` delegates to `comms-worker-client.start(...)` | Cached `workerProcess`, `running`, `lastStartOptions` in `ui/modules/comms-worker-client.js`; worker auto-restart with backoff | `workerClient.stop()` (via `websocketServer.stop()`) | Not explicitly reset on project switch. Restart app/comms stack if transport context must be fully clean. |
 
@@ -32,7 +32,7 @@ Last verified: 2026-02-19
 
 When `select-project`/`switch-project` runs (`ui/modules/ipc/project-handlers.js`):
 
-1. `.hivemind/link.json` is rewritten for the selected project.
+1. `.squidrun/link.json` is rewritten for the selected project.
 2. Watcher state `state.project` is updated.
 3. `setProjectRoot(projectPath)` is applied.
 4. Evidence Ledger + Team Memory runtimes are force-recreated (project DB rebind).

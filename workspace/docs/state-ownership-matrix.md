@@ -4,7 +4,7 @@ Last verified: 2026-02-19
 
 Scope labels:
 - `Global`: shared across all projects (under `GLOBAL_STATE_ROOT` from `ui/config.js`).
-- `Project`: per selected project (under `<project>/.hivemind/`).
+- `Project`: per selected project (under `<project>/.squidrun/`).
 - `Legacy`: compatibility mirror/fallback still in `workspace/`.
 
 | Concern | Store (path) | Scope | Authoritative writer(s) | Primary reader(s) | Notes |
@@ -32,6 +32,6 @@ Scope labels:
 ## Operator Rules
 
 1. Treat `GLOBAL_STATE_ROOT` files as orchestrator-global truth.
-2. Treat `<project>/.hivemind/` files/DBs as project truth.
+2. Treat `<project>/.squidrun/` files/DBs as project truth.
 3. Treat `workspace/` copies as compatibility-only unless a component is explicitly still workspace-local.
-4. For memory/journal diagnosis, use `<project>/.hivemind/runtime/evidence-ledger.db` only.
+4. For memory/journal diagnosis, use `<project>/.squidrun/runtime/evidence-ledger.db` only.

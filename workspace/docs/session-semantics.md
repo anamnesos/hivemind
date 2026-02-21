@@ -18,10 +18,10 @@ Hivemind has multiple session concepts. They are related but not identical.
 
 This is the authoritative "current app run" session boundary.
 
-## 2) Project Bootstrap Session (`.hivemind/link.json -> session_id`)
+## 2) Project Bootstrap Session (`.squidrun/link.json -> session_id`)
 
 - Owner: project selection/switch flow (`ui/modules/ipc/project-handlers.js`).
-- Written by `writeProjectBootstrapFiles(...)` into `<project>/.hivemind/link.json`.
+- Written by `writeProjectBootstrapFiles(...)` into `<project>/.squidrun/link.json`.
 - Source value comes from:
   - `deps.getSessionId()` when available, else
   - app-status session fields.
@@ -81,5 +81,5 @@ If `link.json` is stale, metadata may still carry stale bootstrap values, but se
 1. For runtime slicing and handoff generation, trust `comms_journal.session_id`.
 2. For sender/project attribution, inspect `metadata.project.*`.
 3. Do not assume unresolved claims are session-scoped in handoff generation; unresolved claim query is currently cross-session.
-4. If app-status/link/session-handoff disagree, treat `.hivemind/app-status.json` as current session truth and verify journal rows directly before escalating.
+4. If app-status/link/session-handoff disagree, treat global `app-status.json` (`GLOBAL_STATE_ROOT`) as current session truth and verify journal rows directly before escalating.
 5. `session.md` can legitimately show `rows_scanned: 0` while cross-session sections are populated; this indicates scope mismatch or an empty current session, not necessarily an empty journal DB.

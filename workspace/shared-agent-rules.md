@@ -21,7 +21,7 @@ node ui/scripts/hm-send.js <target> "(ROLE #N): Your message"
 ### Rules
 - **hm-send.js is the ONLY way to message other agents.** Terminal output is visible ONLY to the user glancing at your pane — other agents cannot see it.
 - **James reads ONLY pane 1.** If you are not in pane 1, James will NOT see your output. All user communication flows through Architect.
-- **NEVER read trigger files** (`.hivemind/triggers/*.txt`, legacy `workspace/triggers/*.txt`). They are write-only and consumed instantly by the file watcher.
+- **NEVER read trigger files** (`.squidrun/triggers/*.txt`, legacy `workspace/triggers/*.txt`). They are write-only and consumed instantly by the file watcher.
 - **hm-send.js may report "unverified" or "health=stale"** on startup. This is normal — WebSocket reconnects slowly. The trigger file fallback is reliable. Trust it and move on.
 - **Message format**: `(ROLE #N): message` — sequence numbers prevent duplicates. Start from `#1` each session.
 
@@ -58,17 +58,17 @@ This includes:
 
 Every agent, every model, every pane follows this structure:
 
-1. Read session handoff index at `workspace/handoffs/session.md` (auto-materialized from `comms_journal`)
-2. Read `.hivemind/app-status.json` — runtime state and canonical session number
-3. Glance at `workspace/build/blockers.md` and `errors.md` — active counts only
+1. Read session handoff index at `.squidrun/handoffs/session.md` (legacy mirror may still exist at `workspace/handoffs/session.md`)
+2. Read `app-status.json` from `GLOBAL_STATE_ROOT` — runtime state and canonical session number
+3. Glance at `.squidrun/build/blockers.md` and `.squidrun/build/errors.md` — active counts only
 4. **Architect only:** Await the automated **Startup Briefing** (summarizes Comm Journal, open Tasks, unresolved Claims)
 5. Message Architect via hm-send.js: online status + active blocker/error count
 6. **STOP. Wait for Architect to assign work.**
 
 ### Runtime Truth Checks (Before Calling Something Broken)
-- Treat `.hivemind/runtime/evidence-ledger.db` as canonical live journal DB.
-- Do not diagnose from `.hivemind/evidence-ledger.db` or `workspace/*/evidence-ledger.db` (stale artifact traps).
-- Treat `.hivemind/app-status.json` as session truth; `link.json.session_id` is bootstrap metadata and may lag.
+- Treat `.squidrun/runtime/evidence-ledger.db` as canonical live journal DB.
+- Do not diagnose from `.squidrun/evidence-ledger.db` or `workspace/*/evidence-ledger.db` (stale artifact traps).
+- Treat global `app-status.json` (`GLOBAL_STATE_ROOT`) as session truth; `link.json.session_id` is bootstrap metadata and may lag.
 - Verify live data first, then propose redesigns.
 
 ### What NOT to do on startup
