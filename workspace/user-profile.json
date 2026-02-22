@@ -1,8 +1,8 @@
 {
-  "name": "James",
+  "name": "Your Name Here",
   "experience_level": "tinkerer",
   "communication_style": "terse",
-  "domain_expertise": "Strong JS/Electron, built SquidRun from scratch. No formal dev training.",
+  "domain_expertise": "Describe your strengths, stack, and project context here.",
   "notes": "Edit this file to customize how agents interact with you.",
   "schema": {
     "experience_level": {

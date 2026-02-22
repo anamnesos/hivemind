@@ -20,7 +20,7 @@ node ui/scripts/hm-send.js <target> "(ROLE #N): Your message"
 
 ### Rules
 - **hm-send.js is the ONLY way to message other agents.** Terminal output is visible ONLY to the user glancing at your pane — other agents cannot see it.
-- **James reads ONLY pane 1.** If you are not in pane 1, James will NOT see your output. All user communication flows through Architect.
+- **The user reads ONLY pane 1.** If you are not in pane 1, the user will NOT see your output. All user communication flows through Architect.
 - **NEVER read trigger files** (`.squidrun/triggers/*.txt`). They are write-only and consumed instantly by the file watcher.
 - **hm-send.js may report "unverified" or "health=stale"** on startup. This is normal — WebSocket reconnects slowly. The trigger file fallback is reliable. Trust it and move on.
 - **Message format**: `(ROLE #N): message` — sequence numbers prevent duplicates. Start from `#1` each session.
@@ -88,7 +88,7 @@ Every agent, every model, every pane follows this structure:
 - **Architect must not spawn internal/sub-agents.** Delegation goes only to Builder/Oracle via `hm-send.js`.
 - **Only Architect commits to git.** No other agent touches git.
 - **Architect assigns work.** Don't self-assign unless explicitly told "proceed autonomously."
-- **Architect relays to James.** Don't try to communicate with the user directly from panes 2 or 3.
+- **Architect relays to the user.** Don't try to communicate with the user directly from panes 2 or 3.
 
 ---
 

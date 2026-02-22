@@ -1,7 +1,7 @@
-# Blockers
+# Blockers Template
 
 ## Triage Snapshot
-- Last Updated: 2026-02-13 09:30 (local)
+- Last Updated: YYYY-MM-DD HH:MM (local)
 - Active Blockers: 0
 - Severity Counts: CRITICAL 0 | HIGH 0 | MEDIUM 0 | LOW 0
 - Top 3 Priorities:
@@ -15,19 +15,32 @@
 
 ---
 
+## Example Blocker Entry
+
+### BLK-001 - Short title
+- Owner: Architect | Builder | Oracle
+- Last Verified: YYYY-MM-DD HH:MM by <role>
+- Severity: MEDIUM
+- STALE: NO
+- Stale Since: n/a
+- Dependency: What this blocker depends on.
+- Risk: What slips if unresolved.
+- Unblock Plan: Concrete next step.
+
+---
+
 ## Recently Resolved (Last 5 one-liners)
-- [BLK-021] Voice input non-functional in Electron - resolved by 5375439 - verified S102 by User
-- [BLK-022] broadcastInput interrupted by xterm focus steal - resolved by 4d484a7 - verified S102 by User
-- [BLK-019] Terminal layout/fitting issues (3 root causes) - resolved by 857d4d8+94de7a0+31ba1c9 - verified S100 by Analyst
-- [BLK-016] Injection collision / per-terminal typing guard - resolved by 370d2c9 - verified S98 by Analyst
-- [BLK-014] Agent-to-agent messages executed as commands - resolved by 2a88883 - verified S97 by User
+
+- (Example) [BLK-001] Resolved by commit <hash> — verified in session <id>.
 
 ---
 
 ## Backlog (Nice-to-Have)
-- PTY injection sweeper: background job to retry failed verification injections
+
+- Add non-blocking follow-up items here.
 
 ---
 
 ## Archive
+
 - Full blocker history: `workspace/build/blockers-archive.md`
